@@ -1,6 +1,8 @@
 import 'package:deep_sage/core/config/theme/app_theme.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
 import 'package:deep_sage/views/authentication_screens/login_screen.dart';
+// import 'package:deep_sage/views/edit_profile_screen.dart';
+// import 'package:deep_sage/views/sign_out_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
