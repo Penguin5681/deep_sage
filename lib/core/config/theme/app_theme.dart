@@ -69,6 +69,30 @@ class AppTheme {
         fontFamily: FontFamily.afacadFlux,
       ),
     ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        backgroundColor: Colors.black,
+        elevation: 0,
+        textStyle: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: Colors.grey, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: Colors.blue, width: 2.0),
+      ),
+      hintStyle: TextStyle(color: Colors.grey),
+    ),
   );
 
   static final darkTheme = ThemeData(
@@ -136,6 +160,30 @@ class AppTheme {
         color: Colors.white,
         fontFamily: FontFamily.afacadFlux,
       ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        textStyle: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: Colors.black,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: Colors.white, width: 1.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide(color: Colors.blue, width: 2.0),
+      ),
+      hintStyle: TextStyle(color: Colors.white70),
     ),
   );
 }
