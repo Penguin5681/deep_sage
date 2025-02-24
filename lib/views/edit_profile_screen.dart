@@ -1,3 +1,4 @@
+import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
 
 class EditProfileScreen extends StatelessWidget {
@@ -6,6 +7,7 @@ class EditProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: DevFAB(parentContext: context),
       backgroundColor: Colors.white,
       body: Row(
         children: [
