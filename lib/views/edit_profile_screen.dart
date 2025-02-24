@@ -19,25 +19,23 @@ class EditProfileScreen extends StatelessWidget {
               children: [
                 const Text(
                   'DataVision AI',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16), // Reduced spacing
                 _buildNavItem(Icons.dashboard_outlined, 'Dashboard'),
                 _buildNavItem(Icons.dataset_outlined, 'Data Sets'),
                 _buildNavItem(Icons.analytics_outlined, 'Analysis'),
                 _buildNavItem(Icons.description_outlined, 'Reports'),
-                _buildNavItem(Icons.settings_outlined, 'Settings', isSelected: true),
+                _buildNavItem(
+                  Icons.settings_outlined,
+                  'Settings',
+                  isSelected: true,
+                ),
                 const Spacer(),
                 // Profile section at bottom
                 const Row(
                   children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.grey,
-                    ),
+                    CircleAvatar(radius: 16, backgroundColor: Colors.grey),
                     SizedBox(width: 8), // Reduced spacing
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,10 +46,7 @@ class EditProfileScreen extends StatelessWidget {
                         ),
                         Text(
                           'Data Scientist',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ],
                     ),
@@ -147,10 +142,27 @@ class EditProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16), // Reduced spacing
                       // Form Fields
-                      _buildFormField('Full Name', 'John Smith', Icons.person_outline),
-                      _buildFormField('Job Title', 'Data Scientist', Icons.work_outline),
-                      _buildFormField('Email', 'john.smith@example.com', Icons.email_outlined),
-                      _buildFormField('Bio', 'Tell us about yourself', null, isMultiline: true),
+                      _buildFormField(
+                        'Full Name',
+                        'John Smith',
+                        Icons.person_outline,
+                      ),
+                      _buildFormField(
+                        'Job Title',
+                        'Data Scientist',
+                        Icons.work_outline,
+                      ),
+                      _buildFormField(
+                        'Email',
+                        'john.smith@example.com',
+                        Icons.email_outlined,
+                      ),
+                      _buildFormField(
+                        'Bio',
+                        'Tell us about yourself',
+                        null,
+                        isMultiline: true,
+                      ),
                       const SizedBox(height: 24), // Reduced spacing
                       // Action Buttons
                       Row(
@@ -195,11 +207,7 @@ class EditProfileScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.black : Colors.grey,
-            size: 20,
-          ),
+          Icon(icon, color: isSelected ? Colors.black : Colors.grey, size: 20),
           const SizedBox(width: 8), // Reduced spacing
           Text(
             title,
@@ -213,7 +221,12 @@ class EditProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFormField(String label, String placeholder, IconData? icon, {bool isMultiline = false}) {
+  Widget _buildFormField(
+    String label,
+    String placeholder,
+    IconData? icon, {
+    bool isMultiline = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16), // Reduced spacing
       child: Column(
@@ -221,10 +234,7 @@ class EditProfileScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
           ),
           const SizedBox(height: 8),
           TextFormField(

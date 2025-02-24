@@ -1,9 +1,7 @@
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:provider/provider.dart';
-
-import '../../providers/theme_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -186,12 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(child: screens[selectedIndex]),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-        },
-        child: const Icon(Icons.brightness_6),
-      ),
+      floatingActionButton: env == 'development' ? DevFAB() : null,
     );
   }
 }
