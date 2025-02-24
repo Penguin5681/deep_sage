@@ -1,12 +1,10 @@
 import 'package:deep_sage/views/authentication_screens/signup_screen.dart';
 import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
-import 'package:progressive_button_flutter/progressive_button_flutter.dart';
-import 'package:provider/provider.dart';
-
-import '../../providers/theme_provider.dart';
+import 'package:progressive_button_flutter/progressive_button_fluttme_provider.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -58,12 +56,7 @@ class LoginScreen extends StatelessWidget {
         ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
         Colors.black;
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-        },
-        child: const Icon(Icons.brightness_6),
-      ),
+      floatingActionButton: DevFAB(parentContext: context),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
