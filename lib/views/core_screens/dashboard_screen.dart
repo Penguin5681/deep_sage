@@ -184,7 +184,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(child: screens[selectedIndex]),
         ],
       ),
-      floatingActionButton: env == 'development' ? DevFAB() : null,
+      floatingActionButton:
+          env == 'development' ? DevFAB(parentContext: context) : null,
     );
   }
 }
