@@ -13,6 +13,12 @@ dependencies:
   provider: ^6.1.2
   progressive_button_flutter: ^1.2.0
   font_awesome_flutter: ^10.8.0
+  window_size:
+    git:
+      url: https://github.com/google/flutter-desktop-embedding
+      path: plugins/window_size
+  flutter_dotenv: ^5.2.1
+  flutter_speed_dial: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -20,6 +26,35 @@ dev_dependencies:
 
   flutter_lints: ^5.0.0
 flutter:
+  assets:
+    - assets/icons/light/chart.png
+    - assets/icons/light/chart_outlined.png
+    - assets/icons/light/folder.png
+    - assets/icons/light/folder_outlined.png
+    - assets/icons/light/home.png
+    - assets/icons/light/home_outlined.png
+    - assets/icons/light/report.png
+    - assets/icons/light/report_outlined.png
+    - assets/icons/light/search.png
+    - assets/icons/light/search_outlined.png
+    - assets/icons/light/settings.png
+    - assets/icons/light/settings_outlined.png
+    - assets/icons/light/plus.png
+    - assets/icons/dark/chart.png
+    - assets/icons/dark/chart_outlined.png
+    - assets/icons/dark/folder.png
+    - assets/icons/dark/folder_outlined.png
+    - assets/icons/dark/home.png
+    - assets/icons/dark/home_outlined.png
+    - assets/icons/dark/report.png
+    - assets/icons/dark/report_outlined.png
+    - assets/icons/dark/search.png
+    - assets/icons/dark/search_outlined.png
+    - assets/icons/dark/settings.png
+    - assets/icons/dark/settings_outlined.png
+    - assets/icons/dark/plus.png
+    - assets/larry/larry.png
+    - .env
   fonts:
     - family: AfacadFlux
       fonts:

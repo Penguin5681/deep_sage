@@ -1,38 +1,18 @@
-import 'package:deep_sage/views/authentication_screens/signup_screen.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
-import 'package:progressive_button_flutter/progressive_button_fluttme_provider.dart';
+import 'package:progressive_button_flutter/progressive_button_flutte_provider.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatelessWidget {
+  const SignupScreen({super.key});
 
-  Route _createSignUpRoute() {
+  Route _createRoute() {
     return PageRouteBuilder(
-      pageBuilder:
-          (context, animation, secondaryAnimation) => const SignupScreen(),
+      pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.ease;
-
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    );
-  }
-
-  Route _createDashboardRoute() {
-    return PageRouteBuilder(
-      pageBuilder:
-          (context, animation, secondaryAnimation) => const DashboardScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
+        const begin = Offset(-1.0, 0.0);
         const end = Offset.zero;
         const curve = Curves.ease;
 
@@ -49,6 +29,8 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
+    final TextEditingController confirmPasswordController =
+        TextEditingController();
 
     final backgroundColor =
         Theme.of(
@@ -91,16 +73,14 @@ class LoginScreen extends StatelessWidget {
                     obscureText: true,
                     prefixIcon: Icon(Icons.lock),
                   ),
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: const Text('Forgot password?'),
-                      ),
-                    ],
+                  SizedBox(height: 25),
+                  PrimaryEditText(
+                    placeholderText: 'Confirm Password',
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    prefixIcon: Icon(Icons.lock),
                   ),
+                  SizedBox(height: 10),
                   SizedBox(height: 25),
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
@@ -113,16 +93,9 @@ class LoginScreen extends StatelessWidget {
                         fontSize: 20.0,
                       ),
                       backgroundColor: backgroundColor,
-                      text: 'Login',
+                      text: 'Sign Up',
                       onPressed: () async {
-                        await Future.delayed(const Duration(seconds: 5)).then((
-                          _,
-                        ) {
-                          if (!context.mounted) return;
-                          Navigator.of(
-                            context,
-                          ).pushReplacement(_createDashboardRoute());
-                        });
+                        await Future.delayed(const Duration(seconds: 5));
                       },
                       estimatedTime: const Duration(seconds: 5),
                       elevation: 0,
@@ -156,15 +129,15 @@ class LoginScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Don\'t have an account?  '),
+                      const Text('Already have an account?  '),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.of(context).push(_createSignUpRoute());
+                            Navigator.of(context).push(_createRoute());
                           },
                           child: Text(
-                            'Sign Up',
+                            'Sign In',
                             style: TextStyle(color: Colors.blue),
                           ),
                         ),
