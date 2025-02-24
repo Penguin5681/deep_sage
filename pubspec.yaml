@@ -13,6 +13,11 @@ dependencies:
   provider: ^6.1.2
   progressive_button_flutter: ^1.2.0
   font_awesome_flutter: ^10.8.0
+  window_size:
+    git:
+      url: https://github.com/google/flutter-desktop-embedding
+      path: plugins/window_size
+  flutter_dotenv: ^5.2.1
 
 dev_dependencies:
   flutter_test:
@@ -33,6 +38,7 @@ flutter:
     - assets/icons/light/search_outlined.png
     - assets/icons/light/settings.png
     - assets/icons/light/settings_outlined.png
+    - assets/icons/light/plus.png
     - assets/icons/dark/chart.png
     - assets/icons/dark/chart_outlined.png
     - assets/icons/dark/folder.png
@@ -45,6 +51,9 @@ flutter:
     - assets/icons/dark/search_outlined.png
     - assets/icons/dark/settings.png
     - assets/icons/dark/settings_outlined.png
+    - assets/icons/dark/plus.png
+    - assets/larry/larry.png
+    - .env
   fonts:
     - family: AfacadFlux
       fonts:

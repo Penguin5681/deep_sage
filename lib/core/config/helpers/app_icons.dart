@@ -48,4 +48,10 @@ class AppIcons {
       '$lightModeBasePath/settings_outlined.png';
   static const String settingsOutlinedDark =
       '$darkModeBasePath/settings_outlined.png';
+
+  static const String plusLight = '$darkModeBasePath/plus.png';
+
+  static const String plusDark = '$lightModeBasePath/plus.png';
+
+  static const String larry = 'assets/larry/larry.png';
 }
