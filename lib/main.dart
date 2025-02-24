@@ -1,12 +1,22 @@
+import 'dart:io';
+
 import 'package:deep_sage/core/config/theme/app_theme.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
-import 'package:deep_sage/views/authentication_screens/login_screen.dart';
+import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 // import 'package:deep_sage/views/edit_profile_screen.dart';
 // import 'package:deep_sage/views/sign_out_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:window_size/window_size.dart';
 
-void main() {
+Future main() async {
+  await dotenv.load(fileName: ".env");
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    setWindowMinSize(const Size(800, 600));
+    setWindowTitle('Deep Sage');
+  }
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -28,7 +38,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const LoginScreen(),
+      home: const DashboardScreen(),
     );
   }
 }
