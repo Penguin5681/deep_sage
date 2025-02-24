@@ -8,15 +8,18 @@ import '../views/authentication_screens/signup_screen.dart';
 import '../views/edit_profile_screen.dart';
 
 class DevFAB extends StatelessWidget {
-  const DevFAB({super.key});
+  final BuildContext parentContext;
+  const DevFAB({super.key, required this.parentContext});
 
   @override
   Widget build(BuildContext context) {
     void navigateSomewhere(Widget screen) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (BuildContext context) => screen),
-      );
+      if (parentContext.mounted) {
+        Navigator.push(
+          parentContext,
+          MaterialPageRoute(builder: (BuildContext context) => screen),
+        );
+      }
     }
 
     return SpeedDial(
@@ -26,7 +29,10 @@ class DevFAB extends StatelessWidget {
           child: Icon(Icons.brightness_6),
           label: 'Switch Theme',
           onTap: () {
-            Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            Provider.of<ThemeProvider>(
+              parentContext,
+              listen: false,
+            ).toggleTheme();
           },
         ),
         SpeedDialChild(
@@ -40,7 +46,6 @@ class DevFAB extends StatelessWidget {
           child: Icon(Icons.looks_two),
           label: 'Go To Login Screen',
           onTap: () {
-            if (!context.mounted) return;
             navigateSomewhere(LoginScreen());
           },
         ),
@@ -48,7 +53,6 @@ class DevFAB extends StatelessWidget {
           child: Icon(Icons.looks_3),
           label: 'Go To Sign Up Screen',
           onTap: () {
-            if (!context.mounted) return;
             navigateSomewhere(SignupScreen());
           },
         ),
