@@ -1,7 +1,7 @@
-import 'package:deep_sage/widgets/primary_button.dart';
+import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
-import 'package:deep_sage/widgets/secondary_button.dart';
 import 'package:flutter/material.dart';
+import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/theme_provider.dart';
@@ -11,7 +11,14 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TextEditingController controller = TextEditingController();
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
+    final backgroundColor =
+        Theme.of(
+          context,
+        ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
+        Colors.black;
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -35,16 +42,67 @@ class LoginScreen extends StatelessWidget {
               'Empowering Data Science with AI',
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 25.0),
             ),
-            const SizedBox(height: 40),
-            PrimaryButton(text: 'Login', onPressed: () {}),
-            const SizedBox(height: 40),
-            SecondaryButton(onPressed: () {}, text: 'Remove Profile'),
-            const SizedBox(height: 20),
-            PrimaryEditText(
-              placeholderText: 'Enter Email',
-              controller: controller,
-              obscureText: false,
-              prefixIcon: Icon(Icons.lock),
+            SizedBox(height: 30),
+            SizedBox(
+              width: 300,
+              child: Column(
+                children: [
+                  PrimaryEditText(
+                    placeholderText: 'Email',
+                    controller: emailController,
+                    obscureText: false,
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  SizedBox(height: 25),
+                  PrimaryEditText(
+                    placeholderText: 'Password',
+                    controller: passwordController,
+                    obscureText: true,
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  SizedBox(height: 25),
+                  ProgressiveButtonFlutter(
+                    height: 40,
+                    progressColor: Colors.green,
+                    textStyle: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20.0,
+                    ),
+                    backgroundColor: backgroundColor,
+                    text: 'Login',
+                    onPressed: () async {
+                      await Future.delayed(const Duration(seconds: 5));
+                    },
+                    estimatedTime: const Duration(seconds: 5),
+                    elevation: 0,
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Divider(color: Colors.green, thickness: 1),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10.0),
+                        child: Center(
+                          child: Text(
+                            'or continue with',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(color: Colors.green, thickness: 1),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  GoogleButton(),
+                ],
+              ),
             ),
           ],
         ),
