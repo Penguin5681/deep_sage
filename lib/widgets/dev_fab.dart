@@ -1,4 +1,5 @@
 import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
@@ -67,6 +68,13 @@ class DevFAB extends StatelessWidget {
           label: 'Go To Dashboard',
           onTap: () {
             navigateSomewhere(DashboardScreen());
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.looks_5),
+          label: 'Trigger Splash Screen',
+          onTap: () {
+            navigateSomewhere(SplashScreen());
           },
         ),
       ],
