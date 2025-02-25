@@ -1,6 +1,9 @@
-import 'package:deep_sage/views/authentication_screens/login_screen.dart';
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:deep_sage/widgets/dev_fab.dart';
+import 'package:flutter/material.dart';
+
+import '../authentication_screens/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -9,8 +12,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   // Added Animation Controller and Animation
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -23,15 +26,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
 
     Timer(const Duration(seconds: 4), () {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()), // Replace with your next screen
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ), // Replace with your next screen
       );
     });
   }
@@ -46,19 +48,25 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      floatingActionButton: DevFAB(parentContext: context),
+      backgroundColor: Theme.of(context).primaryColor,
       body: FadeTransition(
         opacity: _animation,
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 50), // Adjust height to position at the top
+              const SizedBox(
+                height: 50,
+              ), // Adjust height to position at the top
               Center(
                 child: Container(
                   width: 600,
                   height: 170, // Increased height to avoid overflow
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? Color(0xff3a3a3a)
+                            : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Stack(
@@ -76,22 +84,23 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
-                          children: const [
+                          children: [
                             Text(
                               "DeepSage AI",
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blueAccent,
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : Colors.blueAccent,
                               ),
                             ),
                             // SizedBox(height: 2),
                             Text(
                               "Empowering Data Science with AI",
-                              style: TextStyle(
-                                fontSize: 24,
-                                color: Colors.black54,
-                              ),
+                              style: TextStyle(fontSize: 24),
                             ),
                           ],
                         ),
@@ -103,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               const SizedBox(height: 20),
               const Text(
                 "Loading your workspace...",
-                style: TextStyle(fontSize: 20, color: Colors.black54),
+                style: TextStyle(fontSize: 20),
               ),
               const SizedBox(height: 20),
             ],
