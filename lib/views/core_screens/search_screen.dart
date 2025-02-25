@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
   @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
+  late TabController tabController;
+  final TextEditingController controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    tabController = TabController(length: 6, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final TextEditingController controller = TextEditingController();
     return Scaffold(
       body: Column(
         children: [
@@ -51,6 +71,22 @@ class SearchScreen extends StatelessWidget {
               ],
             ),
           ),
+          TabBar(controller: tabController, tabs: const [
+            Tab(text: 'All',),
+            Tab(text: 'Finances',),
+            Tab(text: 'Technology',),
+            Tab(text: 'Healthcare',),
+            Tab(text: 'Government',),
+            Tab(text: 'Manufacturing',)
+          ],),
+          Expanded(child: TabBarView(controller: tabController, children: const [
+            Center(child: Text('Screen 1'),),
+            Center(child: Text('Screen 2'),),
+            Center(child: Text('Screen 3'),),
+            Center(child: Text('Screen 4'),),
+            Center(child: Text('Screen 5'),),
+            Center(child: Text('Screen 6'),),
+          ]))
         ],
       ),
     );
@@ -66,11 +102,5 @@ class SearchScreen extends StatelessWidget {
         hintText: 'Search Datasets by name, type or category',
       ),
     );
-  }
-  
-  Widget buildTabBar() {
-    return DefaultTabController(length: 2, child: Scaffold(
-
-    ));
   }
 }
