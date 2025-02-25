@@ -35,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final env = dotenv.env['FLUTTER_ENV'];
     final List<Widget> screens = [
       // This is an array of Screens
-      const Center(child: Text('Dashboard')),
+      Dashboard(),
       const Center(child: Text('Search')),
       const Center(child: Text('Folders')),
       const Center(child: Text('Visualizations')),
@@ -186,6 +186,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       floatingActionButton:
           env == 'development' ? DevFAB(parentContext: context) : null,
+    );
+  }
+}
+
+class Dashboard extends StatelessWidget {
+  const Dashboard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(child: Column(children: [const Text('Welcome Back-Alex')])),
     );
   }
 }
