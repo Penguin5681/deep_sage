@@ -49,17 +49,25 @@ class DatasetCard extends StatelessWidget {
               Theme.of(context).brightness == Brightness.dark
                   ? Color(0xff41434b)
                   : Color(0xfff4f4f4),
-          borderRadius: BorderRadius.circular(15.0)
+          borderRadius: BorderRadius.circular(15.0),
         ),
         child: Padding(
-          padding: const EdgeInsets.only(top: 23.0, bottom: 23.0, left: 23.0, right: 100.0),
+          padding: const EdgeInsets.only(
+            top: 23.0,
+            bottom: 23.0,
+            left: 23.0,
+            right: 100.0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(50),
-                  color: Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.white,
+                  color:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey
+                          : Colors.white,
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(10.0),
@@ -70,10 +78,16 @@ class DatasetCard extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 20,),
-              Text(labelText, style: TextStyle(fontWeight: FontWeight.w500, fontSize: labelSize),),
-              Text(subLabelText, style: TextStyle(fontSize: subLabelSize),),
-              const SizedBox(height: 10,),
+              SizedBox(height: 20),
+              Text(
+                labelText,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: labelSize,
+                ),
+              ),
+              Text(subLabelText, style: TextStyle(fontSize: subLabelSize)),
+              const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
@@ -89,10 +103,7 @@ class DatasetCard extends StatelessWidget {
                 ),
                 child: Text(
                   buttonText,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
