@@ -1,4 +1,5 @@
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/views/core_screens/search_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   var selectedIndex = 0;
+  final navigatorKey = GlobalKey<NavigatorState>();
 
   Widget getIconForTheme({
     required String lightIcon,
@@ -37,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final List<Widget> screens = [
       // This is an array of Screens
       Dashboard(),
-      const Center(child: Text('Search')),
+      SearchScreen(),
       const Center(child: Text('Folders')),
       const Center(child: Text('Visualizations')),
       const Center(child: Text('Reports')),
@@ -274,8 +276,7 @@ class Dashboard extends StatelessWidget {
                     DatasetCard(
                       lightIconPath: AppIcons.chartLight,
                       darkIconPath: AppIcons.chartDark,
-                      labelText:
-                      'Customer Behaviour',
+                      labelText: 'Customer Behaviour',
                       subLabelText: 'Last opened yesterday',
                       buttonText: 'Open',
                     ),
@@ -283,8 +284,7 @@ class Dashboard extends StatelessWidget {
                     DatasetCard(
                       lightIconPath: AppIcons.chartLight,
                       darkIconPath: AppIcons.chartDark,
-                      labelText:
-                      'Market Research',
+                      labelText: 'Market Research',
                       subLabelText: 'Last opened 3 days ago',
                       buttonText: 'Open',
                     ),
@@ -302,9 +302,9 @@ class Dashboard extends StatelessWidget {
                         expanded: false,
                         lightIconPath: AppIcons.chartLight,
                         darkIconPath: AppIcons.chartDark,
-                        labelText:
-                        'Dataset Analysis Summary',
-                        subLabelText: 'Your recent datasets show a 23% increase in customer engagement patterns. Consider exploring correlation with your new marketing campaign.',
+                        labelText: 'Dataset Analysis Summary',
+                        subLabelText:
+                            'Your recent datasets show a 23% increase in customer engagement patterns. Consider exploring correlation with your new marketing campaign.',
                         subLabelSize: 17.0,
                         buttonText: 'Open',
                       ),
