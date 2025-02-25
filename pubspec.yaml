@@ -13,10 +13,6 @@ dependencies:
   provider: ^6.1.2
   progressive_button_flutter: ^1.2.0
   font_awesome_flutter: ^10.8.0
-  window_size:
-    git:
-      url: https://github.com/google/flutter-desktop-embedding
-      path: plugins/window_size
   flutter_dotenv: ^5.2.1
   flutter_speed_dial: ^7.0.0
 
