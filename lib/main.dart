@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:deep_sage/core/config/theme/app_theme.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
@@ -8,15 +6,10 @@ import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:window_size/window_size.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    setWindowMinSize(const Size(800, 600));
-    setWindowTitle('Deep Sage');
-  }
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

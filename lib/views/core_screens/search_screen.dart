@@ -33,17 +33,23 @@ class SearchScreen extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(left: 35.0, top: 25.0, right: 35.0),
-            child: searchBar(controller, (value) {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text('Search has been completed'),
-                    content: Text('You Searched for: $value'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                searchBar(controller, (value) {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Search has been completed'),
+                        content: Text('You Searched for: $value'),
+                      );
+                    },
                   );
-                },
-              );
-            }),
+                }),
+                const SizedBox(height: 25.0),
+              ],
+            ),
           ),
         ],
       ),
@@ -60,5 +66,11 @@ class SearchScreen extends StatelessWidget {
         hintText: 'Search Datasets by name, type or category',
       ),
     );
+  }
+  
+  Widget buildTabBar() {
+    return DefaultTabController(length: 2, child: Scaffold(
+
+    ));
   }
 }
