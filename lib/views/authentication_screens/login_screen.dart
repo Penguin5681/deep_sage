@@ -4,46 +4,46 @@ import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
-import 'package:progressive_button_flutter/progressive_button_fluttme_provider.dart';
+import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  Route _createSignUpRoute() {
-    return PageRouteBuilder(
-      pageBuilder:
-          (context, animation, secondaryAnimation) => const SignupScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.ease;
-
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    );
-  }
-
-  Route _createDashboardRoute() {
-    return PageRouteBuilder(
-      pageBuilder:
-          (context, animation, secondaryAnimation) => const DashboardScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.ease;
-
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    );
-  }
+  // Route _createSignUpRoute() {
+  //   return PageRouteBuilder(
+  //     pageBuilder:
+  //         (context, animation, secondaryAnimation) => const SignupScreen(),
+  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //       const begin = Offset(1.0, 0.0);
+  //       const end = Offset.zero;
+  //       const curve = Curves.ease;
+  //
+  //       var tween = Tween(
+  //         begin: begin,
+  //         end: end,
+  //       ).chain(CurveTween(curve: curve));
+  //       return SlideTransition(position: animation.drive(tween), child: child);
+  //     },
+  //   );
+  // }
+  //
+  // Route _createDashboardRoute() {
+  //   return PageRouteBuilder(
+  //     pageBuilder:
+  //         (context, animation, secondaryAnimation) => const DashboardScreen(),
+  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //       const begin = Offset(1.0, 0.0);
+  //       const end = Offset.zero;
+  //       const curve = Curves.ease;
+  //
+  //       var tween = Tween(
+  //         begin: begin,
+  //         end: end,
+  //       ).chain(CurveTween(curve: curve));
+  //       return SlideTransition(position: animation.drive(tween), child: child);
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -119,9 +119,13 @@ class LoginScreen extends StatelessWidget {
                           _,
                         ) {
                           if (!context.mounted) return;
-                          Navigator.of(
+                          Navigator.pushReplacement(
                             context,
-                          ).pushReplacement(_createDashboardRoute());
+                            MaterialPageRoute(
+                              builder:
+                                  (BuildContext context) => DashboardScreen(),
+                            ),
+                          );
                         });
                       },
                       estimatedTime: const Duration(seconds: 5),
@@ -161,7 +165,13 @@ class LoginScreen extends StatelessWidget {
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.of(context).push(_createSignUpRoute());
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (BuildContext context) => SignupScreen(),
+                              ),
+                            );
                           },
                           child: Text(
                             'Sign Up',

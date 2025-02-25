@@ -3,27 +3,27 @@ import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
-import 'package:progressive_button_flutter/progressive_button_flutte_provider.dart';
+import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
-  Route _createRoute() {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(-1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.ease;
-
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    );
-  }
+  // Route _createRoute() {
+  //   return PageRouteBuilder(
+  //     pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
+  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+  //       const begin = Offset(-1.0, 0.0);
+  //       const end = Offset.zero;
+  //       const curve = Curves.ease;
+  //
+  //       var tween = Tween(
+  //         begin: begin,
+  //         end: end,
+  //       ).chain(CurveTween(curve: curve));
+  //       return SlideTransition(position: animation.drive(tween), child: child);
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +134,13 @@ class SignupScreen extends StatelessWidget {
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.of(context).push(_createRoute());
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (BuildContext context) => LoginScreen(),
+                              ),
+                            );
                           },
                           child: Text(
                             'Sign In',

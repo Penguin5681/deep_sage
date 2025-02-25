@@ -1,3 +1,4 @@
+import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:provider/provider.dart';
@@ -13,9 +14,11 @@ class DevFAB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ValueNotifier<bool> isDialOpen = ValueNotifier<bool>(false);
     void navigateSomewhere(Widget screen) {
+      isDialOpen.value = false;
       if (parentContext.mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           parentContext,
           MaterialPageRoute(builder: (BuildContext context) => screen),
         );
@@ -24,11 +27,14 @@ class DevFAB extends StatelessWidget {
 
     return SpeedDial(
       animatedIcon: AnimatedIcons.menu_close,
+      openCloseDial: isDialOpen,
+      closeDialOnPop: true,
       children: [
         SpeedDialChild(
           child: Icon(Icons.brightness_6),
           label: 'Switch Theme',
           onTap: () {
+            isDialOpen.value = false;
             Provider.of<ThemeProvider>(
               parentContext,
               listen: false,
@@ -54,6 +60,13 @@ class DevFAB extends StatelessWidget {
           label: 'Go To Sign Up Screen',
           onTap: () {
             navigateSomewhere(SignupScreen());
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.looks_4),
+          label: 'Go To Dashboard',
+          onTap: () {
+            navigateSomewhere(DashboardScreen());
           },
         ),
       ],
