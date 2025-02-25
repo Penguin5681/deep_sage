@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
 
+import '../authentication_screens/login_screen.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -28,9 +30,11 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     Timer(const Duration(seconds: 4), () {
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (context) => const LoginScreen()), // Replace with your next screen
-      // );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ), // Replace with your next screen
+      );
     });
   }
 
