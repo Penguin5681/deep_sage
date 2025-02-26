@@ -1,5 +1,5 @@
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
-import 'package:deep_sage/views/core_screens/search_screen.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
@@ -299,7 +299,6 @@ class Dashboard extends StatelessWidget {
                   child: Row(
                     children: [
                       DatasetCard(
-                        expanded: false,
                         lightIconPath: AppIcons.chartLight,
                         darkIconPath: AppIcons.chartDark,
                         labelText: 'Dataset Analysis Summary',
