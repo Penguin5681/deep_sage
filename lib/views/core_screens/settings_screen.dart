@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -21,87 +24,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: darkModeEnabled ? Colors.grey[900] : Colors.white,
         body: Row(
           children: [
-            // Left sidebar
-            Container(
-              width: 170,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: darkModeEnabled ? Colors.grey[850] : Colors.grey[100],
-                border: Border(
-                  right: BorderSide(
-                    color: darkModeEnabled ? Colors.grey[800]! : Colors.grey[300]!,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'DeepSage AI',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: darkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        Icon(
-                          Icons.add,
-                          color: darkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildSidebarItem(Icons.dashboard_outlined, 'Dashboard'),
-                  _buildSidebarItem(Icons.dataset_outlined, 'Data Sets'),
-                  _buildSidebarItem(Icons.analytics_outlined, 'Analysis'),
-                  _buildSidebarItem(Icons.description_outlined, 'Reports'),
-                  _buildSidebarItem(
-                    Icons.settings_outlined,
-                    'Settings',
-                    isSelected: true,
-                  ),
-                  const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: Colors.grey[400],
-                          child: const Text('J', style: TextStyle(color: Colors.white, fontSize: 12)),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'John Smith',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: darkModeEnabled ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            Text(
-                              'Data Scientist',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: darkModeEnabled ? Colors.grey[400] : Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
             // Right content area
             Expanded(
               child: SingleChildScrollView(
@@ -357,6 +279,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               onChanged: (value) {
                                 setState(() {
                                   darkModeEnabled = value;
+                                  Provider.of<ThemeProvider>(
+                                    context,
+                                    listen: false,
+                                  ).toggleTheme();
                                 });
                               },
                               activeColor: Colors.blue,
