@@ -19,6 +19,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
+    final TextEditingController kaggleApiInputController = TextEditingController();
+    final TextEditingController huggingFaceApiInputController = TextEditingController();
     return Theme(
       data: darkModeEnabled ? ThemeData.dark() : ThemeData.light(),
       child: Scaffold(
@@ -369,7 +371,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 12,
+                                  vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
@@ -378,11 +380,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     color: isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
                                   ),
                                 ),
-                                child: Text(
-                                  'Enter your Kaggle API key',
+                                child: TextField(
+                                  controller: kaggleApiInputController,
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
                                     fontSize: 12,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter your Kaggle API key',
+                                    hintStyle: TextStyle(
+                                      color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                      fontSize: 12,
+                                    ),
+                                    border: InputBorder.none,
                                   ),
                                 ),
                               ),
@@ -394,8 +404,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16), // Reduced spacing
-                        // Hugging Face API Key
+                        const SizedBox(height: 16),
+
+// Hugging Face API Key
                         Text(
                           'Hugging Face API Key',
                           style: TextStyle(
@@ -411,7 +422,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 12,
+                                  vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
@@ -420,11 +431,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     color: isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
                                   ),
                                 ),
-                                child: Text(
-                                  'Enter your Hugging Face API key',
+                                child: TextField(
+                                  controller: huggingFaceApiInputController,
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
                                     fontSize: 12,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter your Hugging Face API key',
+                                    hintStyle: TextStyle(
+                                      color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                      fontSize: 12,
+                                    ),
+                                    border: InputBorder.none,
                                   ),
                                 ),
                               ),
@@ -436,7 +455,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24), // Reduced spacing
+                        const SizedBox(height: 16),
+
+// Save Button
+                        Center(
+                          child: ElevatedButton.icon(
+                            onPressed: () {},
+                            icon: const Icon(Icons.save),
+                            label: const Text('Save API Keys'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                         // Data Management
                         Text(
                           'Data Management',
