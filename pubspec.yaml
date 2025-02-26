@@ -36,6 +36,8 @@ flutter:
     - assets/icons/light/settings.png
     - assets/icons/light/settings_outlined.png
     - assets/icons/light/plus.png
+    - assets/icons/light/add.png
+    - assets/icons/light/ai.png
     - assets/icons/dark/chart.png
     - assets/icons/dark/chart_outlined.png
     - assets/icons/dark/folder.png
@@ -49,6 +51,8 @@ flutter:
     - assets/icons/dark/settings.png
     - assets/icons/dark/settings_outlined.png
     - assets/icons/dark/plus.png
+    - assets/icons/dark/add.png
+    - assets/icons/dark/ai.png
     - assets/larry/larry.png
     - .env
   fonts:
