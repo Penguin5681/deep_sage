@@ -38,6 +38,10 @@ flutter:
     - assets/icons/light/plus.png
     - assets/icons/light/add.png
     - assets/icons/light/ai.png
+    - assets/icons/light/factory.png
+    - assets/icons/light/government.png
+
+
     - assets/icons/dark/chart.png
     - assets/icons/dark/chart_outlined.png
     - assets/icons/dark/folder.png
@@ -53,6 +57,8 @@ flutter:
     - assets/icons/dark/plus.png
     - assets/icons/dark/add.png
     - assets/icons/dark/ai.png
+    - assets/icons/dark/factory.png
+    - assets/icons/dark/government.png
     - assets/larry/larry.png
     - .env
   fonts:
