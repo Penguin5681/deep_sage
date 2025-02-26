@@ -1,3 +1,4 @@
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
 import 'package:flutter/material.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -7,7 +8,8 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen>
+    with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
 
@@ -26,6 +28,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Column(
         children: [
@@ -45,7 +48,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {},
-                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
+                    child: const Text(
+                      'Search',
+                      style: TextStyle(fontSize: 16.0),
+                    ),
                   ),
                 ),
               ],
@@ -71,28 +77,47 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
               ],
             ),
           ),
-          TabBar(controller: tabController, tabs: const [
-            Tab(text: 'All',),
-            Tab(text: 'Finances',),
-            Tab(text: 'Technology',),
-            Tab(text: 'Healthcare',),
-            Tab(text: 'Government',),
-            Tab(text: 'Manufacturing',)
-          ],),
-          Expanded(child: TabBarView(controller: tabController, children: const [
-            Center(child: Text('Screen 1'),),
-            Center(child: Text('Screen 2'),),
-            Center(child: Text('Screen 3'),),
-            Center(child: Text('Screen 4'),),
-            Center(child: Text('Screen 5'),),
-            Center(child: Text('Screen 6'),),
-          ]))
+          TabBar(
+            padding: EdgeInsets.only(right: 650.0),
+            dividerColor: Colors.transparent,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: isDarkMode ? Colors.white : Colors.black,
+            unselectedLabelColor: isDarkMode ? Colors.grey : Colors.grey,
+            indicatorColor: isDarkMode ? Colors.white : Colors.black,
+            indicatorAnimation: TabIndicatorAnimation.elastic,
+            controller: tabController,
+            tabs: const [
+              Tab(text: 'All'),
+              Tab(text: 'Finances'),
+              Tab(text: 'Technology'),
+              Tab(text: 'Healthcare'),
+              Tab(text: 'Government'),
+              Tab(text: 'Manufacturing'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: tabController,
+              children: const [
+                // list of screens links to the respective tabs
+                CategoryAll(),
+                Center(child: Text('Screen 2')),
+                Center(child: Text('Screen 3')),
+                Center(child: Text('Screen 4')),
+                Center(child: Text('Screen 5')),
+                Center(child: Text('Screen 6')),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget searchBar(TextEditingController controller, ValueChanged<String>? onSubmitted) {
+  Widget searchBar(
+    TextEditingController controller,
+    ValueChanged<String>? onSubmitted,
+  ) {
     return TextField(
       controller: controller,
       onSubmitted: onSubmitted,
