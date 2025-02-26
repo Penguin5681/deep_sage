@@ -1,5 +1,6 @@
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
+import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
@@ -43,7 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const Center(child: Text('Folders')),
       const Center(child: Text('Visualizations')),
       const Center(child: Text('Reports')),
-      const Center(child: Text('Settings')),
+      SettingsScreen(),
     ];
     return Scaffold(
       body: Row(
