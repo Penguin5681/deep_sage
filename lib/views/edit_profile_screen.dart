@@ -6,49 +6,62 @@ class EditProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Row(
         children: [
           // Left Sidebar
           Container(
             width: 250,
-            color: Colors.grey[100],
+            color: isDarkTheme ? Colors.grey[850] : Colors.grey[100],
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'DataVision AI',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkTheme ? Colors.white : Colors.black,
+                  ),
                 ),
                 const SizedBox(height: 16), // Reduced spacing
-                _buildNavItem(Icons.dashboard_outlined, 'Dashboard'),
-                _buildNavItem(Icons.dataset_outlined, 'Data Sets'),
-                _buildNavItem(Icons.analytics_outlined, 'Analysis'),
-                _buildNavItem(Icons.description_outlined, 'Reports'),
+                _buildNavItem(Icons.dashboard_outlined, 'Dashboard', isDarkTheme),
+                _buildNavItem(Icons.dataset_outlined, 'Data Sets', isDarkTheme),
+                _buildNavItem(Icons.analytics_outlined, 'Analysis', isDarkTheme),
+                _buildNavItem(Icons.description_outlined, 'Reports', isDarkTheme),
                 _buildNavItem(
                   Icons.settings_outlined,
                   'Settings',
+                  isDarkTheme,
                   isSelected: true,
                 ),
                 const Spacer(),
                 // Profile section at bottom
-                const Row(
+                Row(
                   children: [
                     CircleAvatar(radius: 16, backgroundColor: Colors.grey),
-                    SizedBox(width: 8), // Reduced spacing
+                    const SizedBox(width: 8), // Reduced spacing
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'John Smith',
-                          style: TextStyle(fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: isDarkTheme ? Colors.white : Colors.black,
+                          ),
                         ),
                         Text(
                           'Data Scientist',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                          style: TextStyle(
+                            color: isDarkTheme ? Colors.grey[400] : Colors.grey,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -72,26 +85,27 @@ class EditProfileScreen extends StatelessWidget {
                         children: [
                           Text(
                             'DataVision AI',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey[600]),
                           ),
                           const Icon(Icons.chevron_right, color: Colors.grey),
                           Text(
                             'Settings',
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey[600]),
                           ),
                           const Icon(Icons.chevron_right, color: Colors.grey),
-                          const Text(
+                          Text(
                             'Edit Profile',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16), // Reduced spacing
-                      const Text(
+                      Text(
                         'Edit Profile',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: isDarkTheme ? Colors.white : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 24), // Reduced spacing
@@ -99,23 +113,24 @@ class EditProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16), // Reduced padding
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: isDarkTheme ? Colors.grey[800] : Colors.grey[100],
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Profile Photo',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
+                                color: isDarkTheme ? Colors.white : Colors.black,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Upload a new profile photo or remove the current one',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey[600]),
                             ),
                             const SizedBox(height: 12), // Reduced spacing
                             Row(
@@ -148,21 +163,25 @@ class EditProfileScreen extends StatelessWidget {
                         'Full Name',
                         'John Smith',
                         Icons.person_outline,
+                        isDarkTheme,
                       ),
                       _buildFormField(
                         'Job Title',
                         'Data Scientist',
                         Icons.work_outline,
+                        isDarkTheme,
                       ),
                       _buildFormField(
                         'Email',
                         'john.smith@example.com',
                         Icons.email_outlined,
+                        isDarkTheme,
                       ),
                       _buildFormField(
                         'Bio',
                         'Tell us about yourself',
                         null,
+                        isDarkTheme,
                         isMultiline: true,
                       ),
                       const SizedBox(height: 24), // Reduced spacing
@@ -204,17 +223,17 @@ class EditProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String title, {bool isSelected = false}) {
+  Widget _buildNavItem(IconData icon, String title, bool isDarkTheme, {bool isSelected = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: isSelected ? Colors.black : Colors.grey, size: 20),
+          Icon(icon, color: isSelected ? Colors.black : (isDarkTheme ? Colors.grey[400] : Colors.grey), size: 20),
           const SizedBox(width: 8), // Reduced spacing
           Text(
             title,
             style: TextStyle(
-              color: isSelected ? Colors.black : Colors.grey,
+              color: isSelected ? Colors.black : (isDarkTheme ? Colors.grey[400] : Colors.grey),
               fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -226,7 +245,8 @@ class EditProfileScreen extends StatelessWidget {
   Widget _buildFormField(
     String label,
     String placeholder,
-    IconData? icon, {
+    IconData? icon,
+    bool isDarkTheme, {
     bool isMultiline = false,
   }) {
     return Padding(
@@ -236,21 +256,23 @@ class EditProfileScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: isDarkTheme ? Colors.white : Colors.black),
           ),
           const SizedBox(height: 8),
           TextFormField(
             maxLines: isMultiline ? 4 : 1,
             decoration: InputDecoration(
               hintText: placeholder,
+              hintStyle: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey),
               filled: true,
-              fillColor: Colors.grey[100],
+              fillColor: isDarkTheme ? Colors.grey[800] : Colors.grey[100],
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
               ),
-              suffixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
+              suffixIcon: icon != null ? Icon(icon, color: isDarkTheme ? Colors.grey[400] : Colors.grey) : null,
             ),
+            style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
           ),
         ],
       ),
