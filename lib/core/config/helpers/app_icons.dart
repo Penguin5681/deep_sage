@@ -61,5 +61,13 @@ class AppIcons {
 
   static const String healthDark = '$darkModeBasePath/add.png';
 
+  static const String factoryLight = '$lightModeBasePath/factory.png';
+
+  static const String factoryDark = '$darkModeBasePath/factory.png';
+
+  static const String governmentLight = '$lightModeBasePath/government.png';
+
+  static const String governmentDark = '$darkModeBasePath/government.png';
+
   static const String larry = 'assets/larry/larry.png';
 }
