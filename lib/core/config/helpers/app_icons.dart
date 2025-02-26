@@ -53,5 +53,13 @@ class AppIcons {
 
   static const String plusDark = '$lightModeBasePath/plus.png';
 
+  static const String aiLight = '$lightModeBasePath/ai.png';
+
+  static const String aiDark = '$darkModeBasePath/ai.png';
+
+  static const String healthLight = '$lightModeBasePath/add.png';
+
+  static const String healthDark = '$darkModeBasePath/add.png';
+
   static const String larry = 'assets/larry/larry.png';
 }
