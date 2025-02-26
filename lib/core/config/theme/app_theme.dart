@@ -97,7 +97,7 @@ class AppTheme {
 
   static final darkTheme = ThemeData(
     primaryColor: Colors.black,
-    scaffoldBackgroundColor: Colors.black,
+    scaffoldBackgroundColor: Colors.grey[900],
     brightness: Brightness.dark,
     textTheme: const TextTheme(
       bodyLarge: TextStyle(
