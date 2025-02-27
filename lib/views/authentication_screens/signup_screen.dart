@@ -1,4 +1,3 @@
-import 'package:deep_sage/providers/api/auth_api_provider.dart';
 import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
@@ -6,8 +5,6 @@ import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
-import 'package:top_snackbar_flutter/custom_snack_bar.dart';
-import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
@@ -20,7 +17,10 @@ class SignupScreen extends StatelessWidget {
         const end = Offset.zero;
         const curve = Curves.ease;
 
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
         return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
@@ -28,52 +28,18 @@ class SignupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final env = dotenv.env['FLUTTER_ENV'];
+    final _ = dotenv.env['FLUTTER_ENV'];
 
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
-    final TextEditingController confirmPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController =
+        TextEditingController();
 
     final backgroundColor =
-        Theme.of(context).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ?? Colors.black;
-
-    Future<void> validateCredentials(String email, String password, String confirmPassword) async {
-      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-      if (emailRegex.hasMatch(email)) {
-        if (password.length > 6 && confirmPassword.length > 6) {
-          if (password == confirmPassword) {
-            await AuthApiProvider()
-                .firebaseUserSignUp(emailController.text, passwordController.text)
-                .then((result) {
-                  if (!context.mounted) return;
-                  showTopSnackBar(
-                    Overlay.of(context),
-                    CustomSnackBar.success(message: result['message']),
-                  );
-                  Navigator.of(context).pushReplacement(createScreenRoute(LoginScreen(), 1.0, 0));
-                });
-          } else {
-            if (!context.mounted) return;
-            showTopSnackBar(
-              Overlay.of(context),
-              CustomSnackBar.success(message: 'Passwords do not match'),
-            );
-          }
-        } else {
-          if (!context.mounted) return;
-          showTopSnackBar(
-            Overlay.of(context),
-            CustomSnackBar.success(message: 'Password too short'),
-          );
-        }
-      } else {
-        if (!context.mounted) return;
-        showTopSnackBar(
-          Overlay.of(context),
-          CustomSnackBar.success(message: 'Please enter a valid email'),
-        );
-      }
-    }
+        Theme.of(
+          context,
+        ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
+        Colors.black;
 
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
@@ -83,7 +49,11 @@ class SignupScreen extends StatelessWidget {
           children: [
             Text(
               'Deep Sage',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 35.0, letterSpacing: 4.0),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 35.0,
+                letterSpacing: 4.0,
+              ),
             ),
             Text(
               'Empowering Data Science with AI',
@@ -128,19 +98,7 @@ class SignupScreen extends StatelessWidget {
                       ),
                       backgroundColor: backgroundColor,
                       text: 'Sign Up',
-                      onPressed: () async {
-                        if (env == 'production') {
-                          await validateCredentials(
-                            emailController.text,
-                            passwordController.text,
-                            confirmPasswordController.text,
-                          );
-                        } else {
-                          Navigator.of(
-                            context,
-                          ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0));
-                        }
-                      },
+                      onPressed: () async {},
                       estimatedTime: const Duration(seconds: 5),
                       elevation: 0,
                     ),
@@ -150,14 +108,21 @@ class SignupScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(child: Divider(color: Colors.green, thickness: 1)),
+                      Expanded(
+                        child: Divider(color: Colors.green, thickness: 1),
+                      ),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 10.0),
                         child: Center(
-                          child: Text('or continue with', style: TextStyle(fontSize: 16)),
+                          child: Text(
+                            'or continue with',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
-                      Expanded(child: Divider(color: Colors.green, thickness: 1)),
+                      Expanded(
+                        child: Divider(color: Colors.green, thickness: 1),
+                      ),
                     ],
                   ),
                   SizedBox(height: 20),
@@ -171,11 +136,14 @@ class SignupScreen extends StatelessWidget {
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.of(
-                              context,
-                            ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0));
+                            Navigator.of(context).pushReplacement(
+                              createScreenRoute(LoginScreen(), -1.0, 0),
+                            );
                           },
-                          child: Text('Sign In', style: TextStyle(color: Colors.blue)),
+                          child: Text(
+                            'Sign In',
+                            style: TextStyle(color: Colors.blue),
+                          ),
                         ),
                       ),
                     ],
