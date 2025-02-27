@@ -30,10 +30,22 @@ class EditProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16), // Reduced spacing
-                _buildNavItem(Icons.dashboard_outlined, 'Dashboard', isDarkTheme),
+                _buildNavItem(
+                  Icons.dashboard_outlined,
+                  'Dashboard',
+                  isDarkTheme,
+                ),
                 _buildNavItem(Icons.dataset_outlined, 'Data Sets', isDarkTheme),
-                _buildNavItem(Icons.analytics_outlined, 'Analysis', isDarkTheme),
-                _buildNavItem(Icons.description_outlined, 'Reports', isDarkTheme),
+                _buildNavItem(
+                  Icons.analytics_outlined,
+                  'Analysis',
+                  isDarkTheme,
+                ),
+                _buildNavItem(
+                  Icons.description_outlined,
+                  'Reports',
+                  isDarkTheme,
+                ),
                 _buildNavItem(
                   Icons.settings_outlined,
                   'Settings',
@@ -85,17 +97,30 @@ class EditProfileScreen extends StatelessWidget {
                         children: [
                           Text(
                             'DataVision AI',
-                            style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey[600]),
+                            style: TextStyle(
+                              color:
+                                  isDarkTheme
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                            ),
                           ),
                           const Icon(Icons.chevron_right, color: Colors.grey),
                           Text(
                             'Settings',
-                            style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey[600]),
+                            style: TextStyle(
+                              color:
+                                  isDarkTheme
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                            ),
                           ),
                           const Icon(Icons.chevron_right, color: Colors.grey),
                           Text(
                             'Edit Profile',
-                            style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey),
+                            style: TextStyle(
+                              color:
+                                  isDarkTheme ? Colors.grey[400] : Colors.grey,
+                            ),
                           ),
                         ],
                       ),
@@ -113,7 +138,8 @@ class EditProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16), // Reduced padding
                         decoration: BoxDecoration(
-                          color: isDarkTheme ? Colors.grey[800] : Colors.grey[100],
+                          color:
+                              isDarkTheme ? Colors.grey[800] : Colors.grey[100],
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Column(
@@ -124,13 +150,19 @@ class EditProfileScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
-                                color: isDarkTheme ? Colors.white : Colors.black,
+                                color:
+                                    isDarkTheme ? Colors.white : Colors.black,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Upload a new profile photo or remove the current one',
-                              style: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey[600]),
+                              style: TextStyle(
+                                color:
+                                    isDarkTheme
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                              ),
                             ),
                             const SizedBox(height: 12), // Reduced spacing
                             Row(
@@ -223,17 +255,32 @@ class EditProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String title, bool isDarkTheme, {bool isSelected = false}) {
+  Widget _buildNavItem(
+    IconData icon,
+    String title,
+    bool isDarkTheme, {
+    bool isSelected = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: isSelected ? Colors.black : (isDarkTheme ? Colors.grey[400] : Colors.grey), size: 20),
+          Icon(
+            icon,
+            color:
+                isSelected
+                    ? Colors.black
+                    : (isDarkTheme ? Colors.grey[400] : Colors.grey),
+            size: 20,
+          ),
           const SizedBox(width: 8), // Reduced spacing
           Text(
             title,
             style: TextStyle(
-              color: isSelected ? Colors.black : (isDarkTheme ? Colors.grey[400] : Colors.grey),
+              color:
+                  isSelected
+                      ? Colors.black
+                      : (isDarkTheme ? Colors.grey[400] : Colors.grey),
               fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
@@ -256,21 +303,33 @@ class EditProfileScreen extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14, color: isDarkTheme ? Colors.white : Colors.black),
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: isDarkTheme ? Colors.white : Colors.black,
+            ),
           ),
           const SizedBox(height: 8),
           TextFormField(
             maxLines: isMultiline ? 4 : 1,
             decoration: InputDecoration(
               hintText: placeholder,
-              hintStyle: TextStyle(color: isDarkTheme ? Colors.grey[400] : Colors.grey),
+              hintStyle: TextStyle(
+                color: isDarkTheme ? Colors.grey[400] : Colors.grey,
+              ),
               filled: true,
               fillColor: isDarkTheme ? Colors.grey[800] : Colors.grey[100],
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
               ),
-              suffixIcon: icon != null ? Icon(icon, color: isDarkTheme ? Colors.grey[400] : Colors.grey) : null,
+              suffixIcon:
+                  icon != null
+                      ? Icon(
+                        icon,
+                        color: isDarkTheme ? Colors.grey[400] : Colors.grey,
+                      )
+                      : null,
             ),
             style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
           ),

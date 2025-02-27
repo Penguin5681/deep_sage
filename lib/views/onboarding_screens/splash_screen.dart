@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen>
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
 
-    Timer(const Duration(seconds: 4), () {
+    Timer(const Duration(seconds: 1000), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const LoginScreen(),
@@ -49,7 +49,10 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
-      backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor:
+          Theme.of(context).brightness == Brightness.dark
+              ? Color(0xff3a3a3a)
+              : Colors.white,
       body: FadeTransition(
         opacity: _animation,
         child: SingleChildScrollView(
@@ -65,19 +68,22 @@ class _SplashScreenState extends State<SplashScreen>
                   decoration: BoxDecoration(
                     color:
                         Theme.of(context).brightness == Brightness.dark
-                            ? Color(0xff3a3a3a)
+                            ? Colors.black
                             : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Stack(
                     children: [
-                      const Positioned(
+                      Positioned(
                         top: 10,
                         left: 10,
                         child: Icon(
                           Icons.insert_chart, // Example icon, change as needed
                           size: 30, // Decreased size of the icon
-                          color: Colors.black54,
+                          color:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
                         ),
                       ),
                       Center(
@@ -90,11 +96,6 @@ class _SplashScreenState extends State<SplashScreen>
                               style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.bold,
-                                color:
-                                    Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white
-                                        : Colors.blueAccent,
                               ),
                             ),
                             // SizedBox(height: 2),
