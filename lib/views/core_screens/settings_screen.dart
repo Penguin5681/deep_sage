@@ -302,7 +302,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 16), // Reduced spacing
-
                         // Dark Mode
                         // Inside _SettingsScreenState class, replace the dark mode switch implementation
                         Row(
