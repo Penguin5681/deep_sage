@@ -16,6 +16,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   flutter_speed_dial: ^7.0.0
   top_snackbar_flutter: ^3.2.0
+  word_carousel: ^0.0.2
 
 dev_dependencies:
   flutter_test:
