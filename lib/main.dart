@@ -1,6 +1,7 @@
 import 'package:deep_sage/core/config/theme/app_theme.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
 import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 // import 'package:deep_sage/views/edit_profile_screen.dart';
 // import 'package:deep_sage/views/sign_out_screen.dart';
 import 'package:flutter/material.dart';
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const DashboardScreen(),
+      home: SplashScreen(),
     );
   }
 }
