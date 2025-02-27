@@ -1,16 +1,19 @@
 import 'package:deep_sage/core/config/theme/app_theme.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
-// import 'package:deep_sage/views/edit_profile_screen.dart';
-// import 'package:deep_sage/views/sign_out_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
+
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+  final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
+
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseApi);
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

@@ -1,10 +1,14 @@
 import 'package:deep_sage/views/authentication_screens/signup_screen.dart';
+import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -17,10 +21,7 @@ class LoginScreen extends StatelessWidget {
         const end = Offset.zero;
         const curve = Curves.ease;
 
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
+        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
         return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
@@ -30,15 +31,51 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
-    emailController.text = 'pranavsinha922@gmail.com';
-    passwordController.text = '123456789';
+    final supabaseAuthInstance = Supabase.instance.client.auth;
+
     final _ = dotenv.env['FLUTTER_ENV'];
 
     final backgroundColor =
-        Theme.of(
-          context,
-        ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
-        Colors.black;
+        Theme.of(context).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ?? Colors.black;
+
+    Future<void> signIn(String email, String password) async {
+      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+
+      bool isEmail() {
+        return emailRegex.hasMatch(email);
+      }
+
+      bool isThePasswordLengthOk() {
+        return password.length >= 6;
+      }
+
+      if (isEmail() && isThePasswordLengthOk()) {
+        try {
+          await supabaseAuthInstance.signInWithPassword(email: email, password: password);
+          if (!context.mounted) return;
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.success(message: 'Welcome to DeepSage'),
+          );
+          Navigator.of(context).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
+        } catch (e) {
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.error(message: 'Error Occurred: Invalid email or password'),
+          );
+        }
+      } else if (!isEmail()) {
+        showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Invalid Email'));
+      } else if (!isThePasswordLengthOk()) {
+        showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Password too short'));
+      } else {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Internal server error occurred!'),
+        );
+      }
+    }
+
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
       body: Center(
@@ -47,11 +84,7 @@ class LoginScreen extends StatelessWidget {
           children: [
             Text(
               'Deep Sage',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 35.0,
-                letterSpacing: 4.0,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 35.0, letterSpacing: 4.0),
             ),
             Text(
               'Empowering Data Science with AI',
@@ -98,7 +131,9 @@ class LoginScreen extends StatelessWidget {
                       ),
                       backgroundColor: backgroundColor,
                       text: 'Login',
-                      onPressed: () async {},
+                      onPressed: () async {
+                        await signIn(emailController.text, passwordController.text);
+                      },
                       estimatedTime: const Duration(seconds: 5),
                       elevation: 0,
                     ),
@@ -108,21 +143,14 @@ class LoginScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: Divider(color: Colors.green, thickness: 1),
-                      ),
+                      Expanded(child: Divider(color: Colors.green, thickness: 1)),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 10.0),
                         child: Center(
-                          child: Text(
-                            'or continue with',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                          child: Text('or continue with', style: TextStyle(fontSize: 16)),
                         ),
                       ),
-                      Expanded(
-                        child: Divider(color: Colors.green, thickness: 1),
-                      ),
+                      Expanded(child: Divider(color: Colors.green, thickness: 1)),
                     ],
                   ),
                   SizedBox(height: 20),
@@ -136,14 +164,11 @@ class LoginScreen extends StatelessWidget {
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.of(context).pushReplacement(
-                              createScreenRoute(SignupScreen(), 1.0, 0.0),
-                            );
+                            Navigator.of(
+                              context,
+                            ).pushReplacement(createScreenRoute(SignupScreen(), 1.0, 0.0));
                           },
-                          child: Text(
-                            'Sign Up',
-                            style: TextStyle(color: Colors.blue),
-                          ),
+                          child: Text('Sign Up', style: TextStyle(color: Colors.blue)),
                         ),
                       ),
                     ],
