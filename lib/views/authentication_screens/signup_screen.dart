@@ -1,4 +1,4 @@
-import 'package:deep_sage/views/authentication_screens/signup_screen.dart';
+import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatelessWidget {
+  const SignupScreen({super.key});
 
   Route createScreenRoute(Widget screen, double deltaX, double deltaY) {
     return PageRouteBuilder(
@@ -28,17 +28,19 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _ = dotenv.env['FLUTTER_ENV'];
+
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
-    emailController.text = 'pranavsinha922@gmail.com';
-    passwordController.text = '123456789';
-    final _ = dotenv.env['FLUTTER_ENV'];
+    final TextEditingController confirmPasswordController =
+        TextEditingController();
 
     final backgroundColor =
         Theme.of(
           context,
         ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
         Colors.black;
+
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
       body: Center(
@@ -75,16 +77,14 @@ class LoginScreen extends StatelessWidget {
                     obscureText: true,
                     prefixIcon: Icon(Icons.lock),
                   ),
-                  SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: const Text('Forgot password?'),
-                      ),
-                    ],
+                  SizedBox(height: 25),
+                  PrimaryEditText(
+                    placeholderText: 'Confirm Password',
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    prefixIcon: Icon(Icons.lock),
                   ),
+                  SizedBox(height: 10),
                   SizedBox(height: 25),
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
@@ -97,7 +97,7 @@ class LoginScreen extends StatelessWidget {
                         fontSize: 20.0,
                       ),
                       backgroundColor: backgroundColor,
-                      text: 'Login',
+                      text: 'Sign Up',
                       onPressed: () async {},
                       estimatedTime: const Duration(seconds: 5),
                       elevation: 0,
@@ -131,17 +131,17 @@ class LoginScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Don\'t have an account?  '),
+                      const Text('Already have an account?  '),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
                             Navigator.of(context).pushReplacement(
-                              createScreenRoute(SignupScreen(), 1.0, 0.0),
+                              createScreenRoute(LoginScreen(), -1.0, 0),
                             );
                           },
                           child: Text(
-                            'Sign Up',
+                            'Sign In',
                             style: TextStyle(color: Colors.blue),
                           ),
                         ),
