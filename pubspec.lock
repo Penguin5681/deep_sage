@@ -437,6 +437,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  word_carousel:
+    dependency: "direct main"
+    description:
+      name: word_carousel
+      sha256: "56c1135be31e15cb4d301d4d8b96652e4bfb1d7e93a0ce3f39956bf5cf99aff8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   xdg_directories:
     dependency: transitive
     description:
