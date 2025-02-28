@@ -19,8 +19,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
-    final TextEditingController kaggleApiInputController = TextEditingController();
-    final TextEditingController huggingFaceApiInputController = TextEditingController();
+    final TextEditingController kaggleApiInputController =
+        TextEditingController();
+    final TextEditingController huggingFaceApiInputController =
+        TextEditingController();
     return Theme(
       data: darkModeEnabled ? ThemeData.dark() : ThemeData.light(),
       child: Scaffold(
@@ -47,14 +49,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.white
+                                          : Colors.black,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Icon(
                                 Icons.chevron_right,
                                 size: 18,
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -62,7 +70,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
                                 ),
                               ),
                             ],
@@ -74,7 +85,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 16), // Reduced spacing
@@ -82,7 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Container(
                           padding: const EdgeInsets.all(16), // Reduced padding
                           decoration: BoxDecoration(
-                            color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                            color:
+                                isDarkModeEnabled
+                                    ? Colors.grey[800]
+                                    : Colors.grey[100],
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -92,7 +107,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 children: [
                                   Icon(
                                     Icons.person_outline,
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700]
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -100,7 +118,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
                                     ),
                                   ),
                                 ],
@@ -109,7 +130,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Text(
                                 'Manage your account information and preferences',
                                 style: TextStyle(
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
                                   fontSize: 12,
                                 ),
                               ),
@@ -122,7 +146,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           children: [
                             CircleAvatar(
                               radius: 24,
-                              backgroundImage: const AssetImage('assets/larry/larry.png'),
+                              backgroundImage: const AssetImage(
+                                'assets/larry/larry.png',
+                              ),
                             ),
                             const SizedBox(width: 16),
                             Column(
@@ -133,13 +159,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                   ),
                                 ),
                                 Text(
                                   'Change your profile photo',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 12,
                                   ),
                                 ),
@@ -148,7 +180,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Spacer(),
                             Icon(
                               Icons.edit,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                               size: 20,
                             ),
                           ],
@@ -160,7 +195,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -170,14 +206,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                            color:
+                                isDarkModeEnabled
+                                    ? Colors.grey[800]
+                                    : Colors.grey[100],
                             borderRadius: BorderRadius.circular(4),
                           ),
                           width: double.infinity,
                           child: Text(
                             'John Smith',
                             style: TextStyle(
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                         ),
@@ -188,7 +230,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -201,13 +244,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[800]
+                                          : Colors.grey[100],
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   'john.smith@example.com',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                   ),
                                 ),
                               ),
@@ -215,7 +264,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(width: 8),
                             Icon(
                               Icons.mail_outline,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                             ),
                           ],
                         ),
@@ -234,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white,
-                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -245,18 +297,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 16), // Reduced spacing
                         // Dark Mode
                         // Inside _SettingsScreenState class, replace the dark mode switch implementation
-
                         Row(
                           children: [
                             Icon(
                               Icons.dark_mode_outlined,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                             ),
                             const SizedBox(width: 16),
                             Column(
@@ -267,13 +322,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                   ),
                                 ),
                                 Text(
                                   'Toggle between light and dark theme',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 12,
                                   ),
                                 ),
@@ -281,7 +342,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             const Spacer(),
                             Switch(
-                              value: Theme.of(context).brightness == Brightness.dark,
+                              value:
+                                  Theme.of(context).brightness ==
+                                  Brightness.dark,
                               onChanged: (value) {
                                 setState(() {
                                   isDarkModeEnabled = value;
@@ -302,7 +365,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 16), // Reduced spacing
@@ -351,7 +415,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 16), // Reduced spacing
@@ -361,7 +426,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -374,22 +440,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[800]
+                                          : Colors.grey[100],
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[700]!
+                                            : Colors.grey[300]!,
                                   ),
                                 ),
                                 child: TextField(
                                   controller: kaggleApiInputController,
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                     fontSize: 12,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Enter your Kaggle API key',
                                     hintStyle: TextStyle(
-                                      color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[500],
                                       fontSize: 12,
                                     ),
                                     border: InputBorder.none,
@@ -400,19 +478,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(width: 8),
                             Icon(
                               Icons.key_rounded,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-// Hugging Face API Key
+                        // Hugging Face API Key
                         Text(
                           'Hugging Face API Key',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -425,22 +507,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[800]
+                                          : Colors.grey[100],
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[700]!
+                                            : Colors.grey[300]!,
                                   ),
                                 ),
                                 child: TextField(
                                   controller: huggingFaceApiInputController,
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                     fontSize: 12,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: 'Enter your Hugging Face API key',
                                     hintStyle: TextStyle(
-                                      color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[500],
                                       fontSize: 12,
                                     ),
                                     border: InputBorder.none,
@@ -451,13 +545,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const SizedBox(width: 8),
                             Icon(
                               Icons.key_rounded,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                             ),
                           ],
                         ),
                         const SizedBox(height: 16),
 
-// Save Button
+                        // Save Button
                         Center(
                           child: ElevatedButton.icon(
                             onPressed: () {},
@@ -480,7 +577,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            color:
+                                isDarkModeEnabled ? Colors.white : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 16), // Reduced spacing
@@ -489,7 +587,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           children: [
                             Icon(
                               Icons.cleaning_services_outlined,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                             ),
                             const SizedBox(width: 16),
                             Column(
@@ -500,13 +601,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                   ),
                                 ),
                                 Text(
                                   'Remove temporary files and cached data',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 12,
                                   ),
                                 ),
@@ -515,7 +622,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             const Spacer(),
                             Icon(
                               Icons.delete_outline_rounded,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
                             ),
                           ],
                         ),
@@ -525,7 +635,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           children: [
                             Icon(
                               Icons.storage_rounded,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                             ),
                             const SizedBox(width: 16),
                             Column(
@@ -536,13 +649,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.white
+                                            : Colors.black,
                                   ),
                                 ),
                                 Text(
                                   '2.4 GB of 5 GB used',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 12,
                                   ),
                                 ),
@@ -554,14 +673,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Text(
                                   'Select',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
                                 ),
                                 Icon(
                                   Icons.keyboard_arrow_down_sharp,
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
                                 ),
                               ],
                             ),
@@ -590,10 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Icon(
-          icon,
-          color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-        ),
+        Icon(icon, color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,11 +738,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         const Spacer(),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: Colors.blue,
-        ),
+        Switch(value: value, onChanged: onChanged, activeColor: Colors.blue),
       ],
     );
   }
