@@ -1,4 +1,5 @@
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
+import 'package:deep_sage/widgets/source_dropdown.dart';
 import 'package:flutter/material.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -12,6 +13,8 @@ class _SearchScreenState extends State<SearchScreen>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
+  final FocusNode searchFocusNode = FocusNode();
+  String selectedSource = 'Hugging Face';
 
   @override
   void initState() {
@@ -23,6 +26,7 @@ class _SearchScreenState extends State<SearchScreen>
   void dispose() {
     controller.dispose();
     tabController.dispose();
+    searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -59,22 +63,40 @@ class _SearchScreenState extends State<SearchScreen>
           ),
           Padding(
             padding: const EdgeInsets.only(left: 35.0, top: 25.0, right: 35.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                searchBar(controller, (value) {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: const Text('Search has been completed'),
-                        content: Text('You Searched for: $value'),
+            child: SizedBox(
+              height: 70.0,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: searchBar(controller, (value) {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Search has been completed'),
+                            content: Text('You Searched for: $value'),
+                          );
+                        },
                       );
-                    },
-                  );
-                }),
-                const SizedBox(height: 25.0),
-              ],
+                    }),
+                  ),
+                  const SizedBox(width: 16.0),
+                  Expanded(
+                    flex: 1,
+                    child: SourceDropdown(
+                      onSelected: () => searchFocusNode.requestFocus(),
+                      onValueChanged: (value) {
+                        setState(() {
+                          selectedSource = value;
+                        });
+                        debugPrint(selectedSource);
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           TabBar(
@@ -120,6 +142,7 @@ class _SearchScreenState extends State<SearchScreen>
   ) {
     return TextField(
       controller: controller,
+      focusNode: searchFocusNode,
       onSubmitted: onSubmitted,
       decoration: InputDecoration(
         prefixIcon: Icon(Icons.search),
