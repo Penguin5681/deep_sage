@@ -1,7 +1,10 @@
+import 'package:deep_sage/core/models/user_api_model.dart';
 import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/theme_provider.dart';
@@ -11,6 +14,7 @@ import '../views/edit_profile_screen.dart';
 
 class DevFAB extends StatelessWidget {
   final BuildContext parentContext;
+
   const DevFAB({super.key, required this.parentContext});
 
   @override
@@ -36,10 +40,7 @@ class DevFAB extends StatelessWidget {
           label: 'Switch Theme',
           onTap: () {
             isDialOpen.value = false;
-            Provider.of<ThemeProvider>(
-              parentContext,
-              listen: false,
-            ).toggleTheme();
+            Provider.of<ThemeProvider>(parentContext, listen: false).toggleTheme();
           },
         ),
         SpeedDialChild(
@@ -75,6 +76,36 @@ class DevFAB extends StatelessWidget {
           label: 'Trigger Splash Screen',
           onTap: () {
             navigateSomewhere(SplashScreen());
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.bug_report),
+          label: 'Debug Print ENV variables',
+          onTap: () {
+            debugPrint('FLUTTER_ENV: ${dotenv.env['FLUTTER_ENV']}');
+            debugPrint('SUPABASE_URL: ${dotenv.env['SUPABASE_URL']}');
+            debugPrint('SUPABASE_API: ${dotenv.env['SUPABASE_API']}');
+            debugPrint('DEV_BASE_URL: ${dotenv.env['DEV_BASE_URL']}');
+            debugPrint('PROD_BASE_URL: ${dotenv.env['PROD_BASE_URL']}');
+            debugPrint('API_HIVE_BOX_NAME: ${dotenv.env['API_HIVE_BOX_NAME']}');
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.bug_report),
+          label: 'Debug Print Hive data',
+          onTap: () {
+            final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+            for (int i = 0; i < hiveBox.length; i++) {
+              final userApiData = hiveBox.getAt(i) as UserApi?;
+              if (userApiData != null) {
+                debugPrint('Item 1:');
+                debugPrint('Kaggle Username: ${userApiData.kaggleUserName}');
+                debugPrint('Item 2:');
+                debugPrint('Kaggle API Key: ${userApiData.kaggleApiKey}');
+                debugPrint('Item 3:');
+                debugPrint('HF Token: ${userApiData.hfToken}');
+              }
+            }
           },
         ),
       ],
