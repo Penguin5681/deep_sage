@@ -1,0 +1,332 @@
+import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
+import 'package:deep_sage/core/config/helpers/debouncer.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
+import 'package:deep_sage/widgets/source_dropdown.dart';
+import 'package:flutter/material.dart';
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController tabController;
+  final TextEditingController controller = TextEditingController();
+  final FocusNode searchFocusNode = FocusNode();
+  String selectedSource = 'Hugging Face';
+
+  final Debouncer _debouncer =
+  Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
+  List<DatasetSuggestion> _suggestions = [];
+  bool _isLoading = false;
+  late SuggestionService _suggestionService;
+
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink();
+  final GlobalKey _textFieldKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    tabController = TabController(length: 6, vsync: this);
+    _suggestionService = SuggestionService();
+
+    controller.addListener(_onSearchChanged);
+    searchFocusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    tabController.dispose();
+    searchFocusNode.dispose();
+    _debouncer.dispose();
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = controller.text;
+    if (query.length < 2) {
+      setState(() {
+        _suggestions = [];
+        _isLoading = false;
+      });
+      _removeOverlay();
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+    });
+    _debouncer.run(() {
+      _fetchSuggestions(query);
+    });
+  }
+
+  void _onFocusChanged() {
+    if (!searchFocusNode.hasFocus) {
+      setState(() {
+        _suggestions = [];
+      });
+      _removeOverlay();
+    } else if (controller.text.length >= 2) {
+      _fetchSuggestions(controller.text);
+    }
+  }
+
+  String _getSourceParams() {
+    switch (selectedSource) {
+      case 'Hugging Face':
+        return 'huggingface';
+      case 'Kaggle':
+        return 'kaggle';
+      default:
+        return 'all';
+    }
+  }
+
+  Future<void> _fetchSuggestions(String query) async {
+    try {
+      final results = await _suggestionService.getSuggestions(
+        query: query,
+        source: _getSourceParams(),
+        limit: 5,
+      );
+      if (mounted) {
+        setState(() {
+          _suggestions = results;
+          _isLoading = false;
+        });
+        if (_suggestions.isNotEmpty && searchFocusNode.hasFocus) {
+          _showOverlay();
+        } else {
+          _removeOverlay();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _suggestions = [];
+          _isLoading = false;
+        });
+      }
+      debugPrint('Error fetching suggestions: $e');
+      _removeOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    if (_overlayEntry != null) {
+      _overlayEntry!.markNeedsBuild();
+      return;
+    }
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    RenderBox renderBox =
+    _textFieldKey.currentContext!.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: offset.dx,
+        top: offset.dy + size.height + 5.0,
+        width: size.width,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(0.0, size.height + 5.0),
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8.0),
+            color: isDarkMode ? Colors.grey[850] : Colors.white,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: _suggestions.length,
+                itemBuilder: (context, index) {
+                  final suggestion = _suggestions[index];
+                  return ListTile(
+                    title: Text(
+                      suggestion.name,
+                      style: TextStyle(
+                          color:
+                          isDarkMode ? Colors.white : Colors.black),
+                    ),
+                    subtitle: Text(
+                      suggestion.source == 'huggingface'
+                          ? 'Hugging Face'
+                          : 'Kaggle',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode
+                              ? Colors.grey[300]
+                              : Colors.grey),
+                    ),
+                    onTap: () {
+                      controller.text = suggestion.name;
+                      setState(() {
+                        _suggestions = [];
+                      });
+                      _removeOverlay();
+                      searchFocusNode.unfocus();
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 35.0, top: 35.0),
+            child: Row(
+              children: [
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: const Text('Home', style: TextStyle(fontSize: 16.0)),
+                  ),
+                ),
+                const Text('  >  ', style: TextStyle(fontSize: 16.0)),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child:
+                    const Text('Search', style: TextStyle(fontSize: 16.0)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding:
+            const EdgeInsets.only(left: 35.0, top: 25.0, right: 35.0),
+            child: SizedBox(
+              height: 70.0,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: CompositedTransformTarget(
+                      link: _layerLink,
+                      child: Container(
+                        key: _textFieldKey,
+                        child: TextField(
+                          controller: controller,
+                          focusNode: searchFocusNode,
+                          onSubmitted: (value) {
+                            _removeOverlay();
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Search has been completed'),
+                                  content: Text('You Searched for: $value'),
+                                );
+                              },
+                            );
+                          },
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.search),
+                            suffix: _isLoading
+                                ? Container(
+                              width: 24,
+                              height: 24,
+                              padding: const EdgeInsets.all(6.0),
+                              child: const CircularProgressIndicator(
+                                  strokeWidth: 2),
+                            )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            hintText:
+                            'Search Datasets by name, type or category',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16.0),
+                  Expanded(
+                    flex: 1,
+                    child: SourceDropdown(
+                      onSelected: () => searchFocusNode.requestFocus(),
+                      onValueChanged: (value) {
+                        setState(() {
+                          selectedSource = value;
+                        });
+                        if (controller.text.length >= 2) {
+                          _fetchSuggestions(controller.text);
+                        }
+                        debugPrint(selectedSource);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          TabBar(
+            padding: const EdgeInsets.only(right: 650.0),
+            dividerColor: Colors.transparent,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: isDarkMode ? Colors.white : Colors.black,
+            unselectedLabelColor: isDarkMode ? Colors.grey : Colors.grey,
+            indicatorColor: isDarkMode ? Colors.white : Colors.black,
+            indicatorAnimation: TabIndicatorAnimation.elastic,
+            controller: tabController,
+            tabs: const [
+              Tab(text: 'All'),
+              Tab(text: 'Finances'),
+              Tab(text: 'Technology'),
+              Tab(text: 'Healthcare'),
+              Tab(text: 'Government'),
+              Tab(text: 'Manufacturing'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: tabController,
+              children: const [
+                CategoryAll(),
+                Center(child: Text('Screen 2')),
+                Center(child: Text('Screen 3')),
+                Center(child: Text('Screen 4')),
+                Center(child: Text('Screen 5')),
+                Center(child: Text('Screen 6')),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
