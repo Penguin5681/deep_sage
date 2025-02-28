@@ -97,7 +97,9 @@ class SplashScreen extends StatelessWidget {
                   animationDuration: const Duration(milliseconds: 800),
                   onTextChanged: (value) {
                     if (value == 4) {
-                      Navigator.of(context).pushReplacement(createDashboardRoute());
+                      Navigator.of(
+                        context,
+                      ).pushReplacement(createDashboardRoute());
                     }
                   },
                 ),

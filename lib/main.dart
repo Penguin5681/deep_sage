@@ -1,15 +1,21 @@
 import 'package:deep_sage/core/config/theme/app_theme.dart';
+import 'package:deep_sage/core/models/user_api_model.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-
+  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
+  Hive.init(appSupportDirectory.path);
+  Hive.registerAdapter(UserApiAdapter());
+  await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
   final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
   final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
 
