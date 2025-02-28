@@ -15,9 +15,7 @@ class _SignOutScreenState extends State<SignOutScreen> {
     return Align(
       alignment: Alignment.topCenter,
       child: Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         child: Container(
           width: 320,
           padding: const EdgeInsets.all(20.0),
@@ -29,11 +27,7 @@ class _SignOutScreenState extends State<SignOutScreen> {
                 children: [
                   Row(
                     children: [
-                      const Icon(
-                        Icons.logout,
-                        size: 24,
-                        color: Color(0xFFFF003F),
-                      ),
+                      const Icon(Icons.logout, size: 24, color: Color(0xFFFF003F)),
                       const SizedBox(width: 8),
                       const Text(
                         'Sign Out',
