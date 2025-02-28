@@ -1,5 +1,6 @@
+CI/CD: [![Flutter Build (Windows / Linux)](https://github.com/Penguin5681/deep_sage/actions/workflows/build.yml/badge.svg)](https://github.com/Penguin5681/deep_sage/actions/workflows/build.yml)
 ### **Final Feature List for AI-Powered Data Analysis & Visualization Tool**
-This Tauri-based desktop application will serve as a **one-stop solution for data scientists** to search, download, analyze, and visualize datasets efficiently.
+This Flutter-based desktop application will serve as a **one-stop solution for data scientists** to search, download, analyze, and visualize datasets efficiently.
 
 ---
 

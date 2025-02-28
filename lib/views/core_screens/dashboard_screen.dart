@@ -1,4 +1,6 @@
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
+import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,21 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   var selectedIndex = 0;
+  late Widget currentScreen;
+
+  @override
+  void initState() {
+    super.initState();
+    currentScreen = Dashboard(onNavigate: navigateToIndex);
+  }
+
+  void navigateToIndex(int index) {
+    setState(() {
+      selectedIndex = index;
+    });
+  }
+
+  final navigatorKey = GlobalKey<NavigatorState>();
 
   Widget getIconForTheme({
     required String lightIcon,
@@ -36,12 +53,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final env = dotenv.env['FLUTTER_ENV'];
     final List<Widget> screens = [
       // This is an array of Screens
-      Dashboard(),
-      const Center(child: Text('Search')),
+      Dashboard(onNavigate: navigateToIndex),
+      SearchScreen(),
       const Center(child: Text('Folders')),
       const Center(child: Text('Visualizations')),
       const Center(child: Text('Reports')),
-      const Center(child: Text('Settings')),
+      SettingsScreen(),
     ];
     return Scaffold(
       body: Row(
@@ -192,7 +209,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class Dashboard extends StatelessWidget {
-  const Dashboard({super.key});
+  final Function(int) onNavigate;
+
+  const Dashboard({super.key, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +253,9 @@ class Dashboard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        onNavigate(1);
+                      },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.blue.shade600, width: 2),
                         shape: RoundedRectangleBorder(
@@ -274,8 +295,7 @@ class Dashboard extends StatelessWidget {
                     DatasetCard(
                       lightIconPath: AppIcons.chartLight,
                       darkIconPath: AppIcons.chartDark,
-                      labelText:
-                      'Customer Behaviour',
+                      labelText: 'Customer Behaviour',
                       subLabelText: 'Last opened yesterday',
                       buttonText: 'Open',
                     ),
@@ -283,8 +303,7 @@ class Dashboard extends StatelessWidget {
                     DatasetCard(
                       lightIconPath: AppIcons.chartLight,
                       darkIconPath: AppIcons.chartDark,
-                      labelText:
-                      'Market Research',
+                      labelText: 'Market Research',
                       subLabelText: 'Last opened 3 days ago',
                       buttonText: 'Open',
                     ),
@@ -299,12 +318,11 @@ class Dashboard extends StatelessWidget {
                   child: Row(
                     children: [
                       DatasetCard(
-                        expanded: false,
                         lightIconPath: AppIcons.chartLight,
                         darkIconPath: AppIcons.chartDark,
-                        labelText:
-                        'Dataset Analysis Summary',
-                        subLabelText: 'Your recent datasets show a 23% increase in customer engagement patterns. Consider exploring correlation with your new marketing campaign.',
+                        labelText: 'Dataset Analysis Summary',
+                        subLabelText:
+                            'Your recent datasets show a 23% increase in customer engagement patterns. Consider exploring correlation with your new marketing campaign.',
                         subLabelSize: 17.0,
                         buttonText: 'Open',
                       ),

@@ -4,57 +4,97 @@ import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
-  // Route _createSignUpRoute() {
-  //   return PageRouteBuilder(
-  //     pageBuilder:
-  //         (context, animation, secondaryAnimation) => const SignupScreen(),
-  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //       const begin = Offset(1.0, 0.0);
-  //       const end = Offset.zero;
-  //       const curve = Curves.ease;
-  //
-  //       var tween = Tween(
-  //         begin: begin,
-  //         end: end,
-  //       ).chain(CurveTween(curve: curve));
-  //       return SlideTransition(position: animation.drive(tween), child: child);
-  //     },
-  //   );
-  // }
-  //
-  // Route _createDashboardRoute() {
-  //   return PageRouteBuilder(
-  //     pageBuilder:
-  //         (context, animation, secondaryAnimation) => const DashboardScreen(),
-  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //       const begin = Offset(1.0, 0.0);
-  //       const end = Offset.zero;
-  //       const curve = Curves.ease;
-  //
-  //       var tween = Tween(
-  //         begin: begin,
-  //         end: end,
-  //       ).chain(CurveTween(curve: curve));
-  //       return SlideTransition(position: animation.drive(tween), child: child);
-  //     },
-  //   );
-  // }
+  Route createScreenRoute(Widget screen, double deltaX, double deltaY) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => screen,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var begin = Offset(deltaX, deltaY);
+        const end = Offset.zero;
+        const curve = Curves.ease;
+
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
+    final supabaseAuthInstance = Supabase.instance.client.auth;
+
+    final _ = dotenv.env['FLUTTER_ENV'];
 
     final backgroundColor =
         Theme.of(
           context,
         ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
         Colors.black;
+
+    Future<void> signIn(String email, String password) async {
+      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+
+      bool isEmail() {
+        return emailRegex.hasMatch(email);
+      }
+
+      bool isThePasswordLengthOk() {
+        return password.length >= 6;
+      }
+
+      if (isEmail() && isThePasswordLengthOk()) {
+        try {
+          await supabaseAuthInstance.signInWithPassword(
+            email: email,
+            password: password,
+          );
+          if (!context.mounted) return;
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.success(message: 'Welcome to DeepSage'),
+          );
+          Navigator.of(
+            context,
+          ).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
+        } catch (e) {
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.error(
+              message: 'Error Occurred: Invalid email or password',
+            ),
+          );
+        }
+      } else if (!isEmail()) {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Invalid Email'),
+        );
+      } else if (!isThePasswordLengthOk()) {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Password too short'),
+        );
+      } else {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Internal server error occurred!'),
+        );
+      }
+    }
+
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
       body: Center(
@@ -115,18 +155,10 @@ class LoginScreen extends StatelessWidget {
                       backgroundColor: backgroundColor,
                       text: 'Login',
                       onPressed: () async {
-                        await Future.delayed(const Duration(seconds: 5)).then((
-                          _,
-                        ) {
-                          if (!context.mounted) return;
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (BuildContext context) => DashboardScreen(),
-                            ),
-                          );
-                        });
+                        await signIn(
+                          emailController.text,
+                          passwordController.text,
+                        );
                       },
                       estimatedTime: const Duration(seconds: 5),
                       elevation: 0,
@@ -165,12 +197,8 @@ class LoginScreen extends StatelessWidget {
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (BuildContext context) => SignupScreen(),
-                              ),
+                            Navigator.of(context).pushReplacement(
+                              createScreenRoute(SignupScreen(), 1.0, 0.0),
                             );
                           },
                           child: Text(
