@@ -3,30 +3,36 @@ import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
 
-  // Route _createRoute() {
-  //   return PageRouteBuilder(
-  //     pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
-  //     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-  //       const begin = Offset(-1.0, 0.0);
-  //       const end = Offset.zero;
-  //       const curve = Curves.ease;
-  //
-  //       var tween = Tween(
-  //         begin: begin,
-  //         end: end,
-  //       ).chain(CurveTween(curve: curve));
-  //       return SlideTransition(position: animation.drive(tween), child: child);
-  //     },
-  //   );
-  // }
+  Route createScreenRoute(Widget screen, double deltaX, double deltaY) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => screen,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var begin = Offset(deltaX, deltaY);
+        const end = Offset.zero;
+        const curve = Curves.ease;
+
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        return SlideTransition(position: animation.drive(tween), child: child);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final _ = dotenv.env['FLUTTER_ENV'];
+
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
     final TextEditingController confirmPasswordController =
@@ -37,6 +43,77 @@ class SignupScreen extends StatelessWidget {
           context,
         ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
         Colors.black;
+
+    final supabaseAuthInstance = Supabase.instance.client;
+
+    Future<void> signUp(
+      String email,
+      String password,
+      String confirmPassword,
+    ) async {
+      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+      bool isEmail() {
+        return emailRegex.hasMatch(email);
+      }
+
+      bool doesPasswordMatch() {
+        return password == confirmPassword;
+      }
+
+      bool isThePasswordLengthOk() {
+        return password.length >= 6;
+      }
+
+      if (isEmail() && doesPasswordMatch() && isThePasswordLengthOk()) {
+        try {
+          var response = await supabaseAuthInstance.auth.signUp(
+            email: emailController.text,
+            password: passwordController.text,
+          );
+          if (!context.mounted) return;
+          if (response.user!.identities!.isEmpty) {
+            showTopSnackBar(
+              Overlay.of(context),
+              CustomSnackBar.info(message: 'User already exists'),
+            );
+          } else {
+            showTopSnackBar(
+              Overlay.of(context),
+              CustomSnackBar.success(message: 'Sign Up Successful'),
+            );
+            Navigator.of(
+              context,
+            ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
+          }
+        } catch (e) {
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.error(message: 'Sign Up Error: $e'),
+          );
+        }
+      } else if (!isEmail()) {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Invalid Email'),
+        );
+      } else if (doesPasswordMatch()) {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Passwords do not match'),
+        );
+      } else if (!isThePasswordLengthOk()) {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Minimum password length is 6'),
+        );
+      } else {
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Internal server error occurred!'),
+        );
+      }
+    }
+
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
       body: Center(
@@ -95,7 +172,11 @@ class SignupScreen extends StatelessWidget {
                       backgroundColor: backgroundColor,
                       text: 'Sign Up',
                       onPressed: () async {
-                        await Future.delayed(const Duration(seconds: 5));
+                        await signUp(
+                          emailController.text,
+                          passwordController.text,
+                          confirmPasswordController.text,
+                        );
                       },
                       estimatedTime: const Duration(seconds: 5),
                       elevation: 0,
@@ -134,12 +215,8 @@ class SignupScreen extends StatelessWidget {
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (BuildContext context) => LoginScreen(),
-                              ),
+                            Navigator.of(context).pushReplacement(
+                              createScreenRoute(LoginScreen(), -1.0, 0),
                             );
                           },
                           child: Text(

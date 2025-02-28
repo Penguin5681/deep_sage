@@ -13,18 +13,22 @@ dependencies:
   provider: ^6.1.2
   progressive_button_flutter: ^1.2.0
   font_awesome_flutter: ^10.8.0
-  window_size:
-    git:
-      url: https://github.com/google/flutter-desktop-embedding
-      path: plugins/window_size
   flutter_dotenv: ^5.2.1
   flutter_speed_dial: ^7.0.0
+  top_snackbar_flutter: ^3.2.0
+  word_carousel: ^0.0.2
+  supabase_flutter: ^2.8.4
+  http: ^1.3.0
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
+  hive_generator: ^2.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  build_runner: ^2.4.15
 flutter:
   assets:
     - assets/icons/light/chart.png
@@ -40,6 +44,12 @@ flutter:
     - assets/icons/light/settings.png
     - assets/icons/light/settings_outlined.png
     - assets/icons/light/plus.png
+    - assets/icons/light/add.png
+    - assets/icons/light/ai.png
+    - assets/icons/light/factory.png
+    - assets/icons/light/government.png
+
+
     - assets/icons/dark/chart.png
     - assets/icons/dark/chart_outlined.png
     - assets/icons/dark/folder.png
@@ -53,6 +63,10 @@ flutter:
     - assets/icons/dark/settings.png
     - assets/icons/dark/settings_outlined.png
     - assets/icons/dark/plus.png
+    - assets/icons/dark/add.png
+    - assets/icons/dark/ai.png
+    - assets/icons/dark/factory.png
+    - assets/icons/dark/government.png
     - assets/larry/larry.png
     - .env
   fonts:
