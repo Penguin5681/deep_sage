@@ -69,7 +69,8 @@ class CategoryAll extends StatelessWidget {
                         lightIconPath: AppIcons.governmentLight,
                         darkIconPath: AppIcons.governmentDark,
                         labelText: 'Explore Government Open Data',
-                        subLabelText: 'Public reports, policies, and economic indicators',
+                        subLabelText:
+                            'Public reports, policies, and economic indicators',
                         buttonText: 'Search',
                       ),
                       const SizedBox(width: 25),
@@ -77,7 +78,8 @@ class CategoryAll extends StatelessWidget {
                         lightIconPath: AppIcons.factoryLight,
                         darkIconPath: AppIcons.factoryDark,
                         labelText: 'Explore Manufacturing Analytics',
-                        subLabelText: 'Production data, supply chain insights, and industrial trends',
+                        subLabelText:
+                            'Production data, supply chain insights, and industrial trends',
                         buttonText: 'Search',
                       ),
                     ],
