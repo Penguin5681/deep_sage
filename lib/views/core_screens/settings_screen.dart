@@ -550,9 +550,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 kaggleUserName: kaggleUsernameController.text,
                               );
                               hiveBox.add(userApiData);
-                              kaggleApiInputController.clear();
+                              kaggleUsernameController.clear();
                               kaggleApiInputController.clear();
                               huggingFaceApiInputController.clear();
+                              // hiveBox.clear();
                             },
                             icon: const Icon(Icons.save, color: Colors.white),
                             label: const Text('Save'),
