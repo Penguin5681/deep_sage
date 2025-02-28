@@ -25,7 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final TextEditingController kaggleUsernameController = TextEditingController();
     final TextEditingController kaggleApiInputController = TextEditingController();
     final TextEditingController huggingFaceApiInputController = TextEditingController();
-    final HIVE_API_BOX_NAME = dotenv.env['API_HIVE_BOX_NAME'];
+    final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
     return Theme(
       data: darkModeEnabled ? ThemeData.dark() : ThemeData.light(),
       child: Scaffold(
@@ -37,8 +37,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: SingleChildScrollView(
                 child: Center(
                   child: Container(
-                    width: 600, // Set a fixed width for the content
-                    padding: const EdgeInsets.all(24.0), // Reduced padding
+                    width: 600,
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -543,7 +543,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Center(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              final hiveBox = Hive.box(HIVE_API_BOX_NAME!);
+                              final hiveBox = Hive.box(hiveApiBoxName!);
                               final userApiData = UserApi(
                                 hfToken: huggingFaceApiInputController.text,
                                 kaggleApiKey: kaggleApiInputController.text,
