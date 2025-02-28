@@ -15,6 +15,20 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   var selectedIndex = 0;
+  late Widget currentScreen;
+
+  @override
+  void initState() {
+    super.initState();
+    currentScreen = Dashboard(onNavigate: navigateToIndex);
+  }
+
+  void navigateToIndex(int index) {
+    setState(() {
+      selectedIndex = index;
+    });
+  }
+
   final navigatorKey = GlobalKey<NavigatorState>();
 
   Widget getIconForTheme({
@@ -39,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final env = dotenv.env['FLUTTER_ENV'];
     final List<Widget> screens = [
       // This is an array of Screens
-      Dashboard(),
+      Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
       const Center(child: Text('Folders')),
       const Center(child: Text('Visualizations')),
@@ -195,7 +209,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class Dashboard extends StatelessWidget {
-  const Dashboard({super.key});
+  final Function(int) onNavigate;
+
+  const Dashboard({super.key, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +253,9 @@ class Dashboard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        onNavigate(1);
+                      },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.blue.shade600, width: 2),
                         shape: RoundedRectangleBorder(
