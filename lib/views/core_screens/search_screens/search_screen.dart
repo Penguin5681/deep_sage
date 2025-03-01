@@ -11,15 +11,13 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen>
-    with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   String selectedSource = 'Hugging Face';
 
-  final Debouncer _debouncer =
-  Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
+  final Debouncer _debouncer = Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
   List<DatasetSuggestion> _suggestions = [];
   bool _isLoading = false;
   late SuggestionService _suggestionService;
@@ -124,7 +122,7 @@ class _SearchScreenState extends State<SearchScreen>
       return;
     }
     _overlayEntry = _createOverlayEntry();
-    Overlay.of(context)?.insert(_overlayEntry!);
+    Overlay.of(context).insert(_overlayEntry!);
   }
 
   void _removeOverlay() {
@@ -133,65 +131,65 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   OverlayEntry _createOverlayEntry() {
-    RenderBox renderBox =
-    _textFieldKey.currentContext!.findRenderObject() as RenderBox;
+    RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
     var isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return OverlayEntry(
-      builder: (context) => Positioned(
-        left: offset.dx,
-        top: offset.dy + size.height + 5.0,
-        width: size.width,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(0.0, size.height + 5.0),
-          child: Material(
-            elevation: 8,
-            borderRadius: BorderRadius.circular(8.0),
-            color: isDarkMode ? Colors.grey[850] : Colors.white,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 300),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: _suggestions.length,
-                itemBuilder: (context, index) {
-                  final suggestion = _suggestions[index];
-                  return ListTile(
-                    title: Text(
-                      suggestion.name,
-                      style: TextStyle(
-                          color:
-                          isDarkMode ? Colors.white : Colors.black),
-                    ),
-                    subtitle: Text(
-                      suggestion.source == 'huggingface'
-                          ? 'Hugging Face'
-                          : 'Kaggle',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: isDarkMode
-                              ? Colors.grey[300]
-                              : Colors.grey),
-                    ),
-                    onTap: () {
-                      controller.text = suggestion.name;
-                      setState(() {
-                        _suggestions = [];
-                      });
-                      _removeOverlay();
-                      searchFocusNode.unfocus();
+      builder:
+          (context) => Positioned(
+            left: offset.dx,
+            top: offset.dy + size.height + 5.0,
+            width: size.width,
+            child: CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              offset: Offset(0.0, size.height + 5.0),
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(8.0),
+                color: isDarkMode ? Colors.grey[850] : Colors.white,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: _suggestions.length,
+                    itemBuilder: (context, index) {
+                      final suggestion = _suggestions[index];
+                      return MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onPanDown: (_) {
+                            controller.text = suggestion.name;
+                            setState(() {
+                              _suggestions = [];
+                            });
+                            _removeOverlay();
+                            searchFocusNode.unfocus();
+                          },
+                          child: ListTile(
+                            title: Text(
+                              suggestion.name,
+                              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                            ),
+                            subtitle: Text(
+                              suggestion.source == 'huggingface' ? 'Hugging Face' : 'Kaggle',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDarkMode ? Colors.grey[300] : Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
                     },
-                  );
-                },
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -217,16 +215,14 @@ class _SearchScreenState extends State<SearchScreen>
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {},
-                    child:
-                    const Text('Search', style: TextStyle(fontSize: 16.0)),
+                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
                   ),
                 ),
               ],
             ),
           ),
           Padding(
-            padding:
-            const EdgeInsets.only(left: 35.0, top: 25.0, right: 35.0),
+            padding: const EdgeInsets.only(left: 35.0, top: 25.0, right: 35.0),
             child: SizedBox(
               height: 70.0,
               child: Row(
@@ -255,20 +251,17 @@ class _SearchScreenState extends State<SearchScreen>
                           },
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.search),
-                            suffix: _isLoading
-                                ? Container(
-                              width: 24,
-                              height: 24,
-                              padding: const EdgeInsets.all(6.0),
-                              child: const CircularProgressIndicator(
-                                  strokeWidth: 2),
-                            )
-                                : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            hintText:
-                            'Search Datasets by name, type or category',
+                            suffix:
+                                _isLoading
+                                    ? Container(
+                                      width: 24,
+                                      height: 24,
+                                      padding: const EdgeInsets.all(6.0),
+                                      child: const CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                    : null,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
+                            hintText: 'Search Datasets by name, type or category',
                           ),
                         ),
                       ),
