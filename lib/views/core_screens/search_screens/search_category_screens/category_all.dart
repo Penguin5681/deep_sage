@@ -39,19 +39,10 @@ class _CategoryAllState extends State<CategoryAll> {
       'fileType': 'CSV',
       'fileSize': '89MB',
     },
-    {
-      'title': 'Tech Industry Insights',
-      'addedTime': 'Added 5d ago',
-      'fileType': 'XML',
-      'fileSize': '120MB',
-    },
-    {
-      'title': 'Healthcare Data',
-      'addedTime': 'Added 7d ago',
-      'fileType': 'CSV',
-      'fileSize': '200MB',
-    },
   ];
+
+  final FocusNode platformFocusNode = FocusNode();
+  final FocusNode filterFocusNode = FocusNode();
 
   void refreshDatasets() {
     // Logic to refresh datasets
@@ -62,7 +53,16 @@ class _CategoryAllState extends State<CategoryAll> {
   }
 
   @override
+  void dispose() {
+    platformFocusNode.dispose();
+    filterFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.only(top: 25.0, left: 35.0, right: 35.0),
@@ -158,21 +158,26 @@ class _CategoryAllState extends State<CategoryAll> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10.0),
                           border: Border.all(color: Colors.grey),
+                          color: isDarkMode ? Colors.grey[800] : Colors.white,
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            focusNode: platformFocusNode,
                             value: selectedPlatform,
-                            dropdownColor: Colors.white,
+                            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
                             items: ['Kaggle', 'Hugging Face']
-                                .map((platform) => DropdownMenuItem(
-                                      value: platform,
-                                      child: Text(platform),
-                                    ))
+                                .map(
+                                  (platform) => DropdownMenuItem(
+                                    value: platform,
+                                    child: Text(platform),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               setState(() {
                                 selectedPlatform = value!;
                                 selectedFilter = filterOptions[selectedPlatform]!.first;
+                                platformFocusNode.unfocus();
                               });
                             },
                           ),
@@ -184,20 +189,25 @@ class _CategoryAllState extends State<CategoryAll> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10.0),
                           border: Border.all(color: Colors.grey),
+                          color: isDarkMode ? Colors.grey[800] : Colors.white,
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
+                            focusNode: filterFocusNode,
                             value: selectedFilter,
-                            dropdownColor: Colors.white,
+                            dropdownColor: isDarkMode ? Colors.grey[800] : Colors.white,
                             items: filterOptions[selectedPlatform]!
-                                .map((filter) => DropdownMenuItem(
-                                      value: filter,
-                                      child: Text(filter),
-                                    ))
+                                .map(
+                                  (filter) => DropdownMenuItem(
+                                    value: filter,
+                                    child: Text(filter),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               setState(() {
                                 selectedFilter = value!;
+                                filterFocusNode.unfocus();
                               });
                             },
                           ),
@@ -206,16 +216,21 @@ class _CategoryAllState extends State<CategoryAll> {
                       const SizedBox(width: 20),
                       ElevatedButton(
                         onPressed: () {
-                          // Apply filter logic here
+                          // Apply filters logic here
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 23.0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20.0,
+                            vertical: 23.0,
+                          ),
                           backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10.0),
                           ),
                         ),
-                        child: const Text('Apply Filters', style: TextStyle(fontSize: 16, color: Colors.white),
+                        child: const Text(
+                          'Apply Filters',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ),
                     ],
@@ -251,13 +266,19 @@ class _CategoryAllState extends State<CategoryAll> {
                 child: ElevatedButton(
                   onPressed: refreshDatasets,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 15.0,
+                    ),
                     backgroundColor: Colors.blue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
                     ),
                   ),
-                  child: const Text('Refresh Datasets', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  child: const Text(
+                    'Refresh Datasets',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
                 ),
               ),
             ),
@@ -293,11 +314,7 @@ class FileListItem extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Icon(
-            icon,
-            color: textTheme.bodyLarge?.color,
-            size: 24,
-          ),
+          Icon(icon, color: textTheme.bodyLarge?.color, size: 24),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
