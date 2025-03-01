@@ -3,6 +3,7 @@ import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -215,124 +216,155 @@ class Dashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ScrollController scrollController = ScrollController();
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 40.0, top: 25.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Welcome back, Larry',
-                  style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 25),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: const Text(
-                        "Upload Dataset",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    OutlinedButton(
-                      onPressed: () {
-                        onNavigate(1);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.blue.shade600, width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        foregroundColor: Colors.blue.shade600,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: const Text(
-                        "Search Public Datasets",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Text('Recent Datasets', style: TextStyle(fontSize: 20.0)),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    DatasetCard(
-                      lightIconPath: AppIcons.chartLight,
-                      darkIconPath: AppIcons.chartDark,
-                      labelText:
-                          'Sales '
-                          'Analysis 2003',
-                      subLabelText: 'Last opened 2 hours ago',
-                      buttonText: 'Open',
-                    ),
-                    const SizedBox(width: 15.0),
-                    DatasetCard(
-                      lightIconPath: AppIcons.chartLight,
-                      darkIconPath: AppIcons.chartDark,
-                      labelText: 'Customer Behaviour',
-                      subLabelText: 'Last opened yesterday',
-                      buttonText: 'Open',
-                    ),
-                    const SizedBox(width: 15.0),
-                    DatasetCard(
-                      lightIconPath: AppIcons.chartLight,
-                      darkIconPath: AppIcons.chartDark,
-                      labelText: 'Market Research',
-                      subLabelText: 'Last opened 3 days ago',
-                      buttonText: 'Open',
-                    ),
-                    const SizedBox(width: 15.0),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Text('AI Insights', style: TextStyle(fontSize: 20.0)),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.only(right: 30.0, bottom: 40.0),
-                  child: Row(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 40.0, top: 25.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Welcome back, Larry',
+                    style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 25),
+                  Row(
                     children: [
-                      DatasetCard(
-                        lightIconPath: AppIcons.chartLight,
-                        darkIconPath: AppIcons.chartDark,
-                        labelText: 'Dataset Analysis Summary',
-                        subLabelText:
-                            'Your recent datasets show a 23% increase in customer engagement patterns. Consider exploring correlation with your new marketing campaign.',
-                        subLabelSize: 17.0,
-                        buttonText: 'Open',
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        child: const Text(
+                          "Upload Dataset",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      OutlinedButton(
+                        onPressed: () {
+                          onNavigate(1);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.blue.shade600, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          foregroundColor: Colors.blue.shade600,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        child: const Text(
+                          "Search Public Datasets",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  const Text('Recent Datasets', style: TextStyle(fontSize: 20.0)),
+                  const SizedBox(height: 20),
+                  Listener(
+                    onPointerSignal: (PointerSignalEvent event) {
+                      if (event is PointerScrollEvent) {
+                        final offset = event.scrollDelta.dy;
+                        scrollController.animateTo(
+                          (scrollController.offset + offset).clamp(
+                            0.0,
+                            scrollController.position.maxScrollExtent,
+                          ),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                        );
+                      }
+                    },
+                    child: Scrollbar(
+                      thumbVisibility: false,
+                      controller: scrollController,
+                      thickness: 4,
+                      radius: const Radius.circular(20),
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        scrollDirection: Axis.horizontal,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 30.0),
+                          child: Row(
+                            children: [
+                              DatasetCard(
+                                lightIconPath: AppIcons.chartLight,
+                                darkIconPath: AppIcons.chartDark,
+                                labelText:
+                                    'Sales '
+                                    'Analysis 2003',
+                                subLabelText: 'Last opened 2 hours ago',
+                                buttonText: 'Open',
+                              ),
+                              const SizedBox(width: 15.0),
+                              DatasetCard(
+                                lightIconPath: AppIcons.chartLight,
+                                darkIconPath: AppIcons.chartDark,
+                                labelText: 'Customer Behaviour',
+                                subLabelText: 'Last opened yesterday',
+                                buttonText: 'Open',
+                              ),
+                              const SizedBox(width: 15.0),
+                              DatasetCard(
+                                lightIconPath: AppIcons.chartLight,
+                                darkIconPath: AppIcons.chartDark,
+                                labelText: 'Market Research',
+                                subLabelText: 'Last opened 3 days ago',
+                                buttonText: 'Open',
+                              ),
+                              const SizedBox(width: 15.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('AI Insights', style: TextStyle(fontSize: 20.0)),
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 30.0, bottom: 40.0),
+                    child: Row(
+                      children: [
+                        DatasetCard(
+                          lightIconPath: AppIcons.chartLight,
+                          darkIconPath: AppIcons.chartDark,
+                          labelText: 'Dataset Analysis Summary',
+                          subLabelText:
+                              'Your recent datasets show a 23% increase in customer engagement patterns',
+                          subLabelSize: 17.0,
+                          buttonText: 'Open',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
