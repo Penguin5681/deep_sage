@@ -13,9 +13,7 @@ class DownloadDatasetService {
     String? config,
   }) async {
     final uri = Uri.parse('$baseUrl/api/datasets/download');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
 
     if (source == 'huggingface' && dotenv.env['HF_TOKEN'] != null) {
       headers['X-HF-Token'] = dotenv.env['HF_TOKEN']!;

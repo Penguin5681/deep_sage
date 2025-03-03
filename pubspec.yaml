@@ -22,6 +22,7 @@ dependencies:
   hive_flutter: ^1.1.0
   path_provider: ^2.1.5
   hive_generator: ^2.0.1
+  html: ^0.15.5
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +49,12 @@ flutter:
     - assets/icons/light/ai.png
     - assets/icons/light/factory.png
     - assets/icons/light/government.png
+    - assets/icons/light/download.png
+    - assets/icons/light/server.png
+
+
+    - assets/icons/brand/hf-logo.png
+    - assets/icons/brand/kaggle-logo.png
 
 
     - assets/icons/dark/chart.png
@@ -67,6 +74,8 @@ flutter:
     - assets/icons/dark/ai.png
     - assets/icons/dark/factory.png
     - assets/icons/dark/government.png
+    - assets/icons/dark/download.png
+    - assets/icons/dark/server.png
     - assets/larry/larry.png
     - .env
   fonts:

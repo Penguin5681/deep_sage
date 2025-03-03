@@ -1,3 +1,1 @@
-class ApiHelper {
-
-}
+class ApiHelper {}
