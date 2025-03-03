@@ -1,3 +1,5 @@
+import 'package:deep_sage/core/config/api_config/hf_dataset_info.dart';
+import 'package:deep_sage/core/config/api_config/kaggle_dataset_info.dart';
 import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/helpers/debouncer.dart';
@@ -12,18 +14,16 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen>
-    with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   String selectedSource = 'Hugging Face';
 
-  final Debouncer _debouncer = Debouncer(
-    delayBetweenRequests: const Duration(milliseconds: 200),
-  );
+  final Debouncer _debouncer = Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
   List<DatasetSuggestion> _suggestions = [];
   bool _isLoading = false;
+  bool _isDatasetCardLoading = false;
   late SuggestionService _suggestionService;
 
   OverlayEntry? _overlayEntry;
@@ -134,238 +134,233 @@ class _SearchScreenState extends State<SearchScreen>
     _overlayEntry = null;
   }
 
+  Future<void> openDatasetCard(String datasetId, String source) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    setState(() {
+      _isDatasetCardLoading = true;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) => showLoadingIndicator(context),
+    );
+
+    final HfDatasetInfoService hfDatasetInfoService = HfDatasetInfoService();
+    final KaggleDatasetInfoService kaggleDatasetInfoService = KaggleDatasetInfoService();
+    // final metaData = await service.retrieveHfDatasetMetadata(datasetId);
+    final meta = await hfDatasetInfoService.getDatasetInfo('qiaojin/PubMedQA');
+    debugPrint(meta.description);
+    if (!mounted) return;
+    Navigator.of(context).pop();
+
+    setState(() {
+      _isDatasetCardLoading = false;
+    });
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Center(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width - 300,
+            height: MediaQuery.of(context).size.height - 200,
+            child: Container(
+              decoration: BoxDecoration(
+                // dataset card background
+                color: isDarkMode ? Colors.black : Colors.white,
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1
+                  Padding(
+                    padding: const EdgeInsets.only(left: 75.0, right: 75.0, top: 40.0),
+                    child: Container(
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14.0),
+                        color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade300,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Icon Container
+                          const SizedBox(height: 18.0),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Image.asset(AppIcons.huggingFaceLogo, width: 22, height: 22),
+                                const SizedBox(height: 8.0),
+                                Text('Hugging Face Datasets'),
+                                // the dataset title
+                                Text(
+                                  'SQUAD - Stanford Question Answering Dataset',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Text(
+                                  'Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles.Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles.',
+                                  maxLines: 4,
+                                  softWrap: true,
+                                  style: TextStyle(fontSize: 16.0),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Row(
+                                  children: [
+                                    // buttons
+                                    ElevatedButton(
+                                      onPressed: () {},
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue.shade600,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Import",
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10.0),
+                                    OutlinedButton(
+                                      onPressed: () {
+                                        // onNavigate(1);
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        foregroundColor: Colors.blue.shade600,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Download",
+                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16.0),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18.0),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 76.0, right: 76.0, top: 16.0),
+                    child: Container(
+                      decoration: BoxDecoration(),
+                      child: Row(
+                        children: [
+                          // Icon Container
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Image.asset(
+                                isDarkMode ? AppIcons.serverLight : AppIcons.serverDark,
+                                width: 15,
+                                height: 15,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12.0),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Dataset Size'),
+                              const Text('33.5 MB (compressed), 98.2 MB (uncompressed)'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 76.0, right: 76.0),
+                    child: Row(
+                      children: [
+                        // Icon Container
+                        ClipOval(child: Image.asset(AppIcons.larry, width: 32, height: 32)),
+                        const SizedBox(width: 12.0),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [const Text('Owner'), const Text('Dangerous Larry')],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // show configs here
+                  const SizedBox(height: 16.0),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 75.0),
+                    child: const Text(
+                      'Available Configs',
+                      textAlign: TextAlign.start,
+                      style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget showLoadingIndicator(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(20.0),
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey.shade800 : Colors.white,
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: isDarkMode ? Colors.white : Colors.blue.shade600),
+              const SizedBox(height: 16.0),
+              Text('Loading...', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   OverlayEntry _createOverlayEntry() {
-    RenderBox renderBox =
-        _textFieldKey.currentContext!.findRenderObject() as RenderBox;
+    RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
     var isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    void openDatasetCard() {
-      /// details to show
-      /// Source: kaggle datasets || hugging face datasets
-      /// Dataset Name
-      /// Dataset Description
-      /// Two buttons: Download and import
-      /// Dataset Size: both compressed and uncompressed
-      /// Name of the owner / author
-      /// Available Configs (Variants) (only for hugging face)
-      /// What Api calls to make?
-
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return Center(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width - 300,
-              height: MediaQuery.of(context).size.height - 200,
-              child: Container(
-                decoration: BoxDecoration(
-                  // dataset card background
-                  color: isDarkMode ? Colors.black : Colors.white,
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Column(
-                  children: [
-                    // 1
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 75.0,
-                        right: 75.0,
-                        top: 40.0,
-                      ),
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14.0),
-                          color:
-                              isDarkMode
-                                  ? Colors.grey.shade900
-                                  : Colors.grey.shade300,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Icon Container
-                            const SizedBox(height: 18.0),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 20.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Image.asset(
-                                    AppIcons.huggingFaceLogo,
-                                    width: 22,
-                                    height: 22,
-                                  ),
-                                  const SizedBox(height: 8.0),
-                                  Text('Hugging Face Datasets'),
-                                  // the dataset title
-                                  Text(
-                                    'SQUAD - Stanford Question Answering Dataset',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 24.0,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8.0),
-                                  Text(
-                                    'Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles.Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles.',
-                                    maxLines: 4,
-                                    softWrap: true,
-                                    style: TextStyle(fontSize: 16.0),
-                                  ),
-                                  const SizedBox(height: 8.0),
-                                  Row(
-                                    children: [
-                                      // buttons
-                                      ElevatedButton(
-                                        onPressed: () {},
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue.shade600,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 12,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          "Import",
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10.0),
-                                      OutlinedButton(
-                                        onPressed: () {
-                                          // onNavigate(1);
-                                        },
-                                        style: OutlinedButton.styleFrom(
-                                          side: BorderSide(
-                                            color: Colors.blue.shade600,
-                                            width: 2,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          foregroundColor: Colors.blue.shade600,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 12,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          "Download",
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16.0),
-                                  Container(
-                                    decoration: BoxDecoration(),
-                                    child: Row(
-                                      children: [
-                                        // Icon Container
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color:
-                                                isDarkMode
-                                                    ? Colors.grey.shade300
-                                                    : Colors.grey.shade600,
-                                            borderRadius: BorderRadius.circular(
-                                              8.0,
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Image.asset(
-                                              isDarkMode
-                                                  ? AppIcons.serverLight
-                                                  : AppIcons.serverDark,
-                                              width: 15,
-                                              height: 15,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12.0),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            const Text('Dataset Size'),
-                                            const Text(
-                                              '33.5 MB (compressed), 98.2 MB (uncompressed)',
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16.0),
-                                  Row(
-                                    children: [
-                                      // Icon Container
-                                      ClipOval(
-                                        child: Image.asset(
-                                          AppIcons.larry,
-                                          width: 32,
-                                          height: 32,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12.0),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text('Owner'),
-                                          const Text('Dangerous Larry'),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  // show configs here
-                                  const SizedBox(height: 16.0),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Available Configs',
-                                        style: TextStyle(
-                                          fontSize: 22.0,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 18.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
 
     return OverlayEntry(
       builder:
@@ -392,30 +387,32 @@ class _SearchScreenState extends State<SearchScreen>
                       return MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                          onPanDown: (_) {
+                          onPanDown: ((_) async {
                             controller.text = suggestion.name;
-                            openDatasetCard();
+                            _isDatasetCardLoading = true;
+                            debugPrint(_isDatasetCardLoading.toString());
+                            debugPrint(suggestion.source);
+                            await openDatasetCard('qiaojin/PubMedQA', suggestion.source);
                             setState(() {
+                              _isDatasetCardLoading = false;
+                              debugPrint(_isDatasetCardLoading.toString());
                               _suggestions = [];
                             });
+                            debugPrint('Outside of setState() {}');
+                            debugPrint(_isDatasetCardLoading.toString());
                             _removeOverlay();
                             searchFocusNode.unfocus();
-                          },
+                          }),
                           child: ListTile(
                             title: Text(
                               suggestion.name,
-                              style: TextStyle(
-                                color: isDarkMode ? Colors.white : Colors.black,
-                              ),
+                              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                             ),
                             subtitle: Text(
-                              suggestion.source == 'huggingface'
-                                  ? 'Hugging Face'
-                                  : 'Kaggle',
+                              suggestion.source == 'huggingface' ? 'Hugging Face' : 'Kaggle',
                               style: TextStyle(
                                 fontSize: 14,
-                                color:
-                                    isDarkMode ? Colors.grey[300] : Colors.grey,
+                                color: isDarkMode ? Colors.grey[300] : Colors.grey,
                               ),
                             ),
                           ),
@@ -452,10 +449,7 @@ class _SearchScreenState extends State<SearchScreen>
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {},
-                    child: const Text(
-                      'Search',
-                      style: TextStyle(fontSize: 16.0),
-                    ),
+                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
                   ),
                 ),
               ],
@@ -483,9 +477,7 @@ class _SearchScreenState extends State<SearchScreen>
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: const Text(
-                                    'Search has been completed',
-                                  ),
+                                  title: const Text('Search has been completed'),
                                   content: Text('You Searched for: $value'),
                                 );
                               },
@@ -499,16 +491,11 @@ class _SearchScreenState extends State<SearchScreen>
                                       width: 24,
                                       height: 24,
                                       padding: const EdgeInsets.all(6.0),
-                                      child: const CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
+                                      child: const CircularProgressIndicator(strokeWidth: 2),
                                     )
                                     : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            hintText:
-                                'Search Datasets by name, type or category',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
+                            hintText: 'Search Datasets by name, type or category',
                           ),
                         ),
                       ),
