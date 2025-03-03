@@ -15,7 +15,7 @@ class KaggleDatasetInfoService {
   String get kaggleUsername => getUserApi()?.kaggleUserName ?? '';
   String get kaggleKey => getUserApi()?.kaggleApiKey ?? '';
 
-  Future<KaggleDataset> getDatasetInfo(String datasetId) async {
+  Future<KaggleDataset> retrieveKaggleDatasetMetadata(String datasetId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/retrieve-kaggle-dataset?dataset_id=$datasetId'),
