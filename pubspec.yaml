@@ -48,6 +48,12 @@ flutter:
     - assets/icons/light/ai.png
     - assets/icons/light/factory.png
     - assets/icons/light/government.png
+    - assets/icons/light/download.png
+    - assets/icons/light/server.png
+
+
+    - assets/icons/brand/hf-logo.png
+    - assets/icons/brand/kaggle-logo.png
 
 
     - assets/icons/dark/chart.png
@@ -67,6 +73,8 @@ flutter:
     - assets/icons/dark/ai.png
     - assets/icons/dark/factory.png
     - assets/icons/dark/government.png
+    - assets/icons/dark/download.png
+    - assets/icons/dark/server.png
     - assets/larry/larry.png
     - .env
   fonts:
