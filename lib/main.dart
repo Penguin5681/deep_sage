@@ -12,7 +12,8 @@ import 'package:path_provider/path_provider.dart' as path_provider;
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
+  final appSupportDirectory =
+      await path_provider.getApplicationSupportDirectory();
   Hive.init(appSupportDirectory.path);
   Hive.registerAdapter(UserApiAdapter());
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);

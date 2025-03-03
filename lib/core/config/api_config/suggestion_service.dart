@@ -45,9 +45,13 @@ class SuggestionService {
       return [];
     }
 
-    final uri = Uri.parse(
-      '$baseUrl/api/suggestions',
-    ).replace(queryParameters: {'query': query, 'source': source, 'limit': limit.toString()});
+    final uri = Uri.parse('$baseUrl/api/suggestions').replace(
+      queryParameters: {
+        'query': query,
+        'source': source,
+        'limit': limit.toString(),
+      },
+    );
 
     final headers = <String, String>{};
 
@@ -58,7 +62,7 @@ class SuggestionService {
       }
     }
 
-    // I am not sure if this piece code would barely be used.
+    // I am not sure if this piece of code would barely be used.
     // Let's put it anyways
     if (source == 'all' || source == 'huggingface') {
       if (hfToken != null) {
@@ -76,7 +80,10 @@ class SuggestionService {
           final List<dynamic> hfSuggestions = data['huggingface'];
           suggestions.addAll(
             hfSuggestions.map(
-              (name) => DatasetSuggestion(name: name.toString(), source: 'huggingface'),
+              (name) => DatasetSuggestion(
+                name: name.toString(),
+                source: 'huggingface',
+              ),
             ),
           );
         }
@@ -85,7 +92,8 @@ class SuggestionService {
           final List<dynamic> kaggleSuggestions = data['kaggle'];
           suggestions.addAll(
             kaggleSuggestions.map(
-              (name) => DatasetSuggestion(name: name.toString(), source: 'kaggle'),
+              (name) =>
+                  DatasetSuggestion(name: name.toString(), source: 'kaggle'),
             ),
           );
         }
