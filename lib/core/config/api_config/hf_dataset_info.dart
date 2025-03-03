@@ -25,11 +25,11 @@ class HuggingFaceDataset {
 
   factory HuggingFaceDataset.fromJson(Map<String, dynamic> json) {
     String rawDescription = json['description'] ?? '';
-    String cleanDescription = HfDatasetInfoService._cleanDescription(rawDescription);
+    String _ = HfDatasetInfoService._cleanDescription(rawDescription);
     return HuggingFaceDataset(
       id: json['id'] ?? '',
       author: json['author'] ?? '',
-      description: cleanDescription,
+      description: rawDescription,
       lastModified: json['lastModified'] ?? '',
       downloads: json['downloads'] ?? 0,
       likes: json['likes'] ?? 0,

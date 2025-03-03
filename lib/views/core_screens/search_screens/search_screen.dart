@@ -136,6 +136,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   Future<void> openDatasetCard(String datasetId, String source) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    Map<String, dynamic>? huggingFaceMetadata;
+    KaggleDataset? kaggleMetadata;
     setState(() {
       _isDatasetCardLoading = true;
     });
@@ -146,11 +148,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       builder: (BuildContext context) => showLoadingIndicator(context),
     );
 
-    final HfDatasetInfoService hfDatasetInfoService = HfDatasetInfoService();
-    final KaggleDatasetInfoService kaggleDatasetInfoService = KaggleDatasetInfoService();
-    // final metaData = await service.retrieveHfDatasetMetadata(datasetId);
-    final meta = await hfDatasetInfoService.getDatasetInfo('qiaojin/PubMedQA');
-    debugPrint(meta.description);
+    if (source case 'huggingface') {
+      final HfDatasetInfoService hfDatasetInfoService = HfDatasetInfoService();
+      huggingFaceMetadata = await hfDatasetInfoService.retrieveHfDatasetMetadata(datasetId);
+    } else if (source case 'kaggle') {
+      final KaggleDatasetInfoService kaggleDatasetInfoService = KaggleDatasetInfoService();
+      kaggleMetadata = await kaggleDatasetInfoService.retrieveKaggleDatasetMetadata(datasetId);
+    } else {
+      debugPrint('Something bad happened');
+    }
+
     if (!mounted) return;
     Navigator.of(context).pop();
 
@@ -162,6 +169,26 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        String title = '';
+        String description = '';
+        String owner = '';
+        String size = '';
+        List<String> configs = [];
+
+        if (source == 'huggingface' && huggingFaceMetadata != null) {
+          title = huggingFaceMetadata['id'] ?? '';
+          description = huggingFaceMetadata['description'] ?? '';
+          owner = huggingFaceMetadata['author'] ?? '';
+          size = '';
+          configs = List<String>.from(huggingFaceMetadata['configs'] ?? []);
+        } else if (source == 'kaggle' && kaggleMetadata != null) {
+          title = kaggleMetadata.title;
+          description = kaggleMetadata.description;
+          owner = kaggleMetadata.owner;
+          size = kaggleMetadata.size;
+          configs = [];
+        }
+
         return Center(
           child: SizedBox(
             width: MediaQuery.of(context).size.width - 300,
@@ -194,17 +221,17 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Image.asset(AppIcons.huggingFaceLogo, width: 22, height: 22),
+                                Image.asset(source == 'huggingface' ? AppIcons.huggingFaceLogo : AppIcons.kaggleLogo, width: 22, height: 22),
                                 const SizedBox(height: 8.0),
-                                Text('Hugging Face Datasets'),
+                                Text(source == 'huggingface' ? 'Hugging Face Datasets' : 'Kaggle Datasets'),
                                 // the dataset title
                                 Text(
-                                  'SQUAD - Stanford Question Answering Dataset',
+                                  title,
                                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0),
                                 ),
                                 const SizedBox(height: 8.0),
                                 Text(
-                                  'Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles.Stanford Question Answering Dataset (SQuAD) is a reading comprehension dataset, consisting of questions posed by crowdworkers on a set of Wikipedia articles.',
+                                  description,
                                   maxLines: 4,
                                   softWrap: true,
                                   style: TextStyle(fontSize: 16.0),
@@ -270,7 +297,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                       child: Row(
                         children: [
                           // Icon Container
-                          Container(
+                          source == 'kaggle' ? Container(
                             decoration: BoxDecoration(
                               color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
                               borderRadius: BorderRadius.circular(8.0),
@@ -283,15 +310,15 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                 height: 15,
                               ),
                             ),
-                          ),
+                          ) : Container(),
                           const SizedBox(width: 12.0),
-                          Column(
+                          source == 'kaggle' ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Dataset Size'),
-                              const Text('33.5 MB (compressed), 98.2 MB (uncompressed)'),
+                              Text('$size (compressed)'),
                             ],
-                          ),
+                          ) : Container(),
                         ],
                       ),
                     ),
@@ -306,21 +333,38 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                         const SizedBox(width: 12.0),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [const Text('Owner'), const Text('Dangerous Larry')],
+                          children: [const Text('Owner'), Text(owner)],
                         ),
                       ],
                     ),
                   ),
                   // show configs here
                   const SizedBox(height: 16.0),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 75.0),
-                    child: const Text(
-                      'Available Configs',
-                      textAlign: TextAlign.start,
-                      style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold),
+                  // configs here
+                  source == 'huggingface' && configs.isNotEmpty ? Padding(
+                    padding: const EdgeInsets.only(left: 76.0, right: 76.0, top: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Configurations', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8.0),
+                        Wrap(
+                          spacing: 8.0,
+                          runSpacing: 8.0,
+                          children: configs.map((config) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(16.0),
+                              ),
+                              child: Text(config),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
-                  ),
+                  ) : Container(),
                 ],
               ),
             ),
@@ -392,7 +436,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             _isDatasetCardLoading = true;
                             debugPrint(_isDatasetCardLoading.toString());
                             debugPrint(suggestion.source);
-                            await openDatasetCard('qiaojin/PubMedQA', suggestion.source);
+                            await openDatasetCard(suggestion.name, suggestion.source);
                             setState(() {
                               _isDatasetCardLoading = false;
                               debugPrint(_isDatasetCardLoading.toString());
