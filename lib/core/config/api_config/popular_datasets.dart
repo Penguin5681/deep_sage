@@ -34,11 +34,13 @@ class PopularDatasets {
   }
 }
 
-  class PopularDatasetService {
+class PopularDatasetService {
   final String baseUrl = dotenv.env['DEV_BASE_URL']!;
 
   Future<List<PopularDatasets>> fetchPopularDatasets() async {
-    final uri = Uri.parse('$baseUrl/api/datasets/huggingface?limit=3&sort_by=downloads');
+    final uri = Uri.parse(
+      '$baseUrl/api/datasets/huggingface?limit=3&sort_by=downloads',
+    );
     try {
       final response = await http.get(uri);
       if (response.statusCode == 200) {

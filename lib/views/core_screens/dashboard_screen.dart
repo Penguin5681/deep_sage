@@ -228,7 +228,10 @@ class Dashboard extends StatelessWidget {
                 children: [
                   const Text(
                     'Welcome back, Larry',
-                    style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 24.0,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 25),
                   Row(
@@ -260,7 +263,10 @@ class Dashboard extends StatelessWidget {
                           onNavigate(1);
                         },
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.blue.shade600, width: 2),
+                          side: BorderSide(
+                            color: Colors.blue.shade600,
+                            width: 2,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -281,7 +287,10 @@ class Dashboard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  const Text('Recent Datasets', style: TextStyle(fontSize: 20.0)),
+                  const Text(
+                    'Recent Datasets',
+                    style: TextStyle(fontSize: 20.0),
+                  ),
                   const SizedBox(height: 20),
                   Listener(
                     onPointerSignal: (PointerSignalEvent event) {

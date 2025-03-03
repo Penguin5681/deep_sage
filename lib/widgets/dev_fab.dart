@@ -40,7 +40,10 @@ class DevFAB extends StatelessWidget {
           label: 'Switch Theme',
           onTap: () {
             isDialOpen.value = false;
-            Provider.of<ThemeProvider>(parentContext, listen: false).toggleTheme();
+            Provider.of<ThemeProvider>(
+              parentContext,
+              listen: false,
+            ).toggleTheme();
           },
         ),
         SpeedDialChild(
