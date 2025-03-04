@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,7 +25,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool dropboxEnabled = false;
   bool shouldWeAskForDownloadLocation = false;
   bool awsS3Enabled = false;
-  String defaultDownloadPath = r'C:\Users\prana\Downloads\deepsage_datasets';
+  String defaultDownloadPath = '';
+  final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  final kaggleUsernameNotFoundTag = 'kaggle username not found';
+  final kaggleApiKeyNotFoundTag = 'kaggle key not found';
+  final hfTokenNotFoundTag = 'hf token not found';
+
+  late FocusNode kaggleUsernameInputFocus = FocusNode();
+  late FocusNode kaggleApiInputFocus = FocusNode();
+  late FocusNode hfTokenInputFocus = FocusNode();
+  late bool isKaggleApiCredsSaved = false;
+  late bool isHfTokenSaved = false;
+  late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
+
+  final TextEditingController kaggleUsernameController =
+      TextEditingController();
+  final TextEditingController kaggleApiInputController =
+      TextEditingController();
+  final TextEditingController huggingFaceApiInputController =
+      TextEditingController();
+  final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
+
+  Future<void> getDownloadsDirectory() async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+    String? savedPath = hiveBox.get('downloadPath');
+
+    if (savedPath != null && savedPath.isNotEmpty) {
+      setState(() {
+        defaultDownloadPath = savedPath;
+      });
+      return;
+    }
+
+    String? downloadsPath;
+
+    if (Platform.isWindows) {
+      downloadsPath = '${Platform.environment['USERPROFILE']}\\Downloads';
+    } else if (Platform.isMacOS || Platform.isLinux) {
+      downloadsPath = '${Platform.environment['HOME']}/Downloads';
+    } else {
+      downloadsPath = '';
+    }
+
+    setState(() {
+      defaultDownloadPath = downloadsPath!;
+    });
+
+    debugPrint(defaultDownloadPath);
+  }
+
+  UserApi? getUserApi() {
+    if (hiveBox.isEmpty) return null;
+    try {
+      return hiveBox.getAt(0) as UserApi;
+    } catch (e) {
+      debugPrint('Error getting UserApi: $e');
+      return null;
+    }
+  }
+
+  String get kaggleUsername => getUserApi()?.kaggleUserName ?? '';
+
+  String get kaggleKey => getUserApi()?.kaggleApiKey ?? '';
+
+  String get hfToken => getUserApi()?.hfToken ?? '';
+
+  Map<String, dynamic> isAnyUserApiDataSaved() {
+    final userApi = getUserApi();
+    if (userApi == null) {
+      return {"result": false};
+    }
+
+    if (userApi.kaggleUserName.isEmpty) {
+      return {"result": kaggleUsernameNotFoundTag};
+    } else if (userApi.kaggleApiKey.isEmpty) {
+      return {"result": kaggleApiKeyNotFoundTag};
+    } else if (userApi.hfToken.isEmpty) {
+      return {"result": hfTokenNotFoundTag};
+    }
+
+    return {"result": true};
+  }
 
   Widget getIconForTheme({
     required String lightIcon,
@@ -42,18 +125,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    getDownloadsDirectory();
+    kaggleApiInputFocus = FocusNode();
+    kaggleUsernameInputFocus = FocusNode();
+    hfTokenInputFocus = FocusNode();
+    credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+  }
+
+  @override
+  void dispose() {
+    kaggleApiInputFocus.dispose();
+    kaggleUsernameInputFocus.dispose();
+    hfTokenInputFocus.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
-    final TextEditingController kaggleUsernameController =
-        TextEditingController();
-    final TextEditingController kaggleApiInputController =
-        TextEditingController();
-    final TextEditingController huggingFaceApiInputController =
-        TextEditingController();
-    final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
     final ScrollController rootScrollController = ScrollController();
-    final FocusNode focusNode = FocusNode();
+    final focusNode = FocusNode();
 
     void handleKeyEvent(KeyEvent event) {
       var offset = rootScrollController.offset;
@@ -101,9 +195,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Right content area
             Expanded(
               child: KeyboardListener(
-                autofocus: true,
-                focusNode: focusNode,
                 onKeyEvent: handleKeyEvent,
+                focusNode: focusNode,
                 child: SingleChildScrollView(
                   controller: rootScrollController,
                   child: Center(
@@ -167,18 +260,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
                           // Reduced spacing
                           // Profile card
                           Container(
-                            padding: const EdgeInsets.all(
-                              16,
-                            ), // Reduced padding
+                            padding: const EdgeInsets.all(16), // Reduced padding
                             decoration: BoxDecoration(
                               color:
                                   isDarkModeEnabled
@@ -284,9 +373,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -322,9 +409,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -370,12 +455,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SizedBox(
                             width: 80,
                             child: ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                // todo: sign out from here can clear the hive data
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
                               ),
                               child: const Text(
                                 'Sign Out',
@@ -395,15 +480,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
                           // Reduced spacing
-                          // Dark Mode
-                          // Inside _SettingsScreenState class, replace the dark mode switch implementation
                           Row(
                             children: [
                               Icon(
@@ -467,9 +548,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -515,270 +594,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             },
                           ),
                           const SizedBox(height: 24),
-                          // API Management
-                          Row(
-                            children: [
-                              Text(
-                                'API Management',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      isDarkModeEnabled
-                                          ? Colors.white
-                                          : Colors.black,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.help),
-                                tooltip:
-                                    "Kaggle Username and Kaggle Api are\nrequired to conduct search using kaggle.\nIf not provided the default search provider would be hugging face",
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Text(
-                                'Kaggle Username',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color:
-                                      isDarkModeEnabled
-                                          ? Colors.white
-                                          : Colors.black,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.help),
-                                tooltip: "Required for search using Kaggle",
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isDarkModeEnabled
-                                            ? Colors.grey[800]
-                                            : Colors.grey[100],
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color:
-                                          isDarkModeEnabled
-                                              ? Colors.grey[700]!
-                                              : Colors.grey[300]!,
-                                    ),
-                                  ),
-                                  child: TextField(
-                                    controller: kaggleUsernameController,
-                                    style: TextStyle(
-                                      color:
-                                          isDarkModeEnabled
-                                              ? Colors.white
-                                              : Colors.black,
-                                      fontSize: 12,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText: 'Enter your Kaggle username',
-                                      hintStyle: TextStyle(
-                                        color:
-                                            isDarkModeEnabled
-                                                ? Colors.grey[400]
-                                                : Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Reduced spacing
-                          // Kaggle API Key
-                          Row(
-                            children: [
-                              Text(
-                                'Kaggle API Key',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color:
-                                      isDarkModeEnabled
-                                          ? Colors.white
-                                          : Colors.black,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.help),
-                                tooltip: "Required for search using Kaggle",
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isDarkModeEnabled
-                                            ? Colors.grey[800]
-                                            : Colors.grey[100],
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color:
-                                          isDarkModeEnabled
-                                              ? Colors.grey[700]!
-                                              : Colors.grey[300]!,
-                                    ),
-                                  ),
-                                  child: TextField(
-                                    obscureText: true,
-                                    controller: kaggleApiInputController,
-                                    style: TextStyle(
-                                      color:
-                                          isDarkModeEnabled
-                                              ? Colors.white
-                                              : Colors.black,
-                                      fontSize: 12,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText: 'Enter your Kaggle API key',
-                                      hintStyle: TextStyle(
-                                        color:
-                                            isDarkModeEnabled
-                                                ? Colors.grey[400]
-                                                : Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Hugging Face API Key
-                          Row(
-                            children: [
-                              Text(
-                                'Hugging Face Token',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color:
-                                      isDarkModeEnabled
-                                          ? Colors.white
-                                          : Colors.black,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.help),
-                                tooltip:
-                                    "Optional: hf token will only be used to download private datasets",
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isDarkModeEnabled
-                                            ? Colors.grey[800]
-                                            : Colors.grey[100],
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(
-                                      color:
-                                          isDarkModeEnabled
-                                              ? Colors.grey[700]!
-                                              : Colors.grey[300]!,
-                                    ),
-                                  ),
-                                  child: TextField(
-                                    obscureText: true,
-                                    controller: huggingFaceApiInputController,
-                                    style: TextStyle(
-                                      color:
-                                          isDarkModeEnabled
-                                              ? Colors.white
-                                              : Colors.black,
-                                      fontSize: 12,
-                                    ),
-                                    decoration: InputDecoration(
-                                      hintText:
-                                          'Enter your Hugging Face API key',
-                                      hintStyle: TextStyle(
-                                        color:
-                                            isDarkModeEnabled
-                                                ? Colors.grey[400]
-                                                : Colors.grey[500],
-                                        fontSize: 12,
-                                      ),
-                                      border: InputBorder.none,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Save Button
-                          Center(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                final hiveBox = Hive.box(hiveApiBoxName!);
-                                final userApiData = UserApi(
-                                  hfToken: huggingFaceApiInputController.text,
-                                  kaggleApiKey: kaggleApiInputController.text,
-                                  kaggleUserName: kaggleUsernameController.text,
-                                );
-                                hiveBox.add(userApiData);
-                                kaggleUsernameController.clear();
-                                kaggleApiInputController.clear();
-                                huggingFaceApiInputController.clear();
-                                // hiveBox.clear();
-                              },
-                              icon: const Icon(Icons.save, color: Colors.white),
-                              label: const Text('Save'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
+                          buildApiManagementSection(),
                           const SizedBox(height: 24),
                           // Download settings
                           Text(
@@ -787,9 +603,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -799,9 +613,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -836,10 +648,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       MouseRegion(
                                         cursor: SystemMouseCursors.click,
                                         child: GestureDetector(
-                                          onTap: () {
-                                            debugPrint(
-                                              'Will do something here',
-                                            );
+                                          onTap: () async {
+                                            String? selectedDir = await FilePicker
+                                                .platform
+                                                .getDirectoryPath(
+                                                  dialogTitle:
+                                                      'Select the default download directory',
+                                                );
+                                            if (selectedDir != null) {
+                                              setState(() {
+                                                defaultDownloadPath = selectedDir;
+                                              });
+
+                                              final hiveBox = Hive.box(
+                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                              );
+                                              hiveBox.put(
+                                                'downloadPath',
+                                                selectedDir,
+                                              );
+                                            }
                                           },
                                           child: Icon(
                                             Icons.folder_open_outlined,
@@ -887,8 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   const SizedBox(width: 14.0),
                                   Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Ask for location everytime',
@@ -932,9 +759,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled
-                                      ? Colors.white
-                                      : Colors.black,
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -1108,6 +933,454 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const Spacer(),
         Switch(value: value, onChanged: onChanged, activeColor: Colors.blue),
       ],
+    );
+  }
+
+  Widget _buildCredentialsInputFields({
+    required TextEditingController kaggleUsernameController,
+    required TextEditingController kaggleApiInputController,
+    required TextEditingController huggingFaceApiInputController,
+    required String? hiveApiBoxName,
+  }) {
+    bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
+    bool showKaggleUsername =
+        credsSavedOrNotLetsFindOutResult['result'] == false ||
+        credsSavedOrNotLetsFindOutResult['result'] == kaggleUsernameNotFoundTag;
+
+    bool showKaggleApiKey =
+        credsSavedOrNotLetsFindOutResult['result'] == false ||
+        credsSavedOrNotLetsFindOutResult['result'] == kaggleApiKeyNotFoundTag;
+
+    bool showHfToken =
+        credsSavedOrNotLetsFindOutResult['result'] == false ||
+        credsSavedOrNotLetsFindOutResult['result'] == hfTokenNotFoundTag;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Kaggle Username field
+        if (showKaggleUsername)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Kaggle Username',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.help),
+                    tooltip: "Required for search using Kaggle",
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: kaggleUsernameController,
+                focusNode: kaggleUsernameInputFocus,
+                decoration: InputDecoration(
+                  hintText: 'Enter your Kaggle username',
+                  filled: true,
+                  fillColor:
+                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(
+                      color:
+                          isDarkModeEnabled
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+
+        // Kaggle API Key field
+        if (showKaggleApiKey)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Kaggle API Key',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.help),
+                    tooltip: "Required for search using Kaggle",
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: kaggleApiInputController,
+                focusNode: kaggleApiInputFocus,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Enter your Kaggle API key',
+                  filled: true,
+                  fillColor:
+                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(
+                      color:
+                          isDarkModeEnabled
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+
+        // Hugging Face Token field
+        if (showHfToken)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Hugging Face Token',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.help),
+                    tooltip:
+                        "Optional: hf token will only be used to download private datasets",
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: huggingFaceApiInputController,
+                focusNode: hfTokenInputFocus,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Enter your Hugging Face API key',
+                  filled: true,
+                  fillColor:
+                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(
+                      color:
+                          isDarkModeEnabled
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: () {
+              final hiveBox = Hive.box(hiveApiBoxName!);
+
+              UserApi existingData =
+                  getUserApi() ??
+                  UserApi(kaggleUserName: "", kaggleApiKey: "", hfToken: "");
+
+              UserApi userApiData = UserApi(
+                hfToken:
+                    huggingFaceApiInputController.text.isNotEmpty
+                        ? huggingFaceApiInputController.text
+                        : existingData.hfToken,
+                kaggleApiKey:
+                    kaggleApiInputController.text.isNotEmpty
+                        ? kaggleApiInputController.text
+                        : existingData.kaggleApiKey,
+                kaggleUserName:
+                    kaggleUsernameController.text.isNotEmpty
+                        ? kaggleUsernameController.text
+                        : existingData.kaggleUserName,
+              );
+
+              if (hiveBox.isEmpty) {
+                hiveBox.add(userApiData);
+              } else {
+                hiveBox.putAt(0, userApiData);
+              }
+
+              kaggleUsernameController.clear();
+              kaggleApiInputController.clear();
+              huggingFaceApiInputController.clear();
+
+              setState(() {
+                credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+              });
+            },
+            icon: const Icon(Icons.save, color: Colors.white),
+            label: const Text('Save'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16.0,),
+      ],
+    );
+  }
+
+  Widget buildApiManagementSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'API Management',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.help),
+              tooltip:
+                  "Kaggle Username and Kaggle Api are\nrequired to conduct search using kaggle.\nIf not provided the default search provider would be hugging face",
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (credsSavedOrNotLetsFindOutResult['result'] ==
+                kaggleUsernameNotFoundTag ||
+            credsSavedOrNotLetsFindOutResult['result'] ==
+                kaggleApiKeyNotFoundTag ||
+            credsSavedOrNotLetsFindOutResult['result'] == hfTokenNotFoundTag ||
+            credsSavedOrNotLetsFindOutResult['result'] == false)
+          _buildCredentialsInputFields(
+            kaggleUsernameController: kaggleUsernameController,
+            kaggleApiInputController: kaggleApiInputController,
+            huggingFaceApiInputController: huggingFaceApiInputController,
+            hiveApiBoxName: hiveApiBoxName,
+          ),
+
+        if (kaggleUsername.isNotEmpty && kaggleKey.isNotEmpty)
+          Column(
+            children: [
+              _buildSavedDataCard(
+                source: 'kaggle',
+                onRemovePress: () {
+                  final userApi = getUserApi();
+                  if (userApi != null) {
+                    final updatedApi = UserApi(
+                      kaggleUserName: "",
+                      kaggleApiKey: "",
+                      hfToken: userApi.hfToken,
+                    );
+                    hiveBox.putAt(0, updatedApi);
+                    setState(() {
+                      credsSavedOrNotLetsFindOutResult =
+                          isAnyUserApiDataSaved();
+                    });
+                  }
+                },
+                onUpdatePress: () {
+                  // setState(() {
+                  //   credsSavedOrNotLetsFindOutResult = {"result": kaggleUsernameNotFoundTag};
+                  // });
+                },
+              ),
+              SizedBox(height: 16),
+            ],
+          ),
+
+        if (hfToken.isNotEmpty)
+          _buildSavedDataCard(
+            source: 'huggingface',
+            onRemovePress: () {
+              final userApi = getUserApi();
+              if (userApi != null) {
+                final updatedApi = UserApi(
+                  kaggleUserName: userApi.kaggleUserName,
+                  kaggleApiKey: userApi.kaggleApiKey,
+                  hfToken: "",
+                );
+                hiveBox.putAt(0, updatedApi);
+                setState(() {
+                  credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+                });
+              }
+            },
+            onUpdatePress: () {
+              // setState(() {
+              //   credsSavedOrNotLetsFindOutResult = {"result": hfTokenNotFoundTag};
+              // });
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSavedDataCard({
+    required String source,
+    required Function() onUpdatePress,
+    required Function() onRemovePress,
+  }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isTheSourceKaggle = source == 'kaggle';
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          top: 23.0,
+          bottom: 23.0,
+          left: 23.0,
+          right: 100.0,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(50),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey
+                        : Colors.white,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Image.asset(
+                  !isDarkMode ? AppIcons.checkLight : AppIcons.checkDark,
+                  width: 16,
+                  height: 16,
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              !isTheSourceKaggle ? 'Hugging Face API' : 'Kaggle API',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 21.0,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+            Text(
+              !isTheSourceKaggle
+                  ? 'Your Hugging Face API credentials are saved'
+                  : "Your Kaggle API credentials are saved",
+              style: TextStyle(
+                fontSize: 15.0,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: onUpdatePress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: Text(
+                    'Update',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: onRemovePress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isDarkMode ? Color(0xffb6b6b6) : Color(0xffeaeaea),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: Text(
+                    'Remove',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

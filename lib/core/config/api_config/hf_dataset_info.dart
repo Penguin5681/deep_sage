@@ -44,7 +44,9 @@ class HfDatasetInfoService {
   // Contributed by Claude 3.7
 
   static String _cleanDescription(String rawDescription) {
-    final fullDescPattern = RegExp(r'See the full description on the dataset page: https://huggingface\.co/datasets/[^\.]+\.');
+    final fullDescPattern = RegExp(
+      r'See the full description on the dataset page: https://huggingface\.co/datasets/[^\.]+\.',
+    );
     rawDescription = rawDescription.replaceAll(fullDescPattern, '');
 
     try {
@@ -89,7 +91,9 @@ class HfDatasetInfoService {
     }
   }
 
-  Future<Map<String, dynamic>> retrieveHfDatasetMetadata(String datasetId) async {
+  Future<Map<String, dynamic>> retrieveHfDatasetMetadata(
+    String datasetId,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/retrieve-dataset?dataset_id=$datasetId'),
