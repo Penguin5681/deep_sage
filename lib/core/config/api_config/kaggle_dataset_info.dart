@@ -11,6 +11,7 @@ class KaggleDatasetInfoService {
     if (hiveBox.isEmpty) return null;
     return hiveBox.getAt(0) as UserApi;
   }
+
   final String baseUrl = dotenv.env['DEV_BASE_URL']!;
   String get kaggleUsername => getUserApi()?.kaggleUserName ?? '';
   String get kaggleKey => getUserApi()?.kaggleApiKey ?? '';

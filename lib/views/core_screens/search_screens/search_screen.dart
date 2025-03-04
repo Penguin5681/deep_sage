@@ -14,13 +14,16 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen>
+    with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   String selectedSource = 'Hugging Face';
 
-  final Debouncer _debouncer = Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
+  final Debouncer _debouncer = Debouncer(
+    delayBetweenRequests: const Duration(milliseconds: 200),
+  );
   List<DatasetSuggestion> _suggestions = [];
   bool _isLoading = false;
   bool _isDatasetCardLoading = false;
@@ -150,10 +153,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
     if (source case 'huggingface') {
       final HfDatasetInfoService hfDatasetInfoService = HfDatasetInfoService();
-      huggingFaceMetadata = await hfDatasetInfoService.retrieveHfDatasetMetadata(datasetId);
+      huggingFaceMetadata = await hfDatasetInfoService
+          .retrieveHfDatasetMetadata(datasetId);
     } else if (source case 'kaggle') {
-      final KaggleDatasetInfoService kaggleDatasetInfoService = KaggleDatasetInfoService();
-      kaggleMetadata = await kaggleDatasetInfoService.retrieveKaggleDatasetMetadata(datasetId);
+      final KaggleDatasetInfoService kaggleDatasetInfoService =
+          KaggleDatasetInfoService();
+      kaggleMetadata = await kaggleDatasetInfoService
+          .retrieveKaggleDatasetMetadata(datasetId);
     } else {
       debugPrint('Something bad happened');
     }
@@ -204,12 +210,19 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                 children: [
                   // 1
                   Padding(
-                    padding: const EdgeInsets.only(left: 75.0, right: 75.0, top: 40.0),
+                    padding: const EdgeInsets.only(
+                      left: 75.0,
+                      right: 75.0,
+                      top: 40.0,
+                    ),
                     child: Container(
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14.0),
-                        color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade300,
+                        color:
+                            isDarkMode
+                                ? Colors.grey.shade900
+                                : Colors.grey.shade300,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +250,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                 // the dataset title
                                 Text(
                                   title,
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24.0),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 24.0,
+                                  ),
                                 ),
                                 const SizedBox(height: 8.0),
                                 Text(
@@ -256,7 +272,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                         backgroundColor: Colors.blue.shade600,
                                         foregroundColor: Colors.white,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 20,
@@ -265,7 +283,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                       ),
                                       child: const Text(
                                         "Import",
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 10.0),
@@ -274,9 +295,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                         // onNavigate(1);
                                       },
                                       style: OutlinedButton.styleFrom(
-                                        side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                        side: BorderSide(
+                                          color: Colors.blue.shade600,
+                                          width: 2,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         foregroundColor: Colors.blue.shade600,
                                         padding: const EdgeInsets.symmetric(
@@ -286,7 +312,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                       ),
                                       child: const Text(
                                         "Download",
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -301,7 +330,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 76.0, right: 76.0, top: 16.0),
+                    padding: const EdgeInsets.only(
+                      left: 76.0,
+                      right: 76.0,
+                      top: 16.0,
+                    ),
                     child: Container(
                       decoration: BoxDecoration(),
                       child: Row(
@@ -310,13 +343,18 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           source == 'kaggle'
                               ? Container(
                                 decoration: BoxDecoration(
-                                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                                  color:
+                                      isDarkMode
+                                          ? Colors.grey.shade300
+                                          : Colors.grey.shade600,
                                   borderRadius: BorderRadius.circular(8.0),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Image.asset(
-                                    isDarkMode ? AppIcons.serverLight : AppIcons.serverDark,
+                                    isDarkMode
+                                        ? AppIcons.serverLight
+                                        : AppIcons.serverDark,
                                     width: 15,
                                     height: 15,
                                   ),
@@ -327,7 +365,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           source == 'kaggle'
                               ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [const Text('Dataset Size'), Text('$size (compressed)')],
+                                children: [
+                                  const Text('Dataset Size'),
+                                  Text('$size (compressed)'),
+                                ],
                               )
                               : Container(),
                         ],
@@ -340,7 +381,13 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     child: Row(
                       children: [
                         // Icon Container
-                        ClipOval(child: Image.asset(AppIcons.larry, width: 32, height: 32)),
+                        ClipOval(
+                          child: Image.asset(
+                            AppIcons.larry,
+                            width: 32,
+                            height: 32,
+                          ),
+                        ),
                         const SizedBox(width: 12.0),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,11 +401,18 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   // configs here
                   source == 'huggingface' && configs.isNotEmpty
                       ? Padding(
-                        padding: const EdgeInsets.only(left: 76.0, right: 76.0, top: 16.0),
+                        padding: const EdgeInsets.only(
+                          left: 76.0,
+                          right: 76.0,
+                          top: 16.0,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Configurations', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Configurations',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             const SizedBox(height: 8.0),
                             Wrap(
                               spacing: 8.0,
@@ -375,7 +429,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                             isDarkMode
                                                 ? Colors.grey.shade800
                                                 : Colors.grey.shade200,
-                                        borderRadius: BorderRadius.circular(16.0),
+                                        borderRadius: BorderRadius.circular(
+                                          16.0,
+                                        ),
                                       ),
                                       child: Text(config),
                                     );
@@ -410,9 +466,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: isDarkMode ? Colors.white : Colors.blue.shade600),
+              CircularProgressIndicator(
+                color: isDarkMode ? Colors.white : Colors.blue.shade600,
+              ),
               const SizedBox(height: 16.0),
-              Text('Loading...', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+              Text(
+                'Loading...',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
             ],
           ),
         ),
@@ -421,7 +484,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   OverlayEntry _createOverlayEntry() {
-    RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
+    RenderBox renderBox =
+        _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
     var isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -456,7 +520,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             _isDatasetCardLoading = true;
                             debugPrint(_isDatasetCardLoading.toString());
                             debugPrint(suggestion.source);
-                            await openDatasetCard(suggestion.name, suggestion.source);
+                            await openDatasetCard(
+                              suggestion.name,
+                              suggestion.source,
+                            );
                             setState(() {
                               _isDatasetCardLoading = false;
                               debugPrint(_isDatasetCardLoading.toString());
@@ -470,13 +537,18 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           child: ListTile(
                             title: Text(
                               suggestion.name,
-                              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black,
+                              ),
                             ),
                             subtitle: Text(
-                              suggestion.source == 'huggingface' ? 'Hugging Face' : 'Kaggle',
+                              suggestion.source == 'huggingface'
+                                  ? 'Hugging Face'
+                                  : 'Kaggle',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isDarkMode ? Colors.grey[300] : Colors.grey,
+                                color:
+                                    isDarkMode ? Colors.grey[300] : Colors.grey,
                               ),
                             ),
                           ),
@@ -513,7 +585,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {},
-                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
+                    child: const Text(
+                      'Search',
+                      style: TextStyle(fontSize: 16.0),
+                    ),
                   ),
                 ),
               ],
@@ -541,7 +616,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: const Text('Search has been completed'),
+                                  title: const Text(
+                                    'Search has been completed',
+                                  ),
                                   content: Text('You Searched for: $value'),
                                 );
                               },
@@ -555,11 +632,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                       width: 24,
                                       height: 24,
                                       padding: const EdgeInsets.all(6.0),
-                                      child: const CircularProgressIndicator(strokeWidth: 2),
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                     : null,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
-                            hintText: 'Search Datasets by name, type or category',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            hintText:
+                                'Search Datasets by name, type or category',
                           ),
                         ),
                       ),
