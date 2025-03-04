@@ -26,6 +26,7 @@ dependencies:
   internet_connection_checker_plus: ^2.7.0
   url_launcher: ^6.3.1
   intl: ^0.20.2
+  file_picker: ^9.0.2
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +55,7 @@ flutter:
     - assets/icons/light/government.png
     - assets/icons/light/download.png
     - assets/icons/light/server.png
+    - assets/icons/light/check.png
 
 
     - assets/icons/brand/hf-logo.png
@@ -79,6 +81,7 @@ flutter:
     - assets/icons/dark/government.png
     - assets/icons/dark/download.png
     - assets/icons/dark/server.png
+    - assets/icons/dark/check.png
     - assets/larry/larry.png
     - .env
   fonts:
