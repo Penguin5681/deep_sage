@@ -198,7 +198,7 @@ class _SearchScreenState extends State<SearchScreen>
         return Center(
           child: SizedBox(
             width: MediaQuery.of(context).size.width - 300,
-            height: MediaQuery.of(context).size.height - 500,
+            height: MediaQuery.of(context).size.height - 300,
             child: Container(
               decoration: BoxDecoration(
                 // dataset card background
