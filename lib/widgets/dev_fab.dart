@@ -111,6 +111,14 @@ class DevFAB extends StatelessWidget {
             }
           },
         ),
+        SpeedDialChild(
+          child: Icon(Icons.clear),
+          label: "Clear hive data",
+          onTap: () async {
+            final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+            await hiveBox.clear();
+          },
+        ),
       ],
     );
   }
