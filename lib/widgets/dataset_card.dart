@@ -9,6 +9,9 @@ class DatasetCard extends StatelessWidget {
   final double subLabelSize;
   final String buttonText;
 
+  // no way i forgot to create a onButtonClick prop for ts.
+  // i will do it i need it lol.
+
   const DatasetCard({
     super.key,
     required this.lightIconPath,
