@@ -192,7 +192,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         return Center(
           child: SizedBox(
             width: MediaQuery.of(context).size.width - 300,
-            height: MediaQuery.of(context).size.height - 200,
+            height: MediaQuery.of(context).size.height - 500,
             child: Container(
               decoration: BoxDecoration(
                 // dataset card background
@@ -221,9 +221,19 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Image.asset(source == 'huggingface' ? AppIcons.huggingFaceLogo : AppIcons.kaggleLogo, width: 22, height: 22),
+                                Image.asset(
+                                  source == 'huggingface'
+                                      ? AppIcons.huggingFaceLogo
+                                      : AppIcons.kaggleLogo,
+                                  width: 22,
+                                  height: 22,
+                                ),
                                 const SizedBox(height: 8.0),
-                                Text(source == 'huggingface' ? 'Hugging Face Datasets' : 'Kaggle Datasets'),
+                                Text(
+                                  source == 'huggingface'
+                                      ? 'Hugging Face Datasets'
+                                      : 'Kaggle Datasets',
+                                ),
                                 // the dataset title
                                 Text(
                                   title,
@@ -297,28 +307,29 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                       child: Row(
                         children: [
                           // Icon Container
-                          source == 'kaggle' ? Container(
-                            decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Image.asset(
-                                isDarkMode ? AppIcons.serverLight : AppIcons.serverDark,
-                                width: 15,
-                                height: 15,
-                              ),
-                            ),
-                          ) : Container(),
+                          source == 'kaggle'
+                              ? Container(
+                                decoration: BoxDecoration(
+                                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
+                                  borderRadius: BorderRadius.circular(8.0),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Image.asset(
+                                    isDarkMode ? AppIcons.serverLight : AppIcons.serverDark,
+                                    width: 15,
+                                    height: 15,
+                                  ),
+                                ),
+                              )
+                              : Container(),
                           const SizedBox(width: 12.0),
-                          source == 'kaggle' ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Dataset Size'),
-                              Text('$size (compressed)'),
-                            ],
-                          ) : Container(),
+                          source == 'kaggle'
+                              ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [const Text('Dataset Size'), Text('$size (compressed)')],
+                              )
+                              : Container(),
                         ],
                       ),
                     ),
@@ -341,30 +352,39 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   // show configs here
                   const SizedBox(height: 16.0),
                   // configs here
-                  source == 'huggingface' && configs.isNotEmpty ? Padding(
-                    padding: const EdgeInsets.only(left: 76.0, right: 76.0, top: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Configurations', style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8.0),
-                        Wrap(
-                          spacing: 8.0,
-                          runSpacing: 8.0,
-                          children: configs.map((config) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(16.0),
-                              ),
-                              child: Text(config),
-                            );
-                          }).toList(),
+                  source == 'huggingface' && configs.isNotEmpty
+                      ? Padding(
+                        padding: const EdgeInsets.only(left: 76.0, right: 76.0, top: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Configurations', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8.0),
+                            Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children:
+                                  configs.map((config) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12.0,
+                                        vertical: 6.0,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            isDarkMode
+                                                ? Colors.grey.shade800
+                                                : Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(16.0),
+                                      ),
+                                      child: Text(config),
+                                    );
+                                  }).toList(),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ) : Container(),
+                      )
+                      : Container(),
                 ],
               ),
             ),
