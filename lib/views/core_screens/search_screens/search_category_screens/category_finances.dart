@@ -33,12 +33,12 @@ class _CategoryFinancesState extends State<CategoryFinances> {
             datasets
                 .map(
                   (dataset) => {
-                'title': dataset.title,
-                'addedTime': dataset.addedTime,
-                'fileType': dataset.fileType,
-                'fileSize': dataset.fileSize,
-              },
-            )
+                    'title': dataset.title,
+                    'addedTime': dataset.addedTime,
+                    'fileType': dataset.fileType,
+                    'fileSize': dataset.fileSize,
+                  },
+                )
                 .toList();
       });
     } catch (e) {

@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
@@ -24,10 +26,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool shouldWeAskForDownloadLocation = false;
   bool awsS3Enabled = false;
   String defaultDownloadPath = '';
+  final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  final kaggleUsernameNotFoundTag = 'kaggle username not found';
+  final kaggleApiKeyNotFoundTag = 'kaggle key not found';
+  final hfTokenNotFoundTag = 'hf token not found';
 
   late FocusNode kaggleUsernameInputFocus = FocusNode();
   late FocusNode kaggleApiInputFocus = FocusNode();
   late FocusNode hfTokenInputFocus = FocusNode();
+  late bool isKaggleApiCredsSaved = false;
+  late bool isHfTokenSaved = false;
+  late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
+
+  final TextEditingController kaggleUsernameController =
+      TextEditingController();
+  final TextEditingController kaggleApiInputController =
+      TextEditingController();
+  final TextEditingController huggingFaceApiInputController =
+      TextEditingController();
+  final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
   Future<void> getDownloadsDirectory() async {
     final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
@@ -57,12 +74,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
     debugPrint(defaultDownloadPath);
   }
 
+  UserApi? getUserApi() {
+    if (hiveBox.isEmpty) return null;
+    try {
+      return hiveBox.getAt(0) as UserApi;
+    } catch (e) {
+      debugPrint('Error getting UserApi: $e');
+      return null;
+    }
+  }
 
-  Widget getIconForTheme({required String lightIcon, required String darkIcon, double size = 24}) {
+  String get kaggleUsername => getUserApi()?.kaggleUserName ?? '';
+
+  String get kaggleKey => getUserApi()?.kaggleApiKey ?? '';
+
+  String get hfToken => getUserApi()?.hfToken ?? '';
+
+  Map<String, dynamic> isAnyUserApiDataSaved() {
+    final userApi = getUserApi();
+    if (userApi == null) {
+      return {"result": false};
+    }
+
+    if (userApi.kaggleUserName.isEmpty) {
+      return {"result": kaggleUsernameNotFoundTag};
+    } else if (userApi.kaggleApiKey.isEmpty) {
+      return {"result": kaggleApiKeyNotFoundTag};
+    } else if (userApi.hfToken.isEmpty) {
+      return {"result": hfTokenNotFoundTag};
+    }
+
+    return {"result": true};
+  }
+
+  Widget getIconForTheme({
+    required String lightIcon,
+    required String darkIcon,
+    double size = 24,
+  }) {
     return Builder(
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+        return Image.asset(
+          isDarkMode ? darkIcon : lightIcon,
+          width: size,
+          height: size,
+        );
       },
     );
   }
@@ -74,6 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     kaggleApiInputFocus = FocusNode();
     kaggleUsernameInputFocus = FocusNode();
     hfTokenInputFocus = FocusNode();
+    credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
   }
 
   @override
@@ -87,12 +145,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
-    final TextEditingController kaggleUsernameController = TextEditingController();
-    final TextEditingController kaggleApiInputController = TextEditingController();
-    final TextEditingController huggingFaceApiInputController = TextEditingController();
-    final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
     final ScrollController rootScrollController = ScrollController();
+    final focusNode = FocusNode();
+
+    void handleKeyEvent(KeyEvent event) {
+      var offset = rootScrollController.offset;
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        setState(() {
+          if (kReleaseMode) {
+            rootScrollController.animateTo(
+              offset - 200,
+              duration: Duration(milliseconds: 30),
+              curve: Curves.ease,
+            );
+          } else {
+            rootScrollController.animateTo(
+              offset - 200,
+              duration: Duration(milliseconds: 30),
+              curve: Curves.ease,
+            );
+          }
+        });
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        setState(() {
+          if (kReleaseMode) {
+            rootScrollController.animateTo(
+              offset + 200,
+              duration: Duration(milliseconds: 30),
+              curve: Curves.ease,
+            );
+          } else {
+            rootScrollController.animateTo(
+              offset + 200,
+              duration: Duration(milliseconds: 30),
+              curve: Curves.ease,
+            );
+          }
+        });
+      }
+    }
 
     return Theme(
       data: darkModeEnabled ? ThemeData.dark() : ThemeData.light(),
@@ -102,775 +194,699 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             // Right content area
             Expanded(
-              child: SingleChildScrollView(
-                controller: rootScrollController,
-                child: Center(
-                  child: Container(
-                    width: 600,
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Top navigation
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  onTap: () {},
-                                  child: Text(
-                                    'Dashboard',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+              child: KeyboardListener(
+                onKeyEvent: handleKeyEvent,
+                focusNode: focusNode,
+                child: SingleChildScrollView(
+                  controller: rootScrollController,
+                  child: Center(
+                    child: Container(
+                      width: 600,
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top navigation
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              children: [
+                                MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: GestureDetector(
+                                    onTap: () {},
+                                    child: Text(
+                                      'Dashboard',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color:
+                                            isDarkModeEnabled
+                                                ? Colors.white
+                                                : Colors.black,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.chevron_right,
-                                size: 18,
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Settings',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Settings',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          Text(
+                            'Profile',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Profile card
+                          Container(
+                            padding: const EdgeInsets.all(16), // Reduced padding
+                            decoration: BoxDecoration(
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.person_outline,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[700],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'User Profile',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color:
+                                            isDarkModeEnabled
+                                                ? Colors.white
+                                                : Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Manage your account information and preferences',
+                                  style: TextStyle(
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Profile picture
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundImage: const AssetImage(
+                                  'assets/larry/larry.png',
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        Text(
-                          'Profile',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Profile card
-                        Container(
-                          padding: const EdgeInsets.all(16), // Reduced padding
-                          decoration: BoxDecoration(
-                            color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    Icons.person_outline,
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                                  ),
-                                  const SizedBox(width: 8),
                                   Text(
-                                    'User Profile',
+                                    'Profile Picture',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      fontSize: 14,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Change your profile photo',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Manage your account information and preferences',
+                              const Spacer(),
+                              Icon(
+                                Icons.edit,
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Full Name
+                          Text(
+                            'Full Name',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            width: double.infinity,
+                            child: Text(
+                              'John Smith',
+                              style: TextStyle(
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.white
+                                        : Colors.black,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Email
+                          Text(
+                            'Email',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'john.smith@example.com',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.mail_outline,
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Sign Out Button
+                          SizedBox(
+                            width: 80,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // todo: sign out from here can clear the hive data
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                              child: const Text(
+                                'Sign Out',
                                 style: TextStyle(
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
                                   fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // Reduced spacing
+                          // Appearance
+                          Text(
+                            'Appearance',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.dark_mode_outlined,
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dark Mode',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Toggle between light and dark theme',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Switch(
+                                value:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                onChanged: (value) {
+                                  setState(() {
+                                    isDarkModeEnabled = value;
+                                    Provider.of<ThemeProvider>(
+                                      context,
+                                      listen: false,
+                                    ).toggleTheme();
+                                  });
+                                },
+                                activeColor: Colors.blue,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          // Reduced spacing
+                          // Integrations
+                          Text(
+                            'Integrations',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Google Drive
+                          _buildIntegrationItem(
+                            icon: Icons.cloud_outlined,
+                            title: 'Google Drive',
+                            description: 'Connect your Google Drive account',
+                            value: googleDriveEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                googleDriveEnabled = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Dropbox
+                          _buildIntegrationItem(
+                            icon: Icons.folder_outlined,
+                            title: 'Dropbox',
+                            description: 'Connect your Dropbox account',
+                            value: dropboxEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                dropboxEnabled = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // AWS S3
+                          _buildIntegrationItem(
+                            icon: Icons.storage_outlined,
+                            title: 'AWS S3',
+                            description: 'Connect your AWS S3 bucket',
+                            value: awsS3Enabled,
+                            onChanged: (value) {
+                              setState(() {
+                                awsS3Enabled = value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          buildApiManagementSection(),
+                          const SizedBox(height: 24),
+                          // Download settings
+                          Text(
+                            'Download Settings',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Default download location',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4.0),
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        defaultDownloadPath,
+                                        style: TextStyle(
+                                          color:
+                                              isDarkModeEnabled
+                                                  ? Colors.grey[400]
+                                                  : Colors.grey[500],
+                                        ),
+                                      ),
+                                      MouseRegion(
+                                        cursor: SystemMouseCursors.click,
+                                        child: GestureDetector(
+                                          onTap: () async {
+                                            String? selectedDir = await FilePicker
+                                                .platform
+                                                .getDirectoryPath(
+                                                  dialogTitle:
+                                                      'Select the default download directory',
+                                                );
+                                            if (selectedDir != null) {
+                                              setState(() {
+                                                defaultDownloadPath = selectedDir;
+                                              });
+
+                                              final hiveBox = Hive.box(
+                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                              );
+                                              hiveBox.put(
+                                                'downloadPath',
+                                                selectedDir,
+                                              );
+                                            }
+                                          },
+                                          child: Icon(
+                                            Icons.folder_open_outlined,
+                                            color:
+                                                isDarkModeEnabled
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                            size: 18.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Profile picture
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundImage: const AssetImage('assets/larry/larry.png'),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Profile Picture',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  'Change your profile photo',
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Icon(
-                              Icons.edit,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Full Name
-                        Text(
-                          'Full Name',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          width: double.infinity,
-                          child: Text(
-                            'John Smith',
-                            style: TextStyle(
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Email
-                        Text(
-                          'Email',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'john.smith@example.com',
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.mail_outline,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Sign Out Button
-                        SizedBox(
-                          width: 80,
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: const Text(
-                              'Sign Out',
-                              style: TextStyle(fontSize: 12, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Reduced spacing
-                        // Appearance
-                        Text(
-                          'Appearance',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Dark Mode
-                        // Inside _SettingsScreenState class, replace the dark mode switch implementation
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.dark_mode_outlined,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Dark Mode',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  'Toggle between light and dark theme',
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Switch(
-                              value: Theme.of(context).brightness == Brightness.dark,
-                              onChanged: (value) {
-                                setState(() {
-                                  isDarkModeEnabled = value;
-                                  Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
-                                });
-                              },
-                              activeColor: Colors.blue,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        // Reduced spacing
-                        // Integrations
-                        Text(
-                          'Integrations',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Google Drive
-                        _buildIntegrationItem(
-                          icon: Icons.cloud_outlined,
-                          title: 'Google Drive',
-                          description: 'Connect your Google Drive account',
-                          value: googleDriveEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              googleDriveEnabled = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Dropbox
-                        _buildIntegrationItem(
-                          icon: Icons.folder_outlined,
-                          title: 'Dropbox',
-                          description: 'Connect your Dropbox account',
-                          value: dropboxEnabled,
-                          onChanged: (value) {
-                            setState(() {
-                              dropboxEnabled = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // AWS S3
-                        _buildIntegrationItem(
-                          icon: Icons.storage_outlined,
-                          title: 'AWS S3',
-                          description: 'Connect your AWS S3 bucket',
-                          value: awsS3Enabled,
-                          onChanged: (value) {
-                            setState(() {
-                              awsS3Enabled = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        // API Management
-                        Row(
-                          children: [
-                            Text(
-                              'API Management',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDarkModeEnabled ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(Icons.help),
-                              tooltip:
-                                  "Kaggle Username and Kaggle Api are\nrequired to conduct search using kaggle.\nIf not provided the default search provider would be hugging face",
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Text(
-                              'Kaggle Username',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: isDarkModeEnabled ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(Icons.help),
-                              tooltip: "Required for search using Kaggle",
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color:
-                                        isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
-                                  ),
-                                ),
-                                child: TextField(
-                                  controller: kaggleUsernameController,
-                                  focusNode: kaggleUsernameInputFocus,
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                    fontSize: 12,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter your Kaggle username',
-                                    hintStyle: TextStyle(
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10.0),
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
-                                      fontSize: 12,
+                                          isDarkModeEnabled
+                                              ? Colors.grey[800]
+                                              : Colors.grey[100],
                                     ),
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Kaggle API Key
-                        Row(
-                          children: [
-                            Text(
-                              'Kaggle API Key',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: isDarkModeEnabled ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(Icons.help),
-                              tooltip: "Required for search using Kaggle",
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color:
-                                        isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
-                                  ),
-                                ),
-                                child: TextField(
-                                  obscureText: true,
-                                  controller: kaggleApiInputController,
-                                  focusNode: kaggleApiInputFocus,
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                    fontSize: 12,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter your Kaggle API key',
-                                    hintStyle: TextStyle(
-                                      color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
-                                      fontSize: 12,
-                                    ),
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Hugging Face API Key
-                        Row(
-                          children: [
-                            Text(
-                              'Hugging Face Token',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: isDarkModeEnabled ? Colors.white : Colors.black,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(Icons.help),
-                              tooltip:
-                                  "Optional: hf token will only be used to download private datasets",
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color:
-                                        isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
-                                  ),
-                                ),
-                                child: TextField(
-                                  obscureText: true,
-                                  controller: huggingFaceApiInputController,
-                                  focusNode: hfTokenInputFocus,
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                    fontSize: 12,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter your Hugging Face API key',
-                                    hintStyle: TextStyle(
-                                      color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
-                                      fontSize: 12,
-                                    ),
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Save Button
-                        Center(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final hiveBox = Hive.box(hiveApiBoxName!);
-                              final userApiData = UserApi(
-                                hfToken: huggingFaceApiInputController.text,
-                                kaggleApiKey: kaggleApiInputController.text,
-                                kaggleUserName: kaggleUsernameController.text,
-                              );
-                              hiveBox.add(userApiData);
-                              kaggleUsernameController.clear();
-                              kaggleApiInputController.clear();
-                              huggingFaceApiInputController.clear();
-                              // hiveBox.clear();
-                            },
-                            icon: const Icon(Icons.save, color: Colors.white),
-                            label: const Text('Save'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Download settings
-                        Text(
-                          'Download Settings',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          'Default download location',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4.0),
-                                  color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      defaultDownloadPath,
-                                      style: TextStyle(
-                                        color:
-                                            isDarkModeEnabled ? Colors.grey[400] : Colors.grey[500],
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 17.0,
+                                        vertical: 17.0,
+                                      ),
+                                      child: Image.asset(
+                                        !isDarkModeEnabled
+                                            ? AppIcons.downloadLight
+                                            : AppIcons.downloadDark,
+                                        width: 14.0,
+                                        height: 14.0,
                                       ),
                                     ),
-                                    MouseRegion(
-                                      cursor: SystemMouseCursors.click,
-                                      child: GestureDetector(
-                                        onTap: () async {
-                                          String? selectedDir = await FilePicker.platform
-                                              .getDirectoryPath(
-                                                dialogTitle:
-                                                    'Select the default download directory',
-                                              );
-                                          if (selectedDir != null) {
-                                            setState(() {
-                                              defaultDownloadPath = selectedDir;
-                                            });
-
-                                            final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
-                                            hiveBox.put('downloadPath', selectedDir);
-                                          }
-                                        },
-                                        child: Icon(
-                                          Icons.folder_open_outlined,
-                                          color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                          size: 18.0,
+                                  ),
+                                  const SizedBox(width: 14.0),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Ask for location everytime',
+                                        style: TextStyle(
+                                          color:
+                                              isDarkModeEnabled
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                      Text(
+                                        'Prompt for download location before saving files',
+                                        style: TextStyle(
+                                          color:
+                                              isDarkModeEnabled
+                                                  ? Colors.grey[600]
+                                                  : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10.0),
-                                    color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 17.0,
-                                      vertical: 17.0,
-                                    ),
-                                    child: Image.asset(
-                                      !isDarkModeEnabled
-                                          ? AppIcons.downloadLight
-                                          : AppIcons.downloadDark,
-                                      width: 14.0,
-                                      height: 14.0,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 14.0),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Ask for location everytime',
-                                      style: TextStyle(
-                                        color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Prompt for download location before saving files',
-                                      style: TextStyle(
-                                        color:
-                                            isDarkModeEnabled ? Colors.grey[600] : Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Switch(
-                              value: shouldWeAskForDownloadLocation,
-                              onChanged: (value) {
-                                setState(() {
-                                  shouldWeAskForDownloadLocation = value;
-                                });
-                              },
-                              activeColor: Colors.blue,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 32),
-                        // Data Management
-                        Text(
-                          'Data Management',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkModeEnabled ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Clear Cache
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.cleaning_services_outlined,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Clear Cache',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  'Remove temporary files and cached data',
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: GestureDetector(
-                                onTap: () {
-                                  // do something here
+                              Switch(
+                                value: shouldWeAskForDownloadLocation,
+                                onChanged: (value) {
+                                  setState(() {
+                                    shouldWeAskForDownloadLocation = value;
+                                  });
                                 },
-                                child: Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                activeColor: Colors.blue,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
+                          // Data Management
+                          Text(
+                            'Data Management',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Clear Cache
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.cleaning_services_outlined,
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Clear Cache',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Remove temporary files and cached data',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    // do something here
+                                  },
+                                  child: Icon(
+                                    Icons.delete_outline_rounded,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Reduced spacing
-                        // Storage Usage
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.storage_rounded,
-                              color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Storage Usage',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: isDarkModeEnabled ? Colors.white : Colors.black,
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Reduced spacing
+                          // Storage Usage
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.storage_rounded,
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
+                              ),
+                              const SizedBox(width: 16),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Storage Usage',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  '2.4 GB of 5 GB used',
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
-                                    fontSize: 12,
+                                  Text(
+                                    '2.4 GB of 5 GB used',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Row(
-                              children: [
-                                Text(
-                                  'Select',
-                                  style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                ],
+                              ),
+                              const Spacer(),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Select',
+                                    style: TextStyle(
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[700],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                ),
-                                Icon(
-                                  Icons.keyboard_arrow_down_sharp,
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 40),
-                        // Reduced bottom padding
-                      ],
+                                  Icon(
+                                    Icons.keyboard_arrow_down_sharp,
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 40),
+                          // Reduced bottom padding
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -917,6 +933,454 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const Spacer(),
         Switch(value: value, onChanged: onChanged, activeColor: Colors.blue),
       ],
+    );
+  }
+
+  Widget _buildCredentialsInputFields({
+    required TextEditingController kaggleUsernameController,
+    required TextEditingController kaggleApiInputController,
+    required TextEditingController huggingFaceApiInputController,
+    required String? hiveApiBoxName,
+  }) {
+    bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
+    bool showKaggleUsername =
+        credsSavedOrNotLetsFindOutResult['result'] == false ||
+        credsSavedOrNotLetsFindOutResult['result'] == kaggleUsernameNotFoundTag;
+
+    bool showKaggleApiKey =
+        credsSavedOrNotLetsFindOutResult['result'] == false ||
+        credsSavedOrNotLetsFindOutResult['result'] == kaggleApiKeyNotFoundTag;
+
+    bool showHfToken =
+        credsSavedOrNotLetsFindOutResult['result'] == false ||
+        credsSavedOrNotLetsFindOutResult['result'] == hfTokenNotFoundTag;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Kaggle Username field
+        if (showKaggleUsername)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Kaggle Username',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.help),
+                    tooltip: "Required for search using Kaggle",
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: kaggleUsernameController,
+                focusNode: kaggleUsernameInputFocus,
+                decoration: InputDecoration(
+                  hintText: 'Enter your Kaggle username',
+                  filled: true,
+                  fillColor:
+                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(
+                      color:
+                          isDarkModeEnabled
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+
+        // Kaggle API Key field
+        if (showKaggleApiKey)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Kaggle API Key',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.help),
+                    tooltip: "Required for search using Kaggle",
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: kaggleApiInputController,
+                focusNode: kaggleApiInputFocus,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Enter your Kaggle API key',
+                  filled: true,
+                  fillColor:
+                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(
+                      color:
+                          isDarkModeEnabled
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+
+        // Hugging Face Token field
+        if (showHfToken)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Hugging Face Token',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.help),
+                    tooltip:
+                        "Optional: hf token will only be used to download private datasets",
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: huggingFaceApiInputController,
+                focusNode: hfTokenInputFocus,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Enter your Hugging Face API key',
+                  filled: true,
+                  fillColor:
+                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(4),
+                    borderSide: BorderSide(
+                      color:
+                          isDarkModeEnabled
+                              ? Colors.grey[700]!
+                              : Colors.grey[300]!,
+                    ),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                style: TextStyle(
+                  color: isDarkModeEnabled ? Colors.white : Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: () {
+              final hiveBox = Hive.box(hiveApiBoxName!);
+
+              UserApi existingData =
+                  getUserApi() ??
+                  UserApi(kaggleUserName: "", kaggleApiKey: "", hfToken: "");
+
+              UserApi userApiData = UserApi(
+                hfToken:
+                    huggingFaceApiInputController.text.isNotEmpty
+                        ? huggingFaceApiInputController.text
+                        : existingData.hfToken,
+                kaggleApiKey:
+                    kaggleApiInputController.text.isNotEmpty
+                        ? kaggleApiInputController.text
+                        : existingData.kaggleApiKey,
+                kaggleUserName:
+                    kaggleUsernameController.text.isNotEmpty
+                        ? kaggleUsernameController.text
+                        : existingData.kaggleUserName,
+              );
+
+              if (hiveBox.isEmpty) {
+                hiveBox.add(userApiData);
+              } else {
+                hiveBox.putAt(0, userApiData);
+              }
+
+              kaggleUsernameController.clear();
+              kaggleApiInputController.clear();
+              huggingFaceApiInputController.clear();
+
+              setState(() {
+                credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+              });
+            },
+            icon: const Icon(Icons.save, color: Colors.white),
+            label: const Text('Save'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16.0,),
+      ],
+    );
+  }
+
+  Widget buildApiManagementSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'API Management',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.help),
+              tooltip:
+                  "Kaggle Username and Kaggle Api are\nrequired to conduct search using kaggle.\nIf not provided the default search provider would be hugging face",
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (credsSavedOrNotLetsFindOutResult['result'] ==
+                kaggleUsernameNotFoundTag ||
+            credsSavedOrNotLetsFindOutResult['result'] ==
+                kaggleApiKeyNotFoundTag ||
+            credsSavedOrNotLetsFindOutResult['result'] == hfTokenNotFoundTag ||
+            credsSavedOrNotLetsFindOutResult['result'] == false)
+          _buildCredentialsInputFields(
+            kaggleUsernameController: kaggleUsernameController,
+            kaggleApiInputController: kaggleApiInputController,
+            huggingFaceApiInputController: huggingFaceApiInputController,
+            hiveApiBoxName: hiveApiBoxName,
+          ),
+
+        if (kaggleUsername.isNotEmpty && kaggleKey.isNotEmpty)
+          Column(
+            children: [
+              _buildSavedDataCard(
+                source: 'kaggle',
+                onRemovePress: () {
+                  final userApi = getUserApi();
+                  if (userApi != null) {
+                    final updatedApi = UserApi(
+                      kaggleUserName: "",
+                      kaggleApiKey: "",
+                      hfToken: userApi.hfToken,
+                    );
+                    hiveBox.putAt(0, updatedApi);
+                    setState(() {
+                      credsSavedOrNotLetsFindOutResult =
+                          isAnyUserApiDataSaved();
+                    });
+                  }
+                },
+                onUpdatePress: () {
+                  // setState(() {
+                  //   credsSavedOrNotLetsFindOutResult = {"result": kaggleUsernameNotFoundTag};
+                  // });
+                },
+              ),
+              SizedBox(height: 16),
+            ],
+          ),
+
+        if (hfToken.isNotEmpty)
+          _buildSavedDataCard(
+            source: 'huggingface',
+            onRemovePress: () {
+              final userApi = getUserApi();
+              if (userApi != null) {
+                final updatedApi = UserApi(
+                  kaggleUserName: userApi.kaggleUserName,
+                  kaggleApiKey: userApi.kaggleApiKey,
+                  hfToken: "",
+                );
+                hiveBox.putAt(0, updatedApi);
+                setState(() {
+                  credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+                });
+              }
+            },
+            onUpdatePress: () {
+              // setState(() {
+              //   credsSavedOrNotLetsFindOutResult = {"result": hfTokenNotFoundTag};
+              // });
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSavedDataCard({
+    required String source,
+    required Function() onUpdatePress,
+    required Function() onRemovePress,
+  }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isTheSourceKaggle = source == 'kaggle';
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          top: 23.0,
+          bottom: 23.0,
+          left: 23.0,
+          right: 100.0,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(50),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey
+                        : Colors.white,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Image.asset(
+                  !isDarkMode ? AppIcons.checkLight : AppIcons.checkDark,
+                  width: 16,
+                  height: 16,
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              !isTheSourceKaggle ? 'Hugging Face API' : 'Kaggle API',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 21.0,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+            Text(
+              !isTheSourceKaggle
+                  ? 'Your Hugging Face API credentials are saved'
+                  : "Your Kaggle API credentials are saved",
+              style: TextStyle(
+                fontSize: 15.0,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: onUpdatePress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: Text(
+                    'Update',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: onRemovePress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isDarkMode ? Color(0xffb6b6b6) : Color(0xffeaeaea),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
+                  ),
+                  child: Text(
+                    'Remove',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
