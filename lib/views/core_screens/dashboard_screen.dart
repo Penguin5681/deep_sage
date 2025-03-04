@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -209,10 +212,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class Dashboard extends StatelessWidget {
+// the actual screen starts from here for the dashboard
+
+class Dashboard extends StatefulWidget {
   final Function(int) onNavigate;
 
   const Dashboard({super.key, required this.onNavigate});
+
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  late var isDatasetUploaded = false;
+  late var datasetPath = '';
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +250,25 @@ class Dashboard extends StatelessWidget {
                   Row(
                     children: [
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          FilePickerResult? result = await FilePicker.platform
+                              .pickFiles(
+                                dialogTitle: "Import a dataset",
+                                lockParentWindow: true,
+                                type: FileType.custom,
+                                allowedExtensions: ["json", "xlsx", "csv"],
+                              );
+                          if (result != null) {
+                            File file = File(result.files.single.path!);
+                            setState(() {
+                              isDatasetUploaded = true;
+                              datasetPath = file.path;
+                            });
+                            debugPrint(file.path);
+                          } else {
+                            debugPrint('file operation cancelled');
+                          }
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade600,
                           foregroundColor: Colors.white,
@@ -260,7 +291,7 @@ class Dashboard extends StatelessWidget {
                       const SizedBox(width: 10),
                       OutlinedButton(
                         onPressed: () {
-                          onNavigate(1);
+                          widget.onNavigate(1);
                         },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(
@@ -287,6 +318,78 @@ class Dashboard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
+                  // current uploaded dataset
+                  if (isDatasetUploaded)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Dataset successfully uploaded',
+                              style: TextStyle(
+                                color: Colors.blue.shade600,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22.0,
+                              ),
+                            ),
+                            const SizedBox(width: 25),
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () async {
+                                  // reset states
+                                  setState(() {
+                                    isDatasetUploaded = false;
+                                  });
+                                  FilePickerResult? result = await FilePicker
+                                      .platform
+                                      .pickFiles(
+                                        dialogTitle: "Import a dataset",
+                                        lockParentWindow: true,
+                                        type: FileType.custom,
+                                        allowedExtensions: [
+                                          "json",
+                                          "xlsx",
+                                          "csv",
+                                        ],
+                                      );
+                                  if (result != null) {
+                                    File file = File(result.files.single.path!);
+                                    setState(() {
+                                      isDatasetUploaded = true;
+                                      datasetPath = file.path;
+                                    });
+                                    debugPrint(file.path);
+                                  } else {
+                                    debugPrint('file operation cancelled');
+                                  }
+                                },
+                                child: Text(
+                                  'Change dataset',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15.0,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16.0),
+                        DatasetCard(
+                          lightIconPath: AppIcons.checkLight,
+                          labelText: 'Current Dataset',
+                          subLabelText: datasetPath,
+                          buttonText: 'Analyze',
+                          darkIconPath: AppIcons.checkDark,
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 16.0),
                   const Text(
                     'Recent Datasets',
                     style: TextStyle(fontSize: 20.0),

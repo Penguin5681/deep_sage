@@ -78,6 +78,10 @@ class AppIcons {
 
   static const String serverDark = '$darkModeBasePath/server.png';
 
+  static const String checkLight = '$lightModeBasePath/check.png';
+
+  static const String checkDark = '$darkModeBasePath/check.png';
+
   static const String huggingFaceLogo = '$brandIconPath/hf-logo.png';
   static const String kaggleLogo = '$brandIconPath/kaggle-logo.png';
 
