@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/views/core_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
@@ -59,7 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // This is an array of Screens
       Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
-      const Center(child: Text('Folders')),
+      FolderScreen(),
       const Center(child: Text('Visualizations')),
       const Center(child: Text('Reports')),
       SettingsScreen(),
