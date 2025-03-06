@@ -36,6 +36,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late FocusNode hfTokenInputFocus = FocusNode();
   late bool isKaggleApiCredsSaved = false;
   late bool isHfTokenSaved = false;
+  late bool isRootDirectorySelected = false;
+  late String selectedRootDirectoryPath = '';
   late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
 
   final TextEditingController kaggleUsernameController =
@@ -124,10 +126,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _loadRootDirectoryPath() async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+    final savedPath = hiveBox.get('selectedRootDirectoryPath');
+
+    setState(() {
+      if (savedPath != null && savedPath.toString().isNotEmpty) {
+        selectedRootDirectoryPath = savedPath;
+        isRootDirectorySelected = true;
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     getDownloadsDirectory();
+    _loadRootDirectoryPath();
     kaggleApiInputFocus = FocusNode();
     kaggleUsernameInputFocus = FocusNode();
     hfTokenInputFocus = FocusNode();
@@ -260,14 +275,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
                           // Reduced spacing
                           // Profile card
                           Container(
-                            padding: const EdgeInsets.all(16), // Reduced padding
+                            padding: const EdgeInsets.all(
+                              16,
+                            ), // Reduced padding
                             decoration: BoxDecoration(
                               color:
                                   isDarkModeEnabled
@@ -373,7 +392,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -409,7 +430,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -460,7 +483,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                               ),
                               child: const Text(
                                 'Sign Out',
@@ -480,7 +505,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -548,7 +575,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -603,7 +632,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -613,7 +644,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -649,7 +682,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         cursor: SystemMouseCursors.click,
                                         child: GestureDetector(
                                           onTap: () async {
-                                            String? selectedDir = await FilePicker
+                                            String?
+                                            selectedDir = await FilePicker
                                                 .platform
                                                 .getDirectoryPath(
                                                   dialogTitle:
@@ -657,11 +691,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                 );
                                             if (selectedDir != null) {
                                               setState(() {
-                                                defaultDownloadPath = selectedDir;
+                                                defaultDownloadPath =
+                                                    selectedDir;
                                               });
 
                                               final hiveBox = Hive.box(
-                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                                dotenv
+                                                    .env['API_HIVE_BOX_NAME']!,
                                               );
                                               hiveBox.put(
                                                 'downloadPath',
@@ -715,7 +751,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   const SizedBox(width: 14.0),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Ask for location everytime',
@@ -752,6 +789,104 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ],
                           ),
                           const SizedBox(height: 32),
+                          Text(
+                            'File Storage Settings',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Default dataset location',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4.0),
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        selectedRootDirectoryPath.isEmpty
+                                            ? "No path selected"
+                                            : selectedRootDirectoryPath,
+                                        style: TextStyle(
+                                          color:
+                                              isDarkModeEnabled
+                                                  ? Colors.grey[400]
+                                                  : Colors.grey[500],
+                                        ),
+                                      ),
+                                      MouseRegion(
+                                        cursor: SystemMouseCursors.click,
+                                        child: GestureDetector(
+                                          onTap: () async {
+                                            String?
+                                            selectedDir = await FilePicker
+                                                .platform
+                                                .getDirectoryPath(
+                                                  dialogTitle:
+                                                      'Select root directory for datasets',
+                                                );
+                                            if (selectedDir != null) {
+                                              setState(() {
+                                                selectedRootDirectoryPath =
+                                                    selectedDir;
+                                              });
+
+                                              final hiveBox = Hive.box(
+                                                dotenv
+                                                    .env['API_HIVE_BOX_NAME']!,
+                                              );
+                                              hiveBox.put(
+                                                'selectedRootDirectoryPath',
+                                                selectedDir,
+                                              );
+                                            }
+                                          },
+                                          child: Icon(
+                                            Icons.folder_open_outlined,
+                                            color:
+                                                isDarkModeEnabled
+                                                    ? Colors.white
+                                                    : Colors.black,
+                                            size: 18.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 32),
                           // Data Management
                           Text(
                             'Data Management',
@@ -759,7 +894,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color:
-                                  isDarkModeEnabled ? Colors.white : Colors.black,
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -936,246 +1073,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildCredentialsInputFields({
-    required TextEditingController kaggleUsernameController,
-    required TextEditingController kaggleApiInputController,
-    required TextEditingController huggingFaceApiInputController,
-    required String? hiveApiBoxName,
-  }) {
-    bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
-    bool showKaggleUsername =
-        credsSavedOrNotLetsFindOutResult['result'] == false ||
-        credsSavedOrNotLetsFindOutResult['result'] == kaggleUsernameNotFoundTag;
-
-    bool showKaggleApiKey =
-        credsSavedOrNotLetsFindOutResult['result'] == false ||
-        credsSavedOrNotLetsFindOutResult['result'] == kaggleApiKeyNotFoundTag;
-
-    bool showHfToken =
-        credsSavedOrNotLetsFindOutResult['result'] == false ||
-        credsSavedOrNotLetsFindOutResult['result'] == hfTokenNotFoundTag;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Kaggle Username field
-        if (showKaggleUsername)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Kaggle Username',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isDarkModeEnabled ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.help),
-                    tooltip: "Required for search using Kaggle",
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: kaggleUsernameController,
-                focusNode: kaggleUsernameInputFocus,
-                decoration: InputDecoration(
-                  hintText: 'Enter your Kaggle username',
-                  filled: true,
-                  fillColor:
-                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(
-                      color:
-                          isDarkModeEnabled
-                              ? Colors.grey[700]!
-                              : Colors.grey[300]!,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                style: TextStyle(
-                  color: isDarkModeEnabled ? Colors.white : Colors.black,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-
-        // Kaggle API Key field
-        if (showKaggleApiKey)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Kaggle API Key',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isDarkModeEnabled ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.help),
-                    tooltip: "Required for search using Kaggle",
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: kaggleApiInputController,
-                focusNode: kaggleApiInputFocus,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Enter your Kaggle API key',
-                  filled: true,
-                  fillColor:
-                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(
-                      color:
-                          isDarkModeEnabled
-                              ? Colors.grey[700]!
-                              : Colors.grey[300]!,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                style: TextStyle(
-                  color: isDarkModeEnabled ? Colors.white : Colors.black,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-
-        // Hugging Face Token field
-        if (showHfToken)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Hugging Face Token',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isDarkModeEnabled ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.help),
-                    tooltip:
-                        "Optional: hf token will only be used to download private datasets",
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: huggingFaceApiInputController,
-                focusNode: hfTokenInputFocus,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Enter your Hugging Face API key',
-                  filled: true,
-                  fillColor:
-                      isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(
-                      color:
-                          isDarkModeEnabled
-                              ? Colors.grey[700]!
-                              : Colors.grey[300]!,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-                style: TextStyle(
-                  color: isDarkModeEnabled ? Colors.white : Colors.black,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-
-        Center(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              final hiveBox = Hive.box(hiveApiBoxName!);
-
-              UserApi existingData =
-                  getUserApi() ??
-                  UserApi(kaggleUserName: "", kaggleApiKey: "", hfToken: "");
-
-              UserApi userApiData = UserApi(
-                hfToken:
-                    huggingFaceApiInputController.text.isNotEmpty
-                        ? huggingFaceApiInputController.text
-                        : existingData.hfToken,
-                kaggleApiKey:
-                    kaggleApiInputController.text.isNotEmpty
-                        ? kaggleApiInputController.text
-                        : existingData.kaggleApiKey,
-                kaggleUserName:
-                    kaggleUsernameController.text.isNotEmpty
-                        ? kaggleUsernameController.text
-                        : existingData.kaggleUserName,
-              );
-
-              if (hiveBox.isEmpty) {
-                hiveBox.add(userApiData);
-              } else {
-                hiveBox.putAt(0, userApiData);
-              }
-
-              kaggleUsernameController.clear();
-              kaggleApiInputController.clear();
-              huggingFaceApiInputController.clear();
-
-              setState(() {
-                credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
-              });
-            },
-            icon: const Icon(Icons.save, color: Colors.white),
-            label: const Text('Save'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16.0,),
-      ],
-    );
-  }
-
   Widget buildApiManagementSection() {
+    bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1186,10 +1086,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color:
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
+                color: isDarkModeEnabled ? Colors.white : Colors.black,
               ),
             ),
             IconButton(
@@ -1202,18 +1099,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 16),
 
-        if (credsSavedOrNotLetsFindOutResult['result'] ==
-                kaggleUsernameNotFoundTag ||
-            credsSavedOrNotLetsFindOutResult['result'] ==
-                kaggleApiKeyNotFoundTag ||
-            credsSavedOrNotLetsFindOutResult['result'] == hfTokenNotFoundTag ||
-            credsSavedOrNotLetsFindOutResult['result'] == false)
-          _buildCredentialsInputFields(
-            kaggleUsernameController: kaggleUsernameController,
-            kaggleApiInputController: kaggleApiInputController,
-            huggingFaceApiInputController: huggingFaceApiInputController,
-            hiveApiBoxName: hiveApiBoxName,
+        if (kaggleUsername.isEmpty)
+          _buildSingleCredentialInput(
+            title: 'Kaggle Username',
+            hintText: 'Enter your Kaggle username',
+            controller: kaggleUsernameController,
+            focusNode: kaggleUsernameInputFocus,
+            tooltip: "Required for search using Kaggle",
+            obscureText: false,
           ),
+
+        if (kaggleKey.isEmpty)
+          _buildSingleCredentialInput(
+            title: 'Kaggle API Key',
+            hintText: 'Enter your Kaggle API key',
+            controller: kaggleApiInputController,
+            focusNode: kaggleApiInputFocus,
+            tooltip: "Required for search using Kaggle",
+            obscureText: true,
+          ),
+
+        if (hfToken.isEmpty)
+          _buildSingleCredentialInput(
+            title: 'Hugging Face Token',
+            hintText: 'Enter your Hugging Face API key',
+            controller: huggingFaceApiInputController,
+            focusNode: hfTokenInputFocus,
+            tooltip:
+                "Optional: hf token will only be used to download private datasets",
+            obscureText: true,
+          ),
+
+        if (kaggleUsername.isEmpty || kaggleKey.isEmpty || hfToken.isEmpty)
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final hiveBox = Hive.box(hiveApiBoxName!);
+
+                UserApi existingData =
+                    getUserApi() ??
+                    UserApi(kaggleUserName: "", kaggleApiKey: "", hfToken: "");
+
+                UserApi userApiData = UserApi(
+                  hfToken:
+                      huggingFaceApiInputController.text.isNotEmpty
+                          ? huggingFaceApiInputController.text
+                          : existingData.hfToken,
+                  kaggleApiKey:
+                      kaggleApiInputController.text.isNotEmpty
+                          ? kaggleApiInputController.text
+                          : existingData.kaggleApiKey,
+                  kaggleUserName:
+                      kaggleUsernameController.text.isNotEmpty
+                          ? kaggleUsernameController.text
+                          : existingData.kaggleUserName,
+                );
+
+                if (hiveBox.isEmpty) {
+                  hiveBox.add(userApiData);
+                } else {
+                  hiveBox.putAt(0, userApiData);
+                }
+
+                kaggleUsernameController.clear();
+                kaggleApiInputController.clear();
+                huggingFaceApiInputController.clear();
+
+                setState(() {
+                  credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+                });
+              },
+              icon: const Icon(Icons.save, color: Colors.white),
+              label: const Text('Save'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+
+        const SizedBox(height: 16),
 
         if (kaggleUsername.isNotEmpty && kaggleKey.isNotEmpty)
           Column(
@@ -1236,9 +1205,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }
                 },
                 onUpdatePress: () {
-                  // setState(() {
-                  //   credsSavedOrNotLetsFindOutResult = {"result": kaggleUsernameNotFoundTag};
-                  // });
+                  setState(() {
+                    kaggleUsernameController.text = kaggleUsername;
+                    kaggleApiInputController.text = kaggleKey;
+
+                    final userApi = getUserApi();
+                    if (userApi != null) {
+                      final updatedApi = UserApi(
+                        kaggleUserName: "",
+                        kaggleApiKey: "",
+                        hfToken: userApi.hfToken,
+                      );
+                      hiveBox.putAt(0, updatedApi);
+                    }
+                    credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+                  });
                 },
               ),
               SizedBox(height: 16),
@@ -1263,9 +1244,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
             onUpdatePress: () {
-              // setState(() {
-              //   credsSavedOrNotLetsFindOutResult = {"result": hfTokenNotFoundTag};
-              // });
+              setState(() {
+                huggingFaceApiInputController.text = hfToken;
+
+                final userApi = getUserApi();
+                if (userApi != null) {
+                  final updatedApi = UserApi(
+                    kaggleUserName: userApi.kaggleUserName,
+                    kaggleApiKey: userApi.kaggleApiKey,
+                    hfToken: "",
+                  );
+                  hiveBox.putAt(0, updatedApi);
+                }
+                credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+              });
             },
           ),
       ],
@@ -1383,4 +1375,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
+  Widget _buildSingleCredentialInput({
+    required String title,
+    required String hintText,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String tooltip,
+    required bool obscureText,
+  }) {
+    bool isDarkModeEnabled = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isDarkModeEnabled ? Colors.white : Colors.black,
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.help),
+              tooltip: tooltip,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: obscureText,
+          decoration: InputDecoration(
+            hintText: hintText,
+            filled: true,
+            fillColor: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(
+                color:
+                    isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
+              ),
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          style: TextStyle(
+            color: isDarkModeEnabled ? Colors.white : Colors.black,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
 }
+
+/// Disclaimer: I ain't writing any shitty docs for the code, despite knowing I am gonna forget what I wrote.
