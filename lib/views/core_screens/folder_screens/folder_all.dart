@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
+
+import 'package:path/path.dart' as path;
 
 class FolderAll extends StatefulWidget {
   const FolderAll({super.key});
@@ -12,14 +16,20 @@ class FolderAll extends StatefulWidget {
 
 class _FolderAllState extends State<FolderAll> {
   final TextEditingController searchBarController = TextEditingController();
+  final Box hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  final List<Map<String, String>> folders = [];
+
   late bool anyFilesPresent = true;
   late bool isRootDirectorySelected = false;
   late String selectedRootDirectoryPath = '';
+  late String rootDirectory = hiveBox.get('selectedRootDirectoryPath') ?? '';
+  late List<Map<String, String>> folderList = [];
 
   @override
   void initState() {
     super.initState();
     _loadRootDirectoryPath();
+    getDirectoryFileCounts(selectedRootDirectoryPath);
   }
 
   Future<void> _loadRootDirectoryPath() async {
@@ -32,6 +42,73 @@ class _FolderAllState extends State<FolderAll> {
         isRootDirectorySelected = true;
       }
     });
+  }
+
+  Future<void> getDirectoryFileCounts(String directoryPath) async {
+    if (directoryPath.isEmpty) {
+      setState(() {
+        folderList = [];
+      });
+      return;
+    }
+
+    final Directory rootDir = Directory(directoryPath);
+
+    if (!await rootDir.exists()) {
+      throw DirectoryNotFoundException('Directory does not exist: ${rootDir.path}');
+    }
+
+    List<Map<String, String>> result = [];
+    int totalRootFiles = 0;
+
+    try {
+      List<FileSystemEntity> entities = await rootDir.list().toList();
+
+      // Count files directly in the root directory
+      for (var entity in entities) {
+        if (entity is File) {
+          totalRootFiles++;
+        }
+      }
+
+      List<Directory> directories = entities.whereType<Directory>().toList();
+
+      for (var directory in directories) {
+        String folderName = path.basename(directory.path);
+        int fileCount = 0;
+
+        await for (var entity in directory.list()) {
+          if (entity is File) {
+            fileCount++;
+          }
+        }
+
+        result.add({
+          'name': folderName,
+          'files': '$fileCount files'
+        });
+      }
+
+      setState(() {
+        folderList = result;
+        folders.clear();
+        folders.addAll(result);
+
+        if (totalRootFiles > 0) {
+          folders.insert(0, {
+            'name': 'Root',
+            'files': '$totalRootFiles files'
+          });
+        }
+      });
+
+      debugPrint('Root directory contains $totalRootFiles files');
+      for (var folder in result) {
+        debugPrint('${folder['name']}: ${folder['files']}');
+      }
+    } catch (e) {
+      throw Exception('Error scanning directories: $e');
+    }
   }
 
   @override
@@ -57,7 +134,24 @@ class _FolderAllState extends State<FolderAll> {
                       Row(
                         children: [
                           ElevatedButton(
-                            onPressed: () async {},
+                            onPressed: () async {
+                              // what's the plan here?!
+                              // lowk get the file path, and move to the root directory
+                              // list the folders under the root directory, idk how! ===> P0
+                              // I can probably add a file explorer section somewhere on the screen
+                              // also gotta keep track of the recently added datasets, will show max 4-5.
+                              FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                dialogTitle: 'Select dataset(s)',
+                                allowMultiple: true,
+                                type: FileType.custom,
+                                allowedExtensions: ["json", "csv", "xlsx", "xls"],
+                                lockParentWindow: true,
+                              );
+                              if (result != null) {
+                                File file = File(result.files.single.path!);
+                                debugPrint(file.path);
+                              }
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue.shade600,
                               foregroundColor: Colors.white,
@@ -90,7 +184,8 @@ class _FolderAllState extends State<FolderAll> {
                         ],
                       ),
                       const SizedBox(height: 12.0),
-                      _buildFoldersSection(),
+                      if (folders.isNotEmpty)
+                        _buildFoldersSection(),
                       _buildUploadedDatasetsList(
                         filesMetaData: [
                           {
@@ -268,112 +363,120 @@ class _FolderAllState extends State<FolderAll> {
                 ),
               ],
             ),
-            child: ListView.separated(
-              physics: ClampingScrollPhysics(),
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              itemCount: filesMetaData.length,
-              separatorBuilder:
-                  (context, index) =>
-                      Divider(color: isDarkMode ? Colors.grey[800] : Colors.grey[200], height: 1),
-              itemBuilder: (context, index) {
-                final fileData = filesMetaData[index];
-                return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
-                    border:
-                        index == filesMetaData.length - 1
-                            ? Border(bottom: BorderSide(color: Colors.transparent))
-                            : null,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _getFileIcon(fileData['fileType'] ?? ''),
-                        size: 24,
-                        color: _getFileColor(fileData['fileType'] ?? ''),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          fileData['fileName'] ?? '',
-                          style: TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                          ),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification.depth == 0) {
+                  return true;
+                }
+                return false;
+              },
+              child: ListView.separated(
+                physics: ClampingScrollPhysics(),
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: filesMetaData.length,
+                separatorBuilder:
+                    (context, index) =>
+                        Divider(color: isDarkMode ? Colors.grey[800] : Colors.grey[200], height: 1),
+                itemBuilder: (context, index) {
+                  final fileData = filesMetaData[index];
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+                      border:
+                          index == filesMetaData.length - 1
+                              ? Border(bottom: BorderSide(color: Colors.transparent))
+                              : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _getFileIcon(fileData['fileType'] ?? ''),
+                          size: 24,
+                          color: _getFileColor(fileData['fileType'] ?? ''),
                         ),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                          decoration: BoxDecoration(
-                            color: _getFileColor(
-                              fileData['fileType'] ?? '',
-                            ).withValues(alpha: isDarkMode ? 0.2 : 0.1),
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
                           child: Text(
-                            fileData['fileType'] ?? '',
-                            textAlign: TextAlign.center,
+                            fileData['fileName'] ?? '',
                             style: TextStyle(
-                              fontSize: 14.0,
-                              color: _getFileColor(fileData['fileType'] ?? ''),
-                              fontWeight: FontWeight.w600,
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: Text(
-                          fileData['size'] ?? '',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        Expanded(
+                          flex: 1,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                            decoration: BoxDecoration(
+                              color: _getFileColor(
+                                fileData['fileType'] ?? '',
+                              ).withValues(alpha: isDarkMode ? 0.2 : 0.1),
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            child: Text(
+                              fileData['fileType'] ?? '',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14.0,
+                                color: _getFileColor(fileData['fileType'] ?? ''),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          fileData['modified'] ?? '',
-                          style: TextStyle(
-                            fontSize: 14.0,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            fileData['size'] ?? '',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          fileData['starred'] == 'true' ? Icons.star : Icons.star_border,
-                          size: 20,
-                          color:
-                              fileData['starred'] == 'true'
-                                  ? Colors.amber
-                                  : (isDarkMode ? Colors.grey[400] : null),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            fileData['modified'] ?? '',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            ),
+                          ),
                         ),
-                        onPressed: () {},
-                        tooltip: "Add to favorites",
-                        splashRadius: 20,
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.more_vert,
-                          size: 20,
-                          color: isDarkMode ? Colors.grey[400] : null,
+                        IconButton(
+                          icon: Icon(
+                            fileData['starred'] == 'true' ? Icons.star : Icons.star_border,
+                            size: 20,
+                            color:
+                                fileData['starred'] == 'true'
+                                    ? Colors.amber
+                                    : (isDarkMode ? Colors.grey[400] : null),
+                          ),
+                          onPressed: () {},
+                          tooltip: "Add to favorites",
+                          splashRadius: 20,
                         ),
-                        onPressed: () {},
-                        tooltip: "More options",
-                        splashRadius: 20,
-                      ),
-                    ],
-                  ),
-                );
-              },
+                        IconButton(
+                          icon: Icon(
+                            Icons.more_vert,
+                            size: 20,
+                            color: isDarkMode ? Colors.grey[400] : null,
+                          ),
+                          onPressed: () {},
+                          tooltip: "More options",
+                          splashRadius: 20,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -409,12 +512,7 @@ class _FolderAllState extends State<FolderAll> {
 
   Widget _buildFoldersSection() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final folders = [
-      {'name': 'Training Data', 'files': '24 files'},
-      {'name': 'Testing Sets', 'files': '12 files'},
-      {'name': 'Analytics', 'files': '8 files'},
-      {'name': 'Archived', 'files': '36 files'},
-    ];
+    final ScrollController folderScrollController = ScrollController();
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.89,
@@ -434,19 +532,43 @@ class _FolderAllState extends State<FolderAll> {
             ),
           ),
 
-          GridView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              childAspectRatio: 1.5,
-              crossAxisSpacing: 16.0,
-              mainAxisSpacing: 16.0,
+          SizedBox(
+            height: 180,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (scrollNotification) {
+                  if (scrollNotification is ScrollStartNotification ||
+                      scrollNotification is ScrollUpdateNotification ||
+                      scrollNotification is ScrollEndNotification) {
+                    return true;
+                  }
+                  return false;
+                },
+                child: Scrollbar(
+                  controller: folderScrollController,
+                  thickness: 6,
+                  radius: const Radius.circular(8),
+                  thumbVisibility: true,
+                  interactive: true,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    controller: folderScrollController,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: folders.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                        child: SizedBox(
+                          width: 280,
+                          child: _buildFolderCard(folders[index], isDarkMode),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
-            itemCount: folders.length,
-            itemBuilder: (context, index) {
-              return _buildFolderCard(folders[index], isDarkMode);
-            },
           ),
         ],
       ),
@@ -514,7 +636,9 @@ class _FolderAllState extends State<FolderAll> {
               ],
             ),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
                 foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
@@ -751,4 +875,12 @@ class _FolderAllState extends State<FolderAll> {
       debugPrint('Error picking files: $e');
     }
   }
+}
+
+class DirectoryNotFoundException implements Exception {
+  final String message;
+  DirectoryNotFoundException(this.message);
+
+  @override
+  String toString() => message;
 }
