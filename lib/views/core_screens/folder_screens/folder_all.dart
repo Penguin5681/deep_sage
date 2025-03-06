@@ -50,7 +50,45 @@ class _FolderAllState extends State<FolderAll> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(padding: const EdgeInsets.only(top: 8.0), child: _buildSearchBar()),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
+                        child: _buildSearchBar(),
+                      ),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () async {},
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            ),
+                            child: const Text(
+                              "Upload Dataset",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          OutlinedButton(
+                            onPressed: () {},
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.blue.shade600, width: 2),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              foregroundColor: Colors.blue.shade600,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            ),
+                            child: const Text(
+                              "Search Public Datasets",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 12.0),
                       _buildFoldersSection(),
                       _buildUploadedDatasetsList(
@@ -231,6 +269,7 @@ class _FolderAllState extends State<FolderAll> {
               ],
             ),
             child: ListView.separated(
+              physics: ClampingScrollPhysics(),
               padding: EdgeInsets.zero,
               shrinkWrap: true,
               itemCount: filesMetaData.length,
@@ -379,7 +418,7 @@ class _FolderAllState extends State<FolderAll> {
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.89,
-      margin: const EdgeInsets.only(top: 16.0, bottom: 32.0),
+      margin: const EdgeInsets.only(top: 16.0, bottom: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
