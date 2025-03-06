@@ -213,6 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onKeyEvent: handleKeyEvent,
                 focusNode: focusNode,
                 child: SingleChildScrollView(
+                  physics: BouncingScrollPhysics(),
                   controller: rootScrollController,
                   child: Center(
                     child: Container(
