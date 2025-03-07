@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:deep_sage/core/services/directory_path_service.dart';
+import 'package:deep_sage/views/core_screens/explorer/file_explorer_view.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -27,6 +28,9 @@ class _FolderAllState extends State<FolderAll> {
   late String rootDirectory = hiveBox.get('selectedRootDirectoryPath') ?? '';
   late List<Map<String, String>> folderList = [];
   late StreamSubscription<String> pathSubscription;
+
+  bool isExplorerVisible = false;
+  String selectedFolderForExplorer = '';
 
   @override
   void initState() {
@@ -106,10 +110,6 @@ class _FolderAllState extends State<FolderAll> {
         folderList = result;
         folders.clear();
         folders.addAll(result);
-
-        if (totalRootFiles > 0) {
-          folders.insert(0, {'name': 'Root', 'files': '$totalRootFiles files'});
-        }
       });
 
       setState(() {
@@ -134,140 +134,199 @@ class _FolderAllState extends State<FolderAll> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: SingleChildScrollView(
-          physics: BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.only(left: 35.0, top: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (anyFilesPresent)
-                  Column(
+      body: Row(
+        children: [
+          if (isExplorerVisible)
+            Container(
+              width: MediaQuery.of(context).size.width * 0.25,
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Theme.of(context).dividerColor, width: 1.0),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    color: Theme.of(context).cardColor,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          selectedFolderForExplorer,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              isExplorerVisible = false;
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          icon: Icon(Icons.close),
+                          constraints: BoxConstraints(),
+                          iconSize: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: FileExplorerView(
+                      initialPath: path.join(selectedRootDirectoryPath, selectedFolderForExplorer),
+                      onClose: () {
+                        setState(() {
+                          isExplorerVisible = false;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                physics: BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 35.0, top: 16.0),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
-                        child: _buildSearchBar(),
-                      ),
-                      Row(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () async {
-                              // what's the plan here?!
-                              // lowk get the file path, and move to the root directory
-                              // list the folders under the root directory, idk how! ===> P0
-                              // I can probably add a file explorer section somewhere on the screen
-                              // also gotta keep track of the recently added datasets, will show max 4-5.
-                              FilePickerResult? result = await FilePicker.platform.pickFiles(
-                                dialogTitle: 'Select dataset(s)',
-                                allowMultiple: true,
-                                type: FileType.custom,
-                                allowedExtensions: ["json", "csv", "xlsx", "xls"],
-                                lockParentWindow: true,
-                              );
-                              if (result != null) {
-                                File file = File(result.files.single.path!);
-                                debugPrint(file.path);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade600,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      if (anyFilesPresent)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
+                              child: _buildSearchBar(),
                             ),
-                            child: const Text(
-                              "Upload Dataset",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    // what's the plan here?!
+                                    // lowk get the file path, and move to the root directory
+                                    // list the folders under the root directory, idk how! ===> P0
+                                    // I can probably add a file explorer section somewhere on the screen
+                                    // also gotta keep track of the recently added datasets, will show max 4-5.
+                                    FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                      dialogTitle: 'Select dataset(s)',
+                                      allowMultiple: true,
+                                      type: FileType.custom,
+                                      allowedExtensions: ["json", "csv", "xlsx", "xls"],
+                                      lockParentWindow: true,
+                                    );
+                                    if (result != null) {
+                                      File file = File(result.files.single.path!);
+                                      debugPrint(file.path);
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade600,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Upload Dataset",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                OutlinedButton(
+                                  onPressed: () {},
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    foregroundColor: Colors.blue.shade600,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Search Public Datasets",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          OutlinedButton(
-                            onPressed: () {},
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.blue.shade600, width: 2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              foregroundColor: Colors.blue.shade600,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            const SizedBox(height: 12.0),
+                            if (folders.isNotEmpty) _buildFoldersSection(),
+                            _buildUploadedDatasetsList(
+                              filesMetaData: [
+                                {
+                                  'fileName': 'mnist.csv',
+                                  'fileType': 'CSV',
+                                  'size': '24 MB',
+                                  'modified': '1 hour ago',
+                                  'starred': 'false',
+                                },
+                                {
+                                  'fileName': 'customer_data.json',
+                                  'fileType': 'JSON',
+                                  'size': '56 KB',
+                                  'modified': 'Yesterday',
+                                  'starred': 'true',
+                                },
+                                {
+                                  'fileName': 'sales_report.xlsx',
+                                  'fileType': 'XLSX',
+                                  'size': '2.3 MB',
+                                  'modified': 'Last week',
+                                  'starred': 'false',
+                                },
+                                {
+                                  'fileName': 'mnist.csv',
+                                  'fileType': 'CSV',
+                                  'size': '24 MB',
+                                  'modified': '1 hour ago',
+                                  'starred': 'false',
+                                },
+                                {
+                                  'fileName': 'customer_data.json',
+                                  'fileType': 'JSON',
+                                  'size': '56 KB',
+                                  'modified': 'Yesterday',
+                                  'starred': 'true',
+                                },
+                                {
+                                  'fileName': 'sales_report.xlsx',
+                                  'fileType': 'XLSX',
+                                  'size': '2.3 MB',
+                                  'modified': 'Last week',
+                                  'starred': 'false',
+                                },
+                              ],
                             ),
-                            child: const Text(
-                              "Search Public Datasets",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12.0),
-                      if (folders.isNotEmpty) _buildFoldersSection(),
-                      _buildUploadedDatasetsList(
-                        filesMetaData: [
-                          {
-                            'fileName': 'mnist.csv',
-                            'fileType': 'CSV',
-                            'size': '24 MB',
-                            'modified': '1 hour ago',
-                            'starred': 'false',
+                          ],
+                        ),
+                      if (!anyFilesPresent)
+                        _buildPlaceholder(
+                          onUploadClicked: () {
+                            if (!isRootDirectorySelected) {
+                              _showRootDirectoryDialog(context);
+                            } else {
+                              _uploadFiles();
+                            }
                           },
-                          {
-                            'fileName': 'customer_data.json',
-                            'fileType': 'JSON',
-                            'size': '56 KB',
-                            'modified': 'Yesterday',
-                            'starred': 'true',
-                          },
-                          {
-                            'fileName': 'sales_report.xlsx',
-                            'fileType': 'XLSX',
-                            'size': '2.3 MB',
-                            'modified': 'Last week',
-                            'starred': 'false',
-                          },
-                          {
-                            'fileName': 'mnist.csv',
-                            'fileType': 'CSV',
-                            'size': '24 MB',
-                            'modified': '1 hour ago',
-                            'starred': 'false',
-                          },
-                          {
-                            'fileName': 'customer_data.json',
-                            'fileType': 'JSON',
-                            'size': '56 KB',
-                            'modified': 'Yesterday',
-                            'starred': 'true',
-                          },
-                          {
-                            'fileName': 'sales_report.xlsx',
-                            'fileType': 'XLSX',
-                            'size': '2.3 MB',
-                            'modified': 'Last week',
-                            'starred': 'false',
-                          },
-                        ],
-                      ),
+                          onImportClicked: () {},
+                        ),
                     ],
                   ),
-                if (!anyFilesPresent)
-                  _buildPlaceholder(
-                    onUploadClicked: () {
-                      if (!isRootDirectorySelected) {
-                        _showRootDirectoryDialog(context);
-                      } else {
-                        _uploadFiles();
-                      }
-                    },
-                    onImportClicked: () {},
-                  ),
-              ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -655,7 +714,9 @@ class _FolderAllState extends State<FolderAll> {
               ],
             ),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                openFileExplorer(folder['name']!);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
                 foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
@@ -676,6 +737,26 @@ class _FolderAllState extends State<FolderAll> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void openFileExplorer(String folderName) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: EdgeInsets.all(32),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.7,
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: FileExplorerView(
+            initialPath: path.join(selectedRootDirectoryPath, folderName),
+            onClose: () => Navigator.pop(context),
+          ),
         ),
       ),
     );
