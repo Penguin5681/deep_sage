@@ -7,6 +7,12 @@ class AppTheme {
     primaryColor: Colors.white,
     scaffoldBackgroundColor: Colors.white,
     brightness: Brightness.light,
+    cardColor: Colors.grey[100],
+    cardTheme: CardTheme(
+      color: Colors.grey[100],
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+    ),
     textTheme: const TextTheme(
       bodyLarge: TextStyle(
         color: Colors.black,
@@ -99,6 +105,12 @@ class AppTheme {
     primaryColor: Colors.black,
     scaffoldBackgroundColor: Colors.grey[900],
     brightness: Brightness.dark,
+    cardColor: Color(0xFF2A2D37),
+    cardTheme: CardTheme(
+      color: Color(0xFF2A2D37),
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+    ),
     textTheme: const TextTheme(
       bodyLarge: TextStyle(
         color: Colors.white,
