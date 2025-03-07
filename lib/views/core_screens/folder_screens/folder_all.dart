@@ -28,6 +28,7 @@ class _FolderAllState extends State<FolderAll> {
   late String rootDirectory = hiveBox.get('selectedRootDirectoryPath') ?? '';
   late List<Map<String, String>> folderList = [];
   late StreamSubscription<String> pathSubscription;
+  StreamSubscription<FileSystemEvent>? directoryWatcher;
 
   bool isExplorerVisible = false;
   String selectedFolderForExplorer = '';
@@ -38,6 +39,7 @@ class _FolderAllState extends State<FolderAll> {
     _loadRootDirectoryPath().then((_) {
       if (selectedRootDirectoryPath.isNotEmpty) {
         getDirectoryFileCounts(selectedRootDirectoryPath);
+        setupDirectoryWatcher(selectedRootDirectoryPath);
       }
     });
 
@@ -48,8 +50,28 @@ class _FolderAllState extends State<FolderAll> {
           isRootDirectorySelected = newPath.isNotEmpty;
         });
         getDirectoryFileCounts(newPath);
+        setupDirectoryWatcher(newPath);
       }
     });
+  }
+
+  void setupDirectoryWatcher(String dirPath) {
+    directoryWatcher?.cancel();
+
+    if (dirPath.isEmpty) return;
+
+    try {
+      directoryWatcher = Directory(dirPath).watch(recursive: false).listen((event) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            getDirectoryFileCounts(dirPath);
+            debugPrint('Something happened in the root: ${event.path} - ${event.type}');
+          }
+        });
+      });
+    } catch (ex) {
+      debugPrint('setupDirectoryWatcher(): $ex');
+    }
   }
 
   Future<void> _loadRootDirectoryPath() async {
@@ -127,6 +149,7 @@ class _FolderAllState extends State<FolderAll> {
 
   @override
   void dispose() {
+    directoryWatcher?.cancel();
     pathSubscription.cancel();
     super.dispose();
   }
@@ -600,13 +623,17 @@ class _FolderAllState extends State<FolderAll> {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(
-              'Folders',
-              style: TextStyle(
-                fontSize: 22.0,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
+            child: Row(
+              children: [
+                Text(
+                  'Folders',
+                  style: TextStyle(
+                    fontSize: 22.0,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -746,19 +773,20 @@ class _FolderAllState extends State<FolderAll> {
     showDialog(
       context: context,
       barrierColor: Colors.black54,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: EdgeInsets.all(32),
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.7,
-          height: MediaQuery.of(context).size.height * 0.7,
-          child: FileExplorerView(
-            initialPath: path.join(selectedRootDirectoryPath, folderName),
-            onClose: () => Navigator.pop(context),
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: EdgeInsets.all(32),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.7,
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: FileExplorerView(
+                initialPath: path.join(selectedRootDirectoryPath, folderName),
+                onClose: () => Navigator.pop(context),
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
