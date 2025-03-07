@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:deep_sage/core/services/directory_path_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -24,12 +26,26 @@ class _FolderAllState extends State<FolderAll> {
   late String selectedRootDirectoryPath = '';
   late String rootDirectory = hiveBox.get('selectedRootDirectoryPath') ?? '';
   late List<Map<String, String>> folderList = [];
+  late StreamSubscription<String> pathSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadRootDirectoryPath();
-    getDirectoryFileCounts(selectedRootDirectoryPath);
+    _loadRootDirectoryPath().then((_) {
+      if (selectedRootDirectoryPath.isNotEmpty) {
+        getDirectoryFileCounts(selectedRootDirectoryPath);
+      }
+    });
+
+    pathSubscription = DirectoryPathService().pathStream.listen((newPath) {
+      if (newPath != selectedRootDirectoryPath) {
+        setState(() {
+          selectedRootDirectoryPath = newPath;
+          isRootDirectorySelected = newPath.isNotEmpty;
+        });
+        getDirectoryFileCounts(newPath);
+      }
+    });
   }
 
   Future<void> _loadRootDirectoryPath() async {
@@ -48,6 +64,7 @@ class _FolderAllState extends State<FolderAll> {
     if (directoryPath.isEmpty) {
       setState(() {
         folderList = [];
+        folders.clear();
       });
       return;
     }
@@ -64,7 +81,6 @@ class _FolderAllState extends State<FolderAll> {
     try {
       List<FileSystemEntity> entities = await rootDir.list().toList();
 
-      // Count files directly in the root directory
       for (var entity in entities) {
         if (entity is File) {
           totalRootFiles++;
@@ -83,10 +99,7 @@ class _FolderAllState extends State<FolderAll> {
           }
         }
 
-        result.add({
-          'name': folderName,
-          'files': '$fileCount files'
-        });
+        result.add({'name': folderName, 'files': '$fileCount files'});
       }
 
       setState(() {
@@ -95,11 +108,12 @@ class _FolderAllState extends State<FolderAll> {
         folders.addAll(result);
 
         if (totalRootFiles > 0) {
-          folders.insert(0, {
-            'name': 'Root',
-            'files': '$totalRootFiles files'
-          });
+          folders.insert(0, {'name': 'Root', 'files': '$totalRootFiles files'});
         }
+      });
+
+      setState(() {
+        anyFilesPresent = folders.isNotEmpty || totalRootFiles > 0;
       });
 
       debugPrint('Root directory contains $totalRootFiles files');
@@ -109,6 +123,12 @@ class _FolderAllState extends State<FolderAll> {
     } catch (e) {
       throw Exception('Error scanning directories: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    pathSubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -184,8 +204,7 @@ class _FolderAllState extends State<FolderAll> {
                         ],
                       ),
                       const SizedBox(height: 12.0),
-                      if (folders.isNotEmpty)
-                        _buildFoldersSection(),
+                      if (folders.isNotEmpty) _buildFoldersSection(),
                       _buildUploadedDatasetsList(
                         filesMetaData: [
                           {
@@ -636,9 +655,7 @@ class _FolderAllState extends State<FolderAll> {
               ],
             ),
             ElevatedButton(
-              onPressed: () {
-
-              },
+              onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
                 foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
@@ -879,6 +896,7 @@ class _FolderAllState extends State<FolderAll> {
 
 class DirectoryNotFoundException implements Exception {
   final String message;
+
   DirectoryNotFoundException(this.message);
 
   @override
