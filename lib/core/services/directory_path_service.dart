@@ -1,7 +1,8 @@
 import 'dart:async';
 
 class DirectoryPathService {
-  static final DirectoryPathService _instance = DirectoryPathService._internal();
+  static final DirectoryPathService _instance =
+      DirectoryPathService._internal();
 
   factory DirectoryPathService() {
     return _instance;
