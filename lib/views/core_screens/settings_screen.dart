@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/directory_path_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -869,6 +870,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                 'selectedRootDirectoryPath',
                                                 selectedDir,
                                               );
+
+                                              DirectoryPathService().notifyPathChange(selectedDir);
                                             }
                                           },
                                           child: Icon(
