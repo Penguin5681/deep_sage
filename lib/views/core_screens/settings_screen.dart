@@ -133,8 +133,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         debugPrint('Error occurred while choosing the def directory: $ex');
       }
     }
-
   }
+
+  // what are we tryna do here?
+  // i'll also grab the root directory name and put it to hive as well
+  // in case the user wants to select a directory as the root folder. then we'll replace the root name
 
   Future<String> _createDefaultRootIfRootNotSelected() async {
     String defaultPath;
@@ -144,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else if (Platform.isLinux || Platform.isMacOS) {
       defaultPath = path.join(Platform.environment['HOME']!, 'deep_sage_root');
     } else {
-      throw UnsupportedError('Platform not support?. Bruh how did we get here??');
+      throw UnsupportedError('Platform not supported?. Bruh how did we get here??');
     }
     
     try {
@@ -757,7 +760,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                 dotenv.env['API_HIVE_BOX_NAME']!,
                                               );
                                               hiveBox.put('selectedRootDirectoryPath', selectedDir);
-
                                               DirectoryPathService().notifyPathChange(selectedDir);
                                             }
                                           },
