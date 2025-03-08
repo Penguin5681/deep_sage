@@ -105,8 +105,6 @@ class DevFAB extends StatelessWidget {
                 debugPrint('Kaggle Username: ${userApiData.kaggleUserName}');
                 debugPrint('Item 2:');
                 debugPrint('Kaggle API Key: ${userApiData.kaggleApiKey}');
-                debugPrint('Item 3:');
-                debugPrint('HF Token: ${userApiData.hfToken}');
               }
             }
           },

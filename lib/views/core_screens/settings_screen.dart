@@ -30,20 +30,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
   final kaggleUsernameNotFoundTag = 'kaggle username not found';
   final kaggleApiKeyNotFoundTag = 'kaggle key not found';
-  final hfTokenNotFoundTag = 'hf token not found';
 
   late FocusNode kaggleUsernameInputFocus = FocusNode();
   late FocusNode kaggleApiInputFocus = FocusNode();
   late FocusNode hfTokenInputFocus = FocusNode();
   late bool isKaggleApiCredsSaved = false;
-  late bool isHfTokenSaved = false;
   late bool isRootDirectorySelected = false;
   late String selectedRootDirectoryPath = '';
   late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
 
   final TextEditingController kaggleUsernameController = TextEditingController();
   final TextEditingController kaggleApiInputController = TextEditingController();
-  final TextEditingController huggingFaceApiInputController = TextEditingController();
   final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
   Future<void> getDownloadsDirectory() async {
@@ -88,8 +85,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String get kaggleKey => getUserApi()?.kaggleApiKey ?? '';
 
-  String get hfToken => getUserApi()?.hfToken ?? '';
-
   Map<String, dynamic> isAnyUserApiDataSaved() {
     final userApi = getUserApi();
     if (userApi == null) {
@@ -100,8 +95,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return {"result": kaggleUsernameNotFoundTag};
     } else if (userApi.kaggleApiKey.isEmpty) {
       return {"result": kaggleApiKeyNotFoundTag};
-    } else if (userApi.hfToken.isEmpty) {
-      return {"result": hfTokenNotFoundTag};
     }
 
     return {"result": true};
@@ -923,7 +916,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {},
               icon: Icon(Icons.help),
               tooltip:
-                  "Kaggle Username and Kaggle Api are\nrequired to conduct search using kaggle.\nIf not provided the default search provider would be hugging face",
+                  "Kaggle Username and Kaggle Api are\nrequired to conduct search using kaggle",
             ),
           ],
         ),
@@ -949,30 +942,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             obscureText: true,
           ),
 
-        if (hfToken.isEmpty)
-          _buildSingleCredentialInput(
-            title: 'Hugging Face Token',
-            hintText: 'Enter your Hugging Face API key',
-            controller: huggingFaceApiInputController,
-            focusNode: hfTokenInputFocus,
-            tooltip: "Optional: hf token will only be used to download private datasets",
-            obscureText: true,
-          ),
-
-        if (kaggleUsername.isEmpty || kaggleKey.isEmpty || hfToken.isEmpty)
+        if (kaggleUsername.isEmpty || kaggleKey.isEmpty)
           Center(
             child: ElevatedButton.icon(
               onPressed: () {
                 final hiveBox = Hive.box(hiveApiBoxName!);
 
                 UserApi existingData =
-                    getUserApi() ?? UserApi(kaggleUserName: "", kaggleApiKey: "", hfToken: "");
+                    getUserApi() ?? UserApi(kaggleUserName: "", kaggleApiKey: "");
 
                 UserApi userApiData = UserApi(
-                  hfToken:
-                      huggingFaceApiInputController.text.isNotEmpty
-                          ? huggingFaceApiInputController.text
-                          : existingData.hfToken,
                   kaggleApiKey:
                       kaggleApiInputController.text.isNotEmpty
                           ? kaggleApiInputController.text
@@ -991,7 +970,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 kaggleUsernameController.clear();
                 kaggleApiInputController.clear();
-                huggingFaceApiInputController.clear();
 
                 setState(() {
                   credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
@@ -1020,7 +998,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     final updatedApi = UserApi(
                       kaggleUserName: "",
                       kaggleApiKey: "",
-                      hfToken: userApi.hfToken,
                     );
                     hiveBox.putAt(0, updatedApi);
                     setState(() {
@@ -1038,7 +1015,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       final updatedApi = UserApi(
                         kaggleUserName: "",
                         kaggleApiKey: "",
-                        hfToken: userApi.hfToken,
                       );
                       hiveBox.putAt(0, updatedApi);
                     }
@@ -1048,41 +1024,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SizedBox(height: 16),
             ],
-          ),
-
-        if (hfToken.isNotEmpty)
-          _buildSavedDataCard(
-            source: 'huggingface',
-            onRemovePress: () {
-              final userApi = getUserApi();
-              if (userApi != null) {
-                final updatedApi = UserApi(
-                  kaggleUserName: userApi.kaggleUserName,
-                  kaggleApiKey: userApi.kaggleApiKey,
-                  hfToken: "",
-                );
-                hiveBox.putAt(0, updatedApi);
-                setState(() {
-                  credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
-                });
-              }
-            },
-            onUpdatePress: () {
-              setState(() {
-                huggingFaceApiInputController.text = hfToken;
-
-                final userApi = getUserApi();
-                if (userApi != null) {
-                  final updatedApi = UserApi(
-                    kaggleUserName: userApi.kaggleUserName,
-                    kaggleApiKey: userApi.kaggleApiKey,
-                    hfToken: "",
-                  );
-                  hiveBox.putAt(0, updatedApi);
-                }
-                credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
-              });
-            },
           ),
       ],
     );
@@ -1094,7 +1035,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required Function() onRemovePress,
   }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final isTheSourceKaggle = source == 'kaggle';
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
@@ -1121,7 +1061,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             SizedBox(height: 20),
             Text(
-              !isTheSourceKaggle ? 'Hugging Face API' : 'Kaggle API',
+              'Kaggle API',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 21.0,
@@ -1129,9 +1069,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             Text(
-              !isTheSourceKaggle
-                  ? 'Your Hugging Face API credentials are saved'
-                  : "Your Kaggle API credentials are saved",
+              "Your Kaggle API credentials are saved",
               style: TextStyle(fontSize: 15.0, color: isDarkMode ? Colors.white : Colors.black),
             ),
             const SizedBox(height: 16),
