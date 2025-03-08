@@ -1,88 +1,151 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
-class PopularDatasets {
+import '../../models/user_api_model.dart';
+
+
+class PopularDataset {
   final String id;
   final String title;
-  final String addedTime;
-  final String fileType;
-  final String fileSize;
+  final String owner;
+  final String url;
+  final String description;
+  final String lastUpdated;
+  final String size;
+  final int downloadCount;
+  final int voteCount;
 
-  PopularDatasets({
+  String get addedTime => _formatDate(lastUpdated);
+  String get fileType => 'CSV';
+  String get fileSize => size;
+
+  PopularDataset({
     required this.id,
     required this.title,
-    required this.addedTime,
-    required this.fileType,
-    required this.fileSize,
+    required this.owner,
+    required this.url,
+    required this.description,
+    required this.lastUpdated,
+    required this.size,
+    required this.downloadCount,
+    required this.voteCount,
   });
 
-  factory PopularDatasets.fromJson(Map<String, dynamic> json) {
-    return PopularDatasets(
-      id: json['ref'] ?? json['id'] ?? '',
-      title: json['title'] ?? json['ref'] ?? json['id'] ?? 'Unnamed Dataset',
-      addedTime: _formatDate(
-        json['lastModified'] ?? json['lastUpdated'] ?? DateTime.now().toIso8601String(),
-      ),
-      fileType: json['fileType'] ?? _determineFileType(json),
-      fileSize: _formatFileSize(json['size'] ?? 0),
+  factory PopularDataset.fromJson(Map<String, dynamic> json) {
+    int _safeParseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) {
+        try {
+          return int.parse(value);
+        } catch (_) {
+          return 0;
+        }
+      }
+      return 0;
+    }
+
+    return PopularDataset(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'Unnamed Dataset',
+      owner: json['owner']?.toString() ?? 'Unknown',
+      url: json['url']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      lastUpdated: json['lastUpdated']?.toString() ?? '',
+      size: json['size']?.toString() ?? '0 B',
+      downloadCount: _safeParseInt(json['downloadCount']),
+      voteCount: _safeParseInt(json['voteCount']),
     );
   }
 
-  static String _formatDate(String date) {
-    DateTime parsedDate = DateTime.parse(date);
-    return "Added on ${parsedDate.day}/${parsedDate.month}/${parsedDate.year}";
-  }
+  static String _formatDate(String dateStr) {
+    if (dateStr.isEmpty) return "Date unknown";
 
-  static String _determineFileType(Map<String, dynamic> json) {
-    if (json.containsKey('fileTypes')) {
-      List<dynamic> fileTypes = json['fileTypes'];
-      if (fileTypes.isNotEmpty) {
-        return fileTypes.first.toString().toUpperCase();
+    try {
+      if (dateStr.contains("GMT")) {
+        final pattern = "EEE, dd MMM yyyy HH:mm:ss 'GMT'";
+        final date = DateFormat(pattern).parse(dateStr);
+        return "Added on ${date.day}/${date.month}/${date.year}";
+      } else {
+        final date = DateTime.parse(dateStr);
+        return "Added on ${date.day}/${date.month}/${date.year}";
       }
+    } catch (e) {
+      return "Added on ${dateStr.split(' ')[1]} ${dateStr.split(' ')[2]} ${dateStr.split(' ')[3]}";
     }
-    return 'CSV';
-  }
-
-  static String _formatFileSize(int size) {
-    if (size < 1024) return '$size B';
-    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(2)} KB';
-    if (size < 1024 * 1024 * 1024) return '${(size / (1024 * 1024)).toStringAsFixed(2)} MB';
-    return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }
 
 class PopularDatasetService {
-  final String baseUrl = dotenv.env['DEV_BASE_URL']!;
-  final String? kaggleUsername = dotenv.env['KAGGLE_USERNAME'];
-  final String? kaggleKey = dotenv.env['KAGGLE_KEY'];
+  final String baseUrl = dotenv.env['DEV_BASE_URL'] ?? '';
 
-  Future<List<PopularDatasets>> fetchPopularDatasets() async {
-    final uri = Uri.parse('$baseUrl/api/datasets/kaggle?limit=10&sort_by=votes');
-
-    final headers = <String, String>{};
-    if (kaggleUsername != null && kaggleKey != null) {
-      headers['X-Kaggle-Username'] = kaggleUsername!;
-      headers['X-Kaggle-Key'] = kaggleKey!;
-    } else {
-      debugPrint('No Kaggle credentials available');
-      return [];
+  UserApi? _getUserApi() {
+    try {
+      final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME'] ?? '');
+      if (hiveBox.isEmpty) return null;
+      return hiveBox.getAt(0) as UserApi;
+    } catch (e) {
+      return null;
     }
+  }
+
+  String get kaggleUsername => _getUserApi()?.kaggleUserName ?? '';
+  String get kaggleKey => _getUserApi()?.kaggleApiKey ?? '';
+
+  Future<List<PopularDataset>> fetchPopularDatasets({
+    int limit = 10,
+    String sortBy = 'votes',
+  }) async {
+    if (baseUrl.isEmpty) {
+      throw Exception('Base URL is not configured');
+    }
+
+    if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
+      throw Exception('Kaggle credentials not configured');
+    }
+
+    final uri = Uri.parse('$baseUrl/api/datasets/kaggle')
+        .replace(queryParameters: {
+      'limit': limit.toString(),
+      'sort_by': sortBy,
+    });
+
+    final headers = {
+      'X-Kaggle-Username': kaggleUsername,
+      'X-Kaggle-Key': kaggleKey,
+      'Content-Type': 'application/json',
+    };
 
     try {
       final response = await http.get(uri, headers: headers);
+
       if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return [];
+        }
+
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => PopularDatasets.fromJson(json)).toList();
+
+        if (data.isNotEmpty && data.first is Map && (data.first as Map).containsKey('error')) {
+          throw Exception('API error: ${data.first['error']}');
+        }
+
+        return data.map((json) => PopularDataset.fromJson(json)).toList();
       } else {
-        debugPrint('Failed to load datasets: ${response.statusCode}');
-        debugPrint('Response body: ${response.body}');
-        throw Exception('Failed to load datasets');
+        try {
+          final errorBody = json.decode(response.body);
+          if (errorBody is Map && errorBody.containsKey('error')) {
+            throw Exception('API error (${response.statusCode}): ${errorBody['error']}');
+          }
+        } catch (_) {}
+
+        throw Exception('Failed to load datasets (Status: ${response.statusCode})');
       }
     } catch (e) {
-      debugPrint('Error fetching datasets: $e');
-      throw Exception('Error fetching datasets: $e');
+      rethrow;
     }
   }
 }
