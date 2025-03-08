@@ -9,10 +9,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:googleapis/storage/v1.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import "package:googleapis_auth/auth_io.dart";
+import 'package:image/image.dart' as img;
 
 import '../../core/models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
@@ -48,8 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String bucketName;
   late String projectId;
   late String credentialsPath;
-  final TextEditingController kaggleUsernameController = TextEditingController();
-  final TextEditingController kaggleApiInputController = TextEditingController();
+  final TextEditingController kaggleUsernameController =
+      TextEditingController();
+  final TextEditingController kaggleApiInputController =
+      TextEditingController();
 
   final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
@@ -110,11 +114,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return {"result": true};
   }
 
-  Widget getIconForTheme({required String lightIcon, required String darkIcon, double size = 24}) {
+  Widget getIconForTheme({
+    required String lightIcon,
+    required String darkIcon,
+    double size = 24,
+  }) {
     return Builder(
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+        return Image.asset(
+          isDarkMode ? darkIcon : lightIcon,
+          width: size,
+          height: size,
+        );
       },
     );
   }
@@ -133,19 +145,168 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<AuthClient> obtainAuthenticatedClient() async {
     // this is not a very good way to do shit. remember
-    String serviceJson = await rootBundle.loadString('assets/deepsage-452909-06ec904ead63.json');
+    String serviceJson = await rootBundle.loadString(
+      'assets/deepsage-452909-06ec904ead63.json',
+    );
     final accountCredentials = ServiceAccountCredentials.fromJson(serviceJson);
 
-    var scopes = [StorageApi.devstorageFullControlScope, StorageApi.cloudPlatformScope];
+    var scopes = [
+      StorageApi.devstorageFullControlScope,
+      StorageApi.cloudPlatformScope,
+    ];
 
-    AuthClient client = await clientViaServiceAccount(accountCredentials, scopes);
+    AuthClient client = await clientViaServiceAccount(
+      accountCredentials,
+      scopes,
+    );
 
     return client;
   }
 
+  // Future<void> _pickAndUploadImage(BuildContext context) async {
+  //   // we go step by step
+  //   // pick pfp first
+  //   try {
+  //     FilePickerResult? result = await FilePicker.platform.pickFiles(
+  //       dialogTitle: 'Select a profile photo',
+  //       lockParentWindow: true,
+  //       allowMultiple: false,
+  //       allowedExtensions: ["jpg", "png", "jpeg"],
+  //       type: FileType.custom,
+  //     );
+
+  //     if (result != null && result.files.single.path != null) {
+  //       File file = File(result.files.single.path!);
+  //       setState(() {
+  //         uploadImagePath = file.path;
+  //       });
+  //       debugPrint("Selected file: ${file.path}");
+
+  //       // get an authenticated client
+  //       AuthClient gcpClient = await obtainAuthenticatedClient();
+  //       debugPrint('Authentication successful');
+
+  //       var storageClient = StorageApi(gcpClient);
+  //       var media = Media(file.openRead(), await file.length());
+
+  //       // file name is now jus curr time. will change it to supabase id
+  //       String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
+  //       debugPrint('Attempting to upload file as: $uniqueFileName');
+
+  //       try {
+  //         var object = await storageClient.objects.insert(
+  //           Object()..name = uniqueFileName,
+  //           'user_image_data',
+  //           uploadMedia: media,
+  //         );
+  //         debugPrint('Object uploaded successfully: ${object.name}');
+
+  //         try {
+  //           // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+  //           await storageClient.objectAccessControls.insert(
+  //             ObjectAccessControl()
+  //               ..entity = 'allUsers'
+  //               ..role = 'READER',
+  //             'user_image_data',
+  //             object.name!,
+  //           );
+  //           debugPrint('Public access set successfully');
+
+  //           // bucket name is now fixed
+  //           var uploadImageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
+  //           debugPrint('File available at: $uploadImageUrl');
+  //         } catch (aclError) {
+  //           debugPrint('Error setting public access: $aclError');
+  //         }
+  //       } catch (uploadError) {
+  //         debugPrint('Error uploading object: $uploadError');
+  //         if (uploadError is DetailedApiRequestError) {
+  //           debugPrint('Error status: ${uploadError.status}');
+  //           debugPrint('Error message: ${uploadError.message}');
+  //         }
+  //       }
+  //     } else {
+  //       debugPrint('No file selected');
+  //     }
+  //   } catch (ex) {
+  //     debugPrint('General error: $ex');
+  //   }
+  // }
+
+  //   Future<void> _pickAndUploadImage(BuildContext context) async {
+  //   try {
+  //     FilePickerResult? result = await FilePicker.platform.pickFiles(
+  //       dialogTitle: 'Select a profile photo',
+  //       lockParentWindow: true,
+  //       allowMultiple: false,
+  //       allowedExtensions: ["jpg", "png", "jpeg"],
+  //       type: FileType.custom,
+  //     );
+
+  //     if (result != null && result.files.single.path != null) {
+  //       File file = File(result.files.single.path!);
+  //       setState(() {
+  //         uploadImagePath = file.path;
+  //       });
+  //       debugPrint("Selected file: ${file.path}");
+
+  //       // get an authenticated client
+  //       AuthClient gcpClient = await obtainAuthenticatedClient();
+  //       debugPrint('Authentication successful');
+
+  //       var storageClient = StorageApi(gcpClient);
+  //       var media = Media(file.openRead(), await file.length());
+
+  //       // file name is now jus curr time. will change it to supabase id
+  //       String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
+  //       debugPrint('Attempting to upload file as: $uniqueFileName');
+
+  //       try {
+  //         var object = await storageClient.objects.insert(
+  //           Object()..name = uniqueFileName,
+  //           'user_image_data',
+  //           uploadMedia: media,
+  //         );
+  //         debugPrint('Object uploaded successfully: ${object.name}');
+
+  //         try {
+  //           // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+  //           await storageClient.objectAccessControls.insert(
+  //             ObjectAccessControl()
+  //               ..entity = 'allUsers'
+  //               ..role = 'READER',
+  //             'user_image_data',
+  //             object.name!,
+  //           );
+  //           debugPrint('Public access set successfully');
+
+  //           // bucket name is now fixed
+  //           var imageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
+  //           debugPrint('File available at: $imageUrl');
+
+  //           // Update the state with the new image URL
+  //           setState(() {
+  //             uploadImageUrl = imageUrl;
+  //           });
+  //         } catch (aclError) {
+  //           debugPrint('Error setting public access: $aclError');
+  //         }
+  //       } catch (uploadError) {
+  //         debugPrint('Error uploading object: $uploadError');
+  //         if (uploadError is DetailedApiRequestError) {
+  //           debugPrint('Error status: ${uploadError.status}');
+  //           debugPrint('Error message: ${uploadError.message}');
+  //         }
+  //       }
+  //     } else {
+  //       debugPrint('No file selected');
+  //     }
+  //   } catch (ex) {
+  //     debugPrint('General error: $ex');
+  //   }
+  // }
+
   Future<void> _pickAndUploadImage(BuildContext context) async {
-    // we go step by step
-    // pick pfp first
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         dialogTitle: 'Select a profile photo',
@@ -157,53 +318,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (result != null && result.files.single.path != null) {
         File file = File(result.files.single.path!);
-        setState(() {
-          uploadImagePath = file.path;
-        });
-        debugPrint("Selected file: ${file.path}");
 
-        // get an authenticated client
-        AuthClient gcpClient = await obtainAuthenticatedClient();
-        debugPrint('Authentication successful');
+        // Load the image
+        img.Image? image = img.decodeImage(await file.readAsBytes());
 
-        var storageClient = StorageApi(gcpClient);
-        var media = Media(file.openRead(), await file.length());
-
-        // file name is now jus curr time. will change it to supabase id
-        String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
-        debugPrint('Attempting to upload file as: $uniqueFileName');
-
-        try {
-          var object = await storageClient.objects.insert(
-            Object()..name = uniqueFileName,
-            'user_image_data',
-            uploadMedia: media,
+        if (image != null) {
+          // Crop the image to a square (centered)
+          int cropSize =
+              image.width < image.height ? image.width : image.height;
+          int offsetX = (image.width - cropSize) ~/ 2;
+          int offsetY = (image.height - cropSize) ~/ 2;
+          img.Image croppedImage = img.copyCrop(
+            image,
+            x: offsetX,
+            y: offsetY,
+            width: cropSize,
+            height: cropSize,
           );
-          debugPrint('Object uploaded successfully: ${object.name}');
+          
+          /*
+          This is an optional approach for resize image
+
+          // // Resize (optional: adjust size to 512x512 for consistency)
+          // img.Image resizedImage = img.copyResize(
+          //   croppedImage,
+          //   width: 512,
+          //   height: 512,
+          // );
+
+          We will also need this change lines of code in the below croppedFile as this ↓↓↓
+
+          // Save the cropped image to a temporary directory
+          Directory tempDir = await getTemporaryDirectory();
+          File croppedFile = File('${tempDir.path}/cropped_${file.uri.pathSegments.last}')
+          ..writeAsBytesSync(img.encodeJpg(resizedImage));
+
+          */
+
+          // Save the cropped image to a temporary file
+          File croppedFile = await File(
+            '${file.parent.path}/cropped_${file.uri.pathSegments.last}',
+          ).writeAsBytes(img.encodeJpg(croppedImage));
+
+          // Check file size limit (12MB)
+          if (croppedFile.lengthSync() > 12 * 1024 * 1024) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('File size should not be more than 12MB')),
+            );
+            return;
+          }
+
+          setState(() {
+            uploadImagePath = croppedFile.path;
+          });
+          debugPrint("Selected file: ${croppedFile.path}");
+
+          // get an authenticated client
+          AuthClient gcpClient = await obtainAuthenticatedClient();
+          debugPrint('Authentication successful');
+
+          var storageClient = StorageApi(gcpClient);
+          var media = Media(croppedFile.openRead(), await croppedFile.length());
+
+          // file name is now jus curr time. will change it to supabase id
+          String uniqueFileName =
+              '${DateTime.now().millisecondsSinceEpoch}_${path.basename(croppedFile.path)}';
+          debugPrint('Attempting to upload file as: $uniqueFileName');
 
           try {
-            // the role should be READER for us general public, when needed change it to WRITER or OWNER.
-            await storageClient.objectAccessControls.insert(
-              ObjectAccessControl()
-                ..entity = 'allUsers'
-                ..role = 'READER',
+            var object = await storageClient.objects.insert(
+              Object()..name = uniqueFileName,
               'user_image_data',
-              object.name!,
+              uploadMedia: media,
             );
-            debugPrint('Public access set successfully');
+            debugPrint('Object uploaded successfully: ${object.name}');
 
-            // bucket name is now fixed
-            var uploadImageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
-            debugPrint('File available at: $uploadImageUrl');
-          } catch (aclError) {
-            debugPrint('Error setting public access: $aclError');
+            try {
+              // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+              await storageClient.objectAccessControls.insert(
+                ObjectAccessControl()
+                  ..entity = 'allUsers'
+                  ..role = 'READER',
+                'user_image_data',
+                object.name!,
+              );
+              debugPrint('Public access set successfully');
+
+              // bucket name is now fixed
+              var imageUrl =
+                  'https://storage.googleapis.com/$bucketName/${object.name}';
+              debugPrint('File available at: $imageUrl');
+
+              // Update the state with the new image URL
+              setState(() {
+                uploadImageUrl = imageUrl;
+              });
+            } catch (aclError) {
+              debugPrint('Error setting public access: $aclError');
+            }
+          } catch (uploadError) {
+            debugPrint('Error uploading object: $uploadError');
+            if (uploadError is DetailedApiRequestError) {
+              debugPrint('Error status: ${uploadError.status}');
+              debugPrint('Error message: ${uploadError.message}');
+            }
           }
-        } catch (uploadError) {
-          debugPrint('Error uploading object: $uploadError');
-          if (uploadError is DetailedApiRequestError) {
-            debugPrint('Error status: ${uploadError.status}');
-            debugPrint('Error message: ${uploadError.message}');
-          }
+        } else {
+          debugPrint('Image decoding failed');
         }
       } else {
         debugPrint('No file selected');
@@ -322,7 +543,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
-                                        color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                        color:
+                                            isDarkModeEnabled
+                                                ? Colors.white
+                                                : Colors.black,
                                       ),
                                     ),
                                   ),
@@ -331,7 +555,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Icon(
                                   Icons.chevron_right,
                                   size: 18,
-                                  color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -339,7 +566,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                 ),
                               ],
@@ -352,16 +582,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
                           // Reduced spacing
                           // Profile card
                           Container(
-                            padding: const EdgeInsets.all(16), // Reduced padding
+                            padding: const EdgeInsets.all(
+                              16,
+                            ), // Reduced padding
                             decoration: BoxDecoration(
-                              color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100],
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Column(
@@ -372,7 +610,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     Icon(
                                       Icons.person_outline,
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[700],
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
@@ -380,7 +620,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                        color:
+                                            isDarkModeEnabled
+                                                ? Colors.white
+                                                : Colors.black,
                                       ),
                                     ),
                                   ],
@@ -389,7 +632,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Text(
                                   'Manage your account information and preferences',
                                   style: TextStyle(
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 12,
                                   ),
                                 ),
@@ -401,17 +647,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           // Profile picture
                           Row(
                             children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundImage:
+                              // TODO: Change the circle avatar into clip oval and use image cropper
+                              ClipOval(
+                                child:
                                     uploadImageUrl != null
-                                        ? NetworkImage(uploadImageUrl!)
-                                        : const AssetImage('assets/larry/larry.png')
-                                            as ImageProvider,
-                                // backgroundImage: const AssetImage(
-                                //   'assets/larry/larry.png',
-                                // ),
+                                        ? Image.network(
+                                          uploadImageUrl!,
+                                          width: 48,
+                                          height: 48,
+                                          fit: BoxFit.cover,
+                                        )
+                                        : Image.asset(
+                                          'assets/larry/larry.png',
+                                          width: 48,
+                                          height: 48,
+                                          fit: BoxFit.cover,
+                                        ),
                               ),
+                              // CircleAvatar(
+                              //   radius: 24,
+                              //   backgroundImage:
+                              //       uploadImageUrl != null
+                              //           ? NetworkImage(uploadImageUrl!)
+                              //           : const AssetImage('assets/larry/larry.png')
+                              //               as ImageProvider,
+                              //   // backgroundImage: const AssetImage(
+                              //   //   'assets/larry/larry.png',
+                              //   // ),
+                              // ),
                               const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,14 +684,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
                                     ),
                                   ),
                                   Text(
                                     'Change your profile photo',
                                     style: TextStyle(
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
                                       fontSize: 12,
                                     ),
                                   ),
@@ -438,7 +706,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               // TODO: Change the profile picture by clicking on the icon
                               IconButton(
                                 icon: Icon(Icons.edit),
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
                                 iconSize: 20,
                                 onPressed: () async {
                                   // alr, watch this.
@@ -455,14 +726,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
-                              color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100],
                               borderRadius: BorderRadius.circular(4),
                             ),
                             width: double.infinity,
@@ -470,7 +750,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             child: Text(
                               getDisplayName() ?? 'User',
                               style: TextStyle(
-                                color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.white
+                                        : Colors.black,
                               ),
                             ),
                           ),
@@ -482,7 +765,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -490,16 +776,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     // Keep it static for now
                                     'john.smith@example.com',
                                     style: TextStyle(
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
                                     ),
                                   ),
                                 ),
@@ -507,7 +802,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               const SizedBox(width: 8),
                               Icon(
                                 Icons.mail_outline,
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                               ),
                             ],
                           ),
@@ -522,11 +820,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                               ),
                               child: const Text(
                                 'Sign Out',
-                                style: TextStyle(fontSize: 12, color: Colors.white),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -538,7 +841,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -547,7 +853,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Icon(
                                 Icons.dark_mode_outlined,
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
                               ),
                               const SizedBox(width: 16),
                               Column(
@@ -558,14 +867,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
                                     ),
                                   ),
                                   Text(
                                     'Toggle between light and dark theme',
                                     style: TextStyle(
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
                                       fontSize: 12,
                                     ),
                                   ),
@@ -573,7 +887,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               const Spacer(),
                               Switch(
-                                value: Theme.of(context).brightness == Brightness.dark,
+                                value:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
                                 onChanged: (value) {
                                   setState(() {
                                     isDarkModeEnabled = value;
@@ -595,7 +911,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -649,7 +968,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -658,7 +980,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -666,13 +991,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4.0),
-                                    color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
                                   ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         defaultDownloadPath,
@@ -687,25 +1019,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         cursor: SystemMouseCursors.click,
                                         child: GestureDetector(
                                           onTap: () async {
-                                            String? selectedDir = await FilePicker.platform
+                                            String?
+                                            selectedDir = await FilePicker
+                                                .platform
                                                 .getDirectoryPath(
                                                   dialogTitle:
                                                       'Select the default download directory',
                                                 );
                                             if (selectedDir != null) {
                                               setState(() {
-                                                defaultDownloadPath = selectedDir;
+                                                defaultDownloadPath =
+                                                    selectedDir;
                                               });
 
                                               final hiveBox = Hive.box(
-                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                                dotenv
+                                                    .env['API_HIVE_BOX_NAME']!,
                                               );
-                                              hiveBox.put('downloadPath', selectedDir);
+                                              hiveBox.put(
+                                                'downloadPath',
+                                                selectedDir,
+                                              );
                                             }
                                           },
                                           child: Icon(
                                             Icons.folder_open_outlined,
-                                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                            color:
+                                                isDarkModeEnabled
+                                                    ? Colors.white
+                                                    : Colors.black,
                                             size: 18.0,
                                           ),
                                         ),
@@ -726,7 +1068,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(10.0),
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[800]
+                                              : Colors.grey[100],
                                     ),
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(
@@ -744,12 +1088,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   const SizedBox(width: 14.0),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Ask for location everytime',
                                         style: TextStyle(
-                                          color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                          color:
+                                              isDarkModeEnabled
+                                                  ? Colors.white
+                                                  : Colors.black,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -783,7 +1131,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 5),
@@ -792,7 +1143,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -800,13 +1154,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4.0),
-                                    color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
                                   ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         selectedRootDirectoryPath.isEmpty
@@ -823,26 +1184,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         cursor: SystemMouseCursors.click,
                                         child: GestureDetector(
                                           onTap: () async {
-                                            String? selectedDir = await FilePicker.platform
+                                            String?
+                                            selectedDir = await FilePicker
+                                                .platform
                                                 .getDirectoryPath(
-                                                  dialogTitle: 'Select root directory for datasets',
+                                                  dialogTitle:
+                                                      'Select root directory for datasets',
                                                 );
                                             if (selectedDir != null) {
                                               setState(() {
-                                                selectedRootDirectoryPath = selectedDir;
+                                                selectedRootDirectoryPath =
+                                                    selectedDir;
                                               });
 
                                               final hiveBox = Hive.box(
-                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                                dotenv
+                                                    .env['API_HIVE_BOX_NAME']!,
                                               );
-                                              hiveBox.put('selectedRootDirectoryPath', selectedDir);
+                                              hiveBox.put(
+                                                'selectedRootDirectoryPath',
+                                                selectedDir,
+                                              );
 
-                                              DirectoryPathService().notifyPathChange(selectedDir);
+                                              DirectoryPathService()
+                                                  .notifyPathChange(
+                                                    selectedDir,
+                                                  );
                                             }
                                           },
                                           child: Icon(
                                             Icons.folder_open_outlined,
-                                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                            color:
+                                                isDarkModeEnabled
+                                                    ? Colors.white
+                                                    : Colors.black,
                                             size: 18.0,
                                           ),
                                         ),
@@ -860,7 +1235,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isDarkModeEnabled ? Colors.white : Colors.black,
+                              color:
+                                  isDarkModeEnabled
+                                      ? Colors.white
+                                      : Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -870,7 +1248,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Icon(
                                 Icons.cleaning_services_outlined,
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
                               ),
                               const SizedBox(width: 16),
                               Column(
@@ -881,14 +1262,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
                                     ),
                                   ),
                                   Text(
                                     'Remove temporary files and cached data',
                                     style: TextStyle(
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
                                       fontSize: 12,
                                     ),
                                   ),
@@ -903,7 +1289,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   },
                                   child: Icon(
                                     Icons.delete_outline_rounded,
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                   ),
                                 ),
                               ),
@@ -916,7 +1305,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Icon(
                                 Icons.storage_rounded,
-                                color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                color:
+                                    isDarkModeEnabled
+                                        ? Colors.grey[400]
+                                        : Colors.grey[700],
                               ),
                               const SizedBox(width: 16),
                               Column(
@@ -927,14 +1319,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                      color:
+                                          isDarkModeEnabled
+                                              ? Colors.white
+                                              : Colors.black,
                                     ),
                                   ),
                                   Text(
                                     '2.4 GB of 5 GB used',
                                     style: TextStyle(
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[600],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
                                       fontSize: 12,
                                     ),
                                   ),
@@ -947,14 +1344,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     'Select',
                                     style: TextStyle(
                                       color:
-                                          isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                          isDarkModeEnabled
+                                              ? Colors.grey[400]
+                                              : Colors.grey[700],
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
                                   ),
                                   Icon(
                                     Icons.keyboard_arrow_down_sharp,
-                                    color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                 ],
                               ),
@@ -1066,7 +1468,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final hiveBox = Hive.box(hiveApiBoxName!);
 
                 UserApi existingData =
-                    getUserApi() ?? UserApi(kaggleUserName: "", kaggleApiKey: "");
+                    getUserApi() ??
+                    UserApi(kaggleUserName: "", kaggleApiKey: "");
 
                 UserApi userApiData = UserApi(
                   kaggleApiKey:
@@ -1095,7 +1498,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: const Icon(Icons.save, color: Colors.white),
               label: const Text('Save'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
               ),
@@ -1112,10 +1518,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onRemovePress: () {
                   final userApi = getUserApi();
                   if (userApi != null) {
-                    final updatedApi = UserApi(kaggleUserName: "", kaggleApiKey: "");
+                    final updatedApi = UserApi(
+                      kaggleUserName: "",
+                      kaggleApiKey: "",
+                    );
                     hiveBox.putAt(0, updatedApi);
                     setState(() {
-                      credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+                      credsSavedOrNotLetsFindOutResult =
+                          isAnyUserApiDataSaved();
                     });
                   }
                 },
@@ -1126,7 +1536,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     final userApi = getUserApi();
                     if (userApi != null) {
-                      final updatedApi = UserApi(kaggleUserName: "", kaggleApiKey: "");
+                      final updatedApi = UserApi(
+                        kaggleUserName: "",
+                        kaggleApiKey: "",
+                      );
                       hiveBox.putAt(0, updatedApi);
                     }
                     credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
@@ -1152,14 +1565,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(15.0),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 23.0, bottom: 23.0, left: 23.0, right: 100.0),
+        padding: const EdgeInsets.only(
+          top: 23.0,
+          bottom: 23.0,
+          left: 23.0,
+          right: 100.0,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(50),
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.grey : Colors.white,
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey
+                        : Colors.white,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(10.0),
@@ -1181,7 +1602,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             Text(
               "Your Kaggle API credentials are saved",
-              style: TextStyle(fontSize: 15.0, color: isDarkMode ? Colors.white : Colors.black),
+              style: TextStyle(
+                fontSize: 15.0,
+                color: isDarkMode ? Colors.white : Colors.black,
+              ),
             ),
             const SizedBox(height: 16),
             Row(
@@ -1190,8 +1614,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onPressed: onUpdatePress,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
                   ),
                   child: Text(
                     'Update',
@@ -1206,9 +1635,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ElevatedButton(
                   onPressed: onRemovePress,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isDarkMode ? Color(0xffb6b6b6) : Color(0xffeaeaea),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                    backgroundColor:
+                        isDarkMode ? Color(0xffb6b6b6) : Color(0xffeaeaea),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 15,
+                    ),
                   ),
                   child: Text(
                     'Remove',
@@ -1250,7 +1685,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 color: isDarkModeEnabled ? Colors.white : Colors.black,
               ),
             ),
-            IconButton(onPressed: () {}, icon: Icon(Icons.help), tooltip: tooltip),
+            IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.help),
+              tooltip: tooltip,
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -1265,12 +1704,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(4),
               borderSide: BorderSide(
-                color: isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
+                color:
+                    isDarkModeEnabled ? Colors.grey[700]! : Colors.grey[300]!,
               ),
             ),
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          style: TextStyle(color: isDarkModeEnabled ? Colors.white : Colors.black, fontSize: 12),
+          style: TextStyle(
+            color: isDarkModeEnabled ? Colors.white : Colors.black,
+            fontSize: 12,
+          ),
         ),
         const SizedBox(height: 16),
       ],
