@@ -37,7 +37,7 @@ class SuggestionService {
   Future<List<DatasetSuggestion>> getSuggestions({
     required String query,
     String source = 'kaggle',
-    int limit = 5,
+    int limit = 10,
   }) async {
     if (query.length < 2) {
       return [];
