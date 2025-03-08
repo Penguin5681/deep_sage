@@ -690,6 +690,7 @@ class _SearchScreenState extends State<SearchScreen>
               controller: tabController,
               children: const [
                 CategoryAll(),
+                // TODO: Pass all the filters in the respective screens
                 Center(child: Text('Screen 2')),
                 Center(child: Text('Screen 3')),
                 Center(child: Text('Screen 4')),
