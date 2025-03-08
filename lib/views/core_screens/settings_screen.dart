@@ -1123,7 +1123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (hiveBox.isEmpty) {
                   hiveBox.add(userApiData);
                 } else {
-                  hiveBox.putAt(0, userApiData);
+                  hiveBox.add(userApiData);
                 }
 
                 kaggleUsernameController.clear();
