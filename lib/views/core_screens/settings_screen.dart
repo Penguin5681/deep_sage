@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import '../../core/models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
 
+import 'package:path/path.dart' as path;
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -113,12 +115,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
     final savedPath = hiveBox.get('selectedRootDirectoryPath');
 
-    setState(() {
-      if (savedPath != null && savedPath.toString().isNotEmpty) {
+    if (savedPath != null && savedPath.toString().isNotEmpty) {
+      setState(() {
         selectedRootDirectoryPath = savedPath;
         isRootDirectorySelected = true;
+      });
+    } else {
+      try {
+        final defaultPath = await _createDefaultRootIfRootNotSelected();
+        setState(() {
+          selectedRootDirectoryPath = defaultPath;
+          isRootDirectorySelected = true;
+        });
+        await hiveBox.put('selectedRootDirectoryPath', defaultPath);
+        DirectoryPathService().notifyPathChange(defaultPath);
+      } catch (ex) {
+        debugPrint('Error occurred while choosing the def directory: $ex');
       }
-    });
+    }
+
+  }
+
+  Future<String> _createDefaultRootIfRootNotSelected() async {
+    String defaultPath;
+
+    if (Platform.isWindows) {
+      defaultPath = path.join(Platform.environment['USERPROFILE']!, 'deep_sage_root');
+    } else if (Platform.isLinux || Platform.isMacOS) {
+      defaultPath = path.join(Platform.environment['HOME']!, 'deep_sage_root');
+    } else {
+      throw UnsupportedError('Platform not support?. Bruh how did we get here??');
+    }
+    
+    try {
+      final directory = Directory(defaultPath);
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      return defaultPath;
+    } catch (ex) {
+      debugPrint('Error creating directory: $ex');
+      rethrow;
+    }
   }
 
   @override
@@ -995,10 +1033,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onRemovePress: () {
                   final userApi = getUserApi();
                   if (userApi != null) {
-                    final updatedApi = UserApi(
-                      kaggleUserName: "",
-                      kaggleApiKey: "",
-                    );
+                    final updatedApi = UserApi(kaggleUserName: "", kaggleApiKey: "");
                     hiveBox.putAt(0, updatedApi);
                     setState(() {
                       credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
@@ -1012,10 +1047,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     final userApi = getUserApi();
                     if (userApi != null) {
-                      final updatedApi = UserApi(
-                        kaggleUserName: "",
-                        kaggleApiKey: "",
-                      );
+                      final updatedApi = UserApi(kaggleUserName: "", kaggleApiKey: "");
                       hiveBox.putAt(0, updatedApi);
                     }
                     credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
