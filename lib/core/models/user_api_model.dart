@@ -10,11 +10,7 @@ class UserApi {
   @HiveField(1)
   String kaggleApiKey;
 
-  @HiveField(2)
-  String hfToken;
-
   UserApi({
-    required this.hfToken,
     required this.kaggleApiKey,
     required this.kaggleUserName,
   });

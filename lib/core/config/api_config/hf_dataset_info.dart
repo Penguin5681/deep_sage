@@ -18,8 +18,7 @@ class HuggingFaceDataset {
     required this.author,
     required this.description,
     required this.lastModified,
-    required this.downloads,
-    required this.likes,
+    required this.downloads,    required this.likes,
     required this.configs,
   });
 
