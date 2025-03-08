@@ -825,7 +825,7 @@ class _FolderAllState extends State<FolderAll> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
               child: const Text(
-                "Import from source",
+                "Import from Kaggle",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
