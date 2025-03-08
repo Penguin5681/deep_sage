@@ -447,8 +447,6 @@ class _CategoryAllState extends State<CategoryAll> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.only(top: 25.0, left: 35.0, right: 35.0),
@@ -534,98 +532,6 @@ class _CategoryAllState extends State<CategoryAll> {
                 const Text(
                   'Popular Datasets',
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 10.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          border: Border.all(color: Colors.grey),
-                          color: isDarkMode ? Colors.grey[800] : Colors.white,
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            focusNode: platformFocusNode,
-                            value: selectedPlatform,
-                            dropdownColor:
-                                isDarkMode ? Colors.grey[800] : Colors.white,
-                            items:
-                                ['Hugging Face', 'Kaggle']
-                                    .map(
-                                      (platform) => DropdownMenuItem(
-                                        value: platform,
-                                        child: Text(platform),
-                                      ),
-                                    )
-                                    .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedPlatform = value!;
-                                selectedFilter =
-                                    filterOptions[selectedPlatform]!.first;
-                                platformFocusNode.unfocus();
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          border: Border.all(color: Colors.grey),
-                          color: isDarkMode ? Colors.grey[800] : Colors.white,
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            focusNode: filterFocusNode,
-                            value: selectedFilter,
-                            dropdownColor:
-                                isDarkMode ? Colors.grey[800] : Colors.white,
-                            items:
-                                filterOptions[selectedPlatform]!
-                                    .map(
-                                      (filter) => DropdownMenuItem(
-                                        value: filter,
-                                        child: Text(filter),
-                                      ),
-                                    )
-                                    .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedFilter = value!;
-                                filterFocusNode.unfocus();
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Apply filters logic here
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20.0,
-                            vertical: 23.0,
-                          ),
-                          backgroundColor: Colors.blue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
-                        ),
-                        child: const Text(
-                          'Apply Filters',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
