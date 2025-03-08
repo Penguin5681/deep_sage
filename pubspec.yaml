@@ -88,6 +88,7 @@ flutter:
     - assets/icons/dark/check.png
     - assets/larry/larry.png
     - .env
+    - assets/deepsage-452909-06ec904ead63.json
   fonts:
     - family: AfacadFlux
       fonts:

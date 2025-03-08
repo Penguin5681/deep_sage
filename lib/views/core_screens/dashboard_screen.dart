@@ -216,6 +216,7 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     final ScrollController scrollController = ScrollController();
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
