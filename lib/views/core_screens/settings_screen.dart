@@ -17,8 +17,6 @@ import "package:googleapis_auth/auth_io.dart";
 import '../../core/models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
 
-import 'package:path/path.dart' as path;
-
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -125,11 +123,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
     final savedPath = hiveBox.get('selectedRootDirectoryPath');
 
-    if (savedPath != null && savedPath.toString().isNotEmpty) {
+    debugPrint(savedPath);
+    debugPrint(selectedRootDirectoryPath);
+    if (savedPath != null && savedPath is String && savedPath.isNotEmpty) {
       setState(() {
         selectedRootDirectoryPath = savedPath;
         isRootDirectorySelected = true;
       });
+      debugPrint(selectedRootDirectoryPath);
     } else {
       try {
         final defaultPath = await _createDefaultRootIfRootNotSelected();

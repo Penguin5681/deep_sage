@@ -19,6 +19,7 @@ class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
+    _loadRootDirectory();
     tabController = TabController(length: 4, vsync: this);
   }
 
@@ -26,6 +27,20 @@ class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderSt
   void dispose() {
     tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadRootDirectory() async {
+    final boxName = dotenv.env['API_HIVE_BOX_NAME']!;
+    final hiveBox = await Hive.openBox(boxName);
+
+    final root = hiveBox.get('selectedRootDirectoryPath');
+    if (root != null) {
+      setState(() {
+        rootDirectoryName = root;
+      });
+    } else {
+      debugPrint('Root not found');
+    }
   }
 
   @override
@@ -42,7 +57,7 @@ class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderSt
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 35.0),
             child: Text(
-              'Q2 Campaign',
+              path.basename(rootDirectoryName),
               style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
             ),
           ),
