@@ -1,5 +1,9 @@
 import 'package:deep_sage/views/core_screens/folder_screens/folder_all.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
+
+import 'package:path/path.dart' as path;
 
 class FolderScreen extends StatefulWidget {
   const FolderScreen({super.key});
@@ -8,9 +12,9 @@ class FolderScreen extends StatefulWidget {
   State<FolderScreen> createState() => _FolderScreenState();
 }
 
-class _FolderScreenState extends State<FolderScreen>
-    with SingleTickerProviderStateMixin {
+class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderStateMixin {
   late TabController tabController;
+  late String rootDirectoryName = '';
 
   @override
   void initState() {
@@ -32,18 +36,12 @@ class _FolderScreenState extends State<FolderScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 18.0,
-              horizontal: 35.0,
-            ),
-            child: Text(
-              'Datasets',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 35.0),
+            child: Text('Datasets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0)),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 35.0),
-            child: const Text(
+            child: Text(
               'Q2 Campaign',
               style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
             ),
@@ -73,12 +71,7 @@ class _FolderScreenState extends State<FolderScreen>
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [
-                FolderAll(),
-                FolderAll(),
-                FolderAll(),
-                FolderAll(),
-              ],
+              children: const [FolderAll(), FolderAll(), FolderAll(), FolderAll()],
             ),
           ),
         ],
