@@ -7,8 +7,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:googleapis/storage/v1.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as path;
+import "package:googleapis_auth/auth_io.dart";
 
 import '../../core/models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
@@ -40,9 +44,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool isRootDirectorySelected = false;
   late String selectedRootDirectoryPath = '';
   late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
+  late String uploadImagePath = '';
 
+  String? uploadImageUrl;
+  late String bucketName;
+  late String projectId;
+  late String credentialsPath;
   final TextEditingController kaggleUsernameController = TextEditingController();
   final TextEditingController kaggleApiInputController = TextEditingController();
+
   final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
   Future<void> getDownloadsDirectory() async {
@@ -162,6 +172,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<AuthClient> obtainAuthenticatedClient() async {
+    // this is not a very good way to do shit. remember
+    String serviceJson = await rootBundle.loadString('assets/deepsage-452909-06ec904ead63.json');
+    final accountCredentials = ServiceAccountCredentials.fromJson(serviceJson);
+
+    var scopes = [StorageApi.devstorageFullControlScope, StorageApi.cloudPlatformScope];
+
+    AuthClient client = await clientViaServiceAccount(accountCredentials, scopes);
+
+    return client;
+  }
+
+  Future<void> _pickAndUploadImage(BuildContext context) async {
+    // we go step by step
+    // pick pfp first
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        dialogTitle: 'Select a profile photo',
+        lockParentWindow: true,
+        allowMultiple: false,
+        allowedExtensions: ["jpg", "png", "jpeg"],
+        type: FileType.custom,
+      );
+
+      if (result != null && result.files.single.path != null) {
+        File file = File(result.files.single.path!);
+        setState(() {
+          uploadImagePath = file.path;
+        });
+        debugPrint("Selected file: ${file.path}");
+
+        // get an authenticated client
+        AuthClient gcpClient = await obtainAuthenticatedClient();
+        debugPrint('Authentication successful');
+
+        var storageClient = StorageApi(gcpClient);
+        var media = Media(file.openRead(), await file.length());
+
+        // file name is now jus curr time. will change it to supabase id
+        String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
+        debugPrint('Attempting to upload file as: $uniqueFileName');
+
+        try {
+          var object = await storageClient.objects.insert(
+            Object()..name = uniqueFileName,
+            'user_image_data',
+            uploadMedia: media,
+          );
+          debugPrint('Object uploaded successfully: ${object.name}');
+
+          try {
+            // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+            await storageClient.objectAccessControls.insert(
+              ObjectAccessControl()
+                ..entity = 'allUsers'
+                ..role = 'READER',
+              'user_image_data',
+              object.name!,
+            );
+            debugPrint('Public access set successfully');
+
+            // bucket name is now fixed
+            var uploadImageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
+            debugPrint('File available at: $uploadImageUrl');
+          } catch (aclError) {
+            debugPrint('Error setting public access: $aclError');
+          }
+        } catch (uploadError) {
+          debugPrint('Error uploading object: $uploadError');
+          if (uploadError is DetailedApiRequestError) {
+            debugPrint('Error status: ${uploadError.status}');
+            debugPrint('Error message: ${uploadError.message}');
+          }
+        }
+      } else {
+        debugPrint('No file selected');
+      }
+    } catch (ex) {
+      debugPrint('General error: $ex');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -171,6 +263,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     kaggleUsernameInputFocus = FocusNode();
     hfTokenInputFocus = FocusNode();
     credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+
+    // Initialize GCP variables
+    bucketName = 'user_image_data';
+    projectId = dotenv.env['GCP_PROJECT_ID']!;
+    credentialsPath = dotenv.env['GCP_CREDENTIALS_PATH']!;
   }
 
   @override
@@ -179,6 +276,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     kaggleUsernameInputFocus.dispose();
     hfTokenInputFocus.dispose();
     super.dispose();
+  }
+
+  // Function for displaying name
+  String? getDisplayName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    return user?.userMetadata?['display_name']; // Retrieve display name
   }
 
   @override
@@ -341,7 +444,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundImage: const AssetImage('assets/larry/larry.png'),
+                                backgroundImage:
+                                    uploadImageUrl != null
+                                        ? NetworkImage(uploadImageUrl!)
+                                        : const AssetImage('assets/larry/larry.png')
+                                            as ImageProvider,
+                                // backgroundImage: const AssetImage(
+                                //   'assets/larry/larry.png',
+                                // ),
                               ),
                               const SizedBox(width: 16),
                               Column(
@@ -366,10 +476,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                               const Spacer(),
-                              Icon(
-                                Icons.edit,
+                              // TODO: Change the profile picture by clicking on the icon
+                              IconButton(
+                                icon: Icon(Icons.edit),
                                 color: isDarkModeEnabled ? Colors.grey[400] : Colors.grey[700],
-                                size: 20,
+                                iconSize: 20,
+                                onPressed: () async {
+                                  // alr, watch this.
+                                  await _pickAndUploadImage(context);
+                                },
                               ),
                             ],
                           ),
@@ -392,8 +507,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             width: double.infinity,
+                            // Show the name on the text widget from supabase
                             child: Text(
-                              'John Smith',
+                              getDisplayName() ?? 'User',
                               style: TextStyle(
                                 color: isDarkModeEnabled ? Colors.white : Colors.black,
                               ),
@@ -421,6 +537,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
+                                    // Keep it static for now
                                     'john.smith@example.com',
                                     style: TextStyle(
                                       color: isDarkModeEnabled ? Colors.white : Colors.black,
