@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
-import 'package:deep_sage/views/core_screens/folder_screen.dart';
+import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';

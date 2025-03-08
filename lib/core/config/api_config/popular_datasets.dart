@@ -35,7 +35,7 @@ class PopularDataset {
   });
 
   factory PopularDataset.fromJson(Map<String, dynamic> json) {
-    int _safeParseInt(dynamic value) {
+    int safeParseInt(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
       if (value is String) {
@@ -56,8 +56,8 @@ class PopularDataset {
       description: json['description']?.toString() ?? '',
       lastUpdated: json['lastUpdated']?.toString() ?? '',
       size: json['size']?.toString() ?? '0 B',
-      downloadCount: _safeParseInt(json['downloadCount']),
-      voteCount: _safeParseInt(json['voteCount']),
+      downloadCount: safeParseInt(json['downloadCount']),
+      voteCount: safeParseInt(json['voteCount']),
     );
   }
 

@@ -85,7 +85,7 @@ class _SearchScreenState extends State<SearchScreen>
       final results = await _suggestionService.getSuggestions(
         query: query,
         source: 'kaggle',
-        limit: 5,
+        limit: 15,
       );
       if (mounted) {
         setState(() {

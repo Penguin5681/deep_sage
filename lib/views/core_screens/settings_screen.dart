@@ -135,12 +135,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
     final savedPath = hiveBox.get('selectedRootDirectoryPath');
 
-    setState(() {
-      if (savedPath != null && savedPath.toString().isNotEmpty) {
+    debugPrint(savedPath);
+    debugPrint(selectedRootDirectoryPath);
+    if (savedPath != null && savedPath is String && savedPath.isNotEmpty) {
+      setState(() {
         selectedRootDirectoryPath = savedPath;
         isRootDirectorySelected = true;
+      });
+      debugPrint(selectedRootDirectoryPath);
+    } else {
+      try {
+        final defaultPath = await _createDefaultRootIfRootNotSelected();
+        setState(() {
+          selectedRootDirectoryPath = defaultPath;
+          isRootDirectorySelected = true;
+        });
+        await hiveBox.put('selectedRootDirectoryPath', defaultPath);
+        DirectoryPathService().notifyPathChange(defaultPath);
+      } catch (ex) {
+        debugPrint('Error occurred while choosing the def directory: $ex');
       }
-    });
+    }
+  }
+
+  // what are we tryna do here?
+  // i'll also grab the root directory name and put it to hive as well
+  // in case the user wants to select a directory as the root folder. then we'll replace the root name
+
+  Future<String> _createDefaultRootIfRootNotSelected() async {
+    String defaultPath;
+
+    if (Platform.isWindows) {
+      defaultPath = path.join(Platform.environment['USERPROFILE']!, 'deep_sage_root');
+    } else if (Platform.isLinux || Platform.isMacOS) {
+      defaultPath = path.join(Platform.environment['HOME']!, 'deep_sage_root');
+    } else {
+      throw UnsupportedError('Platform not supported?. Bruh how did we get here??');
+    }
+    
+    try {
+      final directory = Directory(defaultPath);
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      return defaultPath;
+    } catch (ex) {
+      debugPrint('Error creating directory: $ex');
+      rethrow;
+    }
   }
 
   Future<AuthClient> obtainAuthenticatedClient() async {
@@ -1210,6 +1252,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                   .notifyPathChange(
                                                     selectedDir,
                                                   );
+                                              hiveBox.put('selectedRootDirectoryPath', selectedDir);
+                                              DirectoryPathService().notifyPathChange(selectedDir);
                                             }
                                           },
                                           child: Icon(
@@ -1485,7 +1529,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (hiveBox.isEmpty) {
                   hiveBox.add(userApiData);
                 } else {
-                  hiveBox.putAt(0, userApiData);
+                  hiveBox.add(userApiData);
                 }
 
                 kaggleUsernameController.clear();
