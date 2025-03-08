@@ -30,15 +30,13 @@ class SuggestionService {
 
   String? get kaggleKey => getUserApi()?.kaggleApiKey;
 
-  String? get hfToken => getUserApi()?.hfToken;
-
   bool isThereApiDetailsForKaggle() {
     return kaggleUsername!.isNotEmpty && kaggleKey!.isNotEmpty;
   }
 
   Future<List<DatasetSuggestion>> getSuggestions({
     required String query,
-    String source = 'all',
+    String source = 'kaggle',
     int limit = 5,
   }) async {
     if (query.length < 2) {
@@ -48,26 +46,19 @@ class SuggestionService {
     final uri = Uri.parse('$baseUrl/api/suggestions').replace(
       queryParameters: {
         'query': query,
-        'source': source,
+        'source': 'kaggle',
         'limit': limit.toString(),
       },
     );
 
     final headers = <String, String>{};
 
-    if (source == 'all' || source == 'kaggle') {
-      if (kaggleUsername != null && kaggleKey != null) {
-        headers['X-Kaggle-Username'] = kaggleUsername!;
-        headers['X-Kaggle-Key'] = kaggleKey!;
-      }
-    }
-
-    // I am not sure if this piece of code would barely be used.
-    // Let's put it anyways
-    if (source == 'all' || source == 'huggingface') {
-      if (hfToken != null) {
-        headers['X-HF-Token'] = hfToken!;
-      }
+    if (kaggleUsername != null && kaggleKey != null) {
+      headers['X-Kaggle-Username'] = kaggleUsername!;
+      headers['X-Kaggle-Key'] = kaggleKey!;
+    } else {
+      debugPrint('No Kaggle credentials available');
+      return [];
     }
 
     try {
@@ -76,28 +67,16 @@ class SuggestionService {
         final Map<String, dynamic> data = json.decode(response.body);
         List<DatasetSuggestion> suggestions = [];
 
-        if (data.containsKey('huggingface')) {
-          final List<dynamic> hfSuggestions = data['huggingface'];
-          suggestions.addAll(
-            hfSuggestions.map(
-              (name) => DatasetSuggestion(
-                name: name.toString(),
-                source: 'huggingface',
-              ),
-            ),
-          );
-        }
-
         if (data.containsKey('kaggle')) {
           final List<dynamic> kaggleSuggestions = data['kaggle'];
           suggestions.addAll(
             kaggleSuggestions.map(
-              (name) =>
-                  DatasetSuggestion(name: name.toString(), source: 'kaggle'),
+                  (name) => DatasetSuggestion(name: name.toString(), source: 'kaggle'),
             ),
           );
         }
-        debugPrint(suggestions.toString());
+
+        debugPrint('Kaggle suggestions: ${suggestions.length}');
         return suggestions;
       } else {
         debugPrint('Error occurred: ${response.statusCode}');
