@@ -28,8 +28,8 @@ class _FolderAllState extends State<FolderAll> {
   late String rootDirectory = hiveBox.get('selectedRootDirectoryPath') ?? '';
   late List<Map<String, String>> folderList = [];
   late StreamSubscription<String> pathSubscription;
-  StreamSubscription<FileSystemEvent>? directoryWatcher;
 
+  StreamSubscription<FileSystemEvent>? directoryWatcher;
   bool isExplorerVisible = false;
   String selectedFolderForExplorer = '';
 

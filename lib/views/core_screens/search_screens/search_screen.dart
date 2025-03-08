@@ -1,10 +1,8 @@
-import 'package:deep_sage/core/config/api_config/hf_dataset_info.dart';
 import 'package:deep_sage/core/config/api_config/kaggle_dataset_info.dart';
 import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/helpers/debouncer.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
-import 'package:deep_sage/widgets/source_dropdown.dart';
 import 'package:flutter/material.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -82,22 +80,11 @@ class _SearchScreenState extends State<SearchScreen>
     }
   }
 
-  String _getSourceParams() {
-    switch (selectedSource) {
-      case 'Hugging Face':
-        return 'huggingface';
-      case 'Kaggle':
-        return 'kaggle';
-      default:
-        return 'all';
-    }
-  }
-
   Future<void> _fetchSuggestions(String query) async {
     try {
       final results = await _suggestionService.getSuggestions(
         query: query,
-        source: _getSourceParams(),
+        source: 'kaggle',
         limit: 5,
       );
       if (mounted) {
@@ -139,7 +126,6 @@ class _SearchScreenState extends State<SearchScreen>
 
   Future<void> openDatasetCard(String datasetId, String source) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    Map<String, dynamic>? huggingFaceMetadata;
     KaggleDataset? kaggleMetadata;
     setState(() {
       _isDatasetCardLoading = true;
@@ -151,11 +137,7 @@ class _SearchScreenState extends State<SearchScreen>
       builder: (BuildContext context) => showLoadingIndicator(context),
     );
 
-    if (source case 'huggingface') {
-      final HfDatasetInfoService hfDatasetInfoService = HfDatasetInfoService();
-      huggingFaceMetadata = await hfDatasetInfoService
-          .retrieveHfDatasetMetadata(datasetId);
-    } else if (source case 'kaggle') {
+    if (source case 'kaggle') {
       final KaggleDatasetInfoService kaggleDatasetInfoService =
           KaggleDatasetInfoService();
       kaggleMetadata = await kaggleDatasetInfoService
@@ -181,13 +163,7 @@ class _SearchScreenState extends State<SearchScreen>
         String size = '';
         List<String> configs = [];
 
-        if (source == 'huggingface' && huggingFaceMetadata != null) {
-          title = huggingFaceMetadata['id'] ?? '';
-          description = huggingFaceMetadata['description'] ?? '';
-          owner = huggingFaceMetadata['author'] ?? '';
-          size = '';
-          configs = List<String>.from(huggingFaceMetadata['configs'] ?? []);
-        } else if (source == 'kaggle' && kaggleMetadata != null) {
+        if (source == 'kaggle' && kaggleMetadata != null) {
           title = kaggleMetadata.title;
           description = kaggleMetadata.description;
           owner = kaggleMetadata.owner;
@@ -235,17 +211,13 @@ class _SearchScreenState extends State<SearchScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Image.asset(
-                                  source == 'huggingface'
-                                      ? AppIcons.huggingFaceLogo
-                                      : AppIcons.kaggleLogo,
+                                  AppIcons.kaggleLogo,
                                   width: 22,
                                   height: 22,
                                 ),
                                 const SizedBox(height: 8.0),
                                 Text(
-                                  source == 'huggingface'
-                                      ? 'Hugging Face Datasets'
-                                      : 'Kaggle Datasets',
+                                  'Kaggle Datasets',
                                 ),
                                 // the dataset title
                                 Text(
@@ -542,9 +514,7 @@ class _SearchScreenState extends State<SearchScreen>
                               ),
                             ),
                             subtitle: Text(
-                              suggestion.source == 'huggingface'
-                                  ? 'Hugging Face'
-                                  : 'Kaggle',
+                              'Kaggle',
                               style: TextStyle(
                                 fontSize: 14,
                                 color:
@@ -648,21 +618,6 @@ class _SearchScreenState extends State<SearchScreen>
                     ),
                   ),
                   const SizedBox(width: 16.0),
-                  Expanded(
-                    flex: 1,
-                    child: SourceDropdown(
-                      onSelected: () => searchFocusNode.requestFocus(),
-                      onValueChanged: (value) {
-                        setState(() {
-                          selectedSource = value;
-                        });
-                        if (controller.text.length >= 2) {
-                          _fetchSuggestions(controller.text);
-                        }
-                        debugPrint(selectedSource);
-                      },
-                    ),
-                  ),
                 ],
               ),
             ),
