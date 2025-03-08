@@ -17,7 +17,6 @@ class UserApiAdapter extends TypeAdapter<UserApi> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UserApi(
-      hfToken: fields[2] as String,
       kaggleApiKey: fields[1] as String,
       kaggleUserName: fields[0] as String,
     );
@@ -26,13 +25,11 @@ class UserApiAdapter extends TypeAdapter<UserApi> {
   @override
   void write(BinaryWriter writer, UserApi obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(2)
       ..writeByte(0)
       ..write(obj.kaggleUserName)
       ..writeByte(1)
-      ..write(obj.kaggleApiKey)
-      ..writeByte(2)
-      ..write(obj.hfToken);
+      ..write(obj.kaggleApiKey);
   }
 
   @override
