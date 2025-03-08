@@ -29,6 +29,8 @@ dependencies:
   file_picker: ^9.0.2
   shared_preferences: ^2.5.2
   path: ^1.9.1
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -86,6 +88,7 @@ flutter:
     - assets/icons/dark/check.png
     - assets/larry/larry.png
     - .env
+    - assets/deepsage-452909-06ec904ead63.json
   fonts:
     - family: AfacadFlux
       fonts:
