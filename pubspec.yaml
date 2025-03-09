@@ -91,6 +91,7 @@ flutter:
     - assets/larry/larry.png
     - .env
     - assets/deepsage-452909-06ec904ead63.json
+    - assets/fallback/fallback_user_image.png
   fonts:
     - family: AfacadFlux
       fonts:
