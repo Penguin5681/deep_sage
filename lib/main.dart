@@ -18,10 +18,16 @@ Future main() async {
   Hive.init(appSupportDirectory.path);
   Hive.registerAdapter(UserApiAdapter());
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
+  await Hive.openBox(dotenv.env['USER_HIVE_BOX']!);
   final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
   final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseApi);
+  final session = await Hive.box(dotenv.env['USER_HIVE_BOX']!).get('userSession');
+  if (session != null) {
+    Supabase.instance.client.auth.setSession(session);
+  }
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

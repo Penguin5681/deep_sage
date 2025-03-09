@@ -1,7 +1,10 @@
 import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/config/helpers/route_builder.dart';
 import 'package:deep_sage/core/services/directory_path_service.dart';
+import 'package:deep_sage/core/services/user_image_service.dart';
+import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import "package:googleapis_auth/auth_io.dart";
+import 'package:image/image.dart' as img;
 
 import '../../core/models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
@@ -31,27 +35,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool shouldWeAskForDownloadLocation = false;
   bool awsS3Enabled = false;
   String defaultDownloadPath = '';
-  final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  String? uploadImageUrl;
+
   final kaggleUsernameNotFoundTag = 'kaggle username not found';
   final kaggleApiKeyNotFoundTag = 'kaggle key not found';
+  final TextEditingController kaggleUsernameController = TextEditingController();
+  final TextEditingController kaggleApiInputController = TextEditingController();
+  final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
+  final userHiveBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+  final Image fallbackUserAvatar = Image.asset('assets/fallback/fallback_user_image.png');
 
   late FocusNode kaggleUsernameInputFocus = FocusNode();
   late FocusNode kaggleApiInputFocus = FocusNode();
-  late FocusNode hfTokenInputFocus = FocusNode();
   late bool isKaggleApiCredsSaved = false;
   late bool isRootDirectorySelected = false;
   late String selectedRootDirectoryPath = '';
   late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
   late String uploadImagePath = '';
+  late String displayName = '';
+  late String userEmail = '';
+  late String userAvatarUrl = '';
+  late String userId = '';
 
-  String? uploadImageUrl;
   late String bucketName;
   late String projectId;
   late String credentialsPath;
-  final TextEditingController kaggleUsernameController = TextEditingController();
-  final TextEditingController kaggleApiInputController = TextEditingController();
-
-  final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
 
   Future<void> getDownloadsDirectory() async {
     final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
@@ -160,7 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       throw UnsupportedError('Platform not supported?. Bruh how did we get here??');
     }
-    
+
     try {
       final directory = Directory(defaultPath);
       if (!await directory.exists()) {
@@ -185,9 +194,150 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return client;
   }
 
+  // Future<void> _pickAndUploadImage(BuildContext context) async {
+  //   // we go step by step
+  //   // pick pfp first
+  //   try {
+  //     FilePickerResult? result = await FilePicker.platform.pickFiles(
+  //       dialogTitle: 'Select a profile photo',
+  //       lockParentWindow: true,
+  //       allowMultiple: false,
+  //       allowedExtensions: ["jpg", "png", "jpeg"],
+  //       type: FileType.custom,
+  //     );
+
+  //     if (result != null && result.files.single.path != null) {
+  //       File file = File(result.files.single.path!);
+  //       setState(() {
+  //         uploadImagePath = file.path;
+  //       });
+  //       debugPrint("Selected file: ${file.path}");
+
+  //       // get an authenticated client
+  //       AuthClient gcpClient = await obtainAuthenticatedClient();
+  //       debugPrint('Authentication successful');
+
+  //       var storageClient = StorageApi(gcpClient);
+  //       var media = Media(file.openRead(), await file.length());
+
+  //       // file name is now jus curr time. will change it to supabase id
+  //       String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
+  //       debugPrint('Attempting to upload file as: $uniqueFileName');
+
+  //       try {
+  //         var object = await storageClient.objects.insert(
+  //           Object()..name = uniqueFileName,
+  //           'user_image_data',
+  //           uploadMedia: media,
+  //         );
+  //         debugPrint('Object uploaded successfully: ${object.name}');
+
+  //         try {
+  //           // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+  //           await storageClient.objectAccessControls.insert(
+  //             ObjectAccessControl()
+  //               ..entity = 'allUsers'
+  //               ..role = 'READER',
+  //             'user_image_data',
+  //             object.name!,
+  //           );
+  //           debugPrint('Public access set successfully');
+
+  //           // bucket name is now fixed
+  //           var uploadImageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
+  //           debugPrint('File available at: $uploadImageUrl');
+  //         } catch (aclError) {
+  //           debugPrint('Error setting public access: $aclError');
+  //         }
+  //       } catch (uploadError) {
+  //         debugPrint('Error uploading object: $uploadError');
+  //         if (uploadError is DetailedApiRequestError) {
+  //           debugPrint('Error status: ${uploadError.status}');
+  //           debugPrint('Error message: ${uploadError.message}');
+  //         }
+  //       }
+  //     } else {
+  //       debugPrint('No file selected');
+  //     }
+  //   } catch (ex) {
+  //     debugPrint('General error: $ex');
+  //   }
+  // }
+
+  //   Future<void> _pickAndUploadImage(BuildContext context) async {
+  //   try {
+  //     FilePickerResult? result = await FilePicker.platform.pickFiles(
+  //       dialogTitle: 'Select a profile photo',
+  //       lockParentWindow: true,
+  //       allowMultiple: false,
+  //       allowedExtensions: ["jpg", "png", "jpeg"],
+  //       type: FileType.custom,
+  //     );
+
+  //     if (result != null && result.files.single.path != null) {
+  //       File file = File(result.files.single.path!);
+  //       setState(() {
+  //         uploadImagePath = file.path;
+  //       });
+  //       debugPrint("Selected file: ${file.path}");
+
+  //       // get an authenticated client
+  //       AuthClient gcpClient = await obtainAuthenticatedClient();
+  //       debugPrint('Authentication successful');
+
+  //       var storageClient = StorageApi(gcpClient);
+  //       var media = Media(file.openRead(), await file.length());
+
+  //       // file name is now jus curr time. will change it to supabase id
+  //       String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
+  //       debugPrint('Attempting to upload file as: $uniqueFileName');
+
+  //       try {
+  //         var object = await storageClient.objects.insert(
+  //           Object()..name = uniqueFileName,
+  //           'user_image_data',
+  //           uploadMedia: media,
+  //         );
+  //         debugPrint('Object uploaded successfully: ${object.name}');
+
+  //         try {
+  //           // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+  //           await storageClient.objectAccessControls.insert(
+  //             ObjectAccessControl()
+  //               ..entity = 'allUsers'
+  //               ..role = 'READER',
+  //             'user_image_data',
+  //             object.name!,
+  //           );
+  //           debugPrint('Public access set successfully');
+
+  //           // bucket name is now fixed
+  //           var imageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
+  //           debugPrint('File available at: $imageUrl');
+
+  //           // Update the state with the new image URL
+  //           setState(() {
+  //             uploadImageUrl = imageUrl;
+  //           });
+  //         } catch (aclError) {
+  //           debugPrint('Error setting public access: $aclError');
+  //         }
+  //       } catch (uploadError) {
+  //         debugPrint('Error uploading object: $uploadError');
+  //         if (uploadError is DetailedApiRequestError) {
+  //           debugPrint('Error status: ${uploadError.status}');
+  //           debugPrint('Error message: ${uploadError.message}');
+  //         }
+  //       }
+  //     } else {
+  //       debugPrint('No file selected');
+  //     }
+  //   } catch (ex) {
+  //     debugPrint('General error: $ex');
+  //   }
+  // }
+
   Future<void> _pickAndUploadImage(BuildContext context) async {
-    // we go step by step
-    // pick pfp first
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         dialogTitle: 'Select a profile photo',
@@ -199,53 +349,117 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (result != null && result.files.single.path != null) {
         File file = File(result.files.single.path!);
-        setState(() {
-          uploadImagePath = file.path;
-        });
-        debugPrint("Selected file: ${file.path}");
 
-        // get an authenticated client
-        AuthClient gcpClient = await obtainAuthenticatedClient();
-        debugPrint('Authentication successful');
+        img.Image? image = img.decodeImage(await file.readAsBytes());
 
-        var storageClient = StorageApi(gcpClient);
-        var media = Media(file.openRead(), await file.length());
-
-        // file name is now jus curr time. will change it to supabase id
-        String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
-        debugPrint('Attempting to upload file as: $uniqueFileName');
-
-        try {
-          var object = await storageClient.objects.insert(
-            Object()..name = uniqueFileName,
-            'user_image_data',
-            uploadMedia: media,
+        if (image != null) {
+          int cropSize = image.width < image.height ? image.width : image.height;
+          int offsetX = (image.width - cropSize) ~/ 2;
+          int offsetY = (image.height - cropSize) ~/ 2;
+          img.Image croppedImage = img.copyCrop(
+            image,
+            x: offsetX,
+            y: offsetY,
+            width: cropSize,
+            height: cropSize,
           );
-          debugPrint('Object uploaded successfully: ${object.name}');
+
+          /*
+          This is an optional approach for resize image
+
+          // // Resize (optional: adjust size to 512x512 for consistency)
+          // img.Image resizedImage = img.copyResize(
+          //   croppedImage,
+          //   width: 512,
+          //   height: 512,
+          // );
+
+          We will also need this change lines of code in the below croppedFile as this ↓↓↓
+
+          // Save the cropped image to a temporary directory
+          Directory tempDir = await getTemporaryDirectory();
+          File croppedFile = File('${tempDir.path}/cropped_${file.uri.pathSegments.last}')
+          ..writeAsBytesSync(img.encodeJpg(resizedImage));
+
+          */
+
+          // Save the cropped image to a temporary file
+          File croppedFile = await File(
+            '${file.parent.path}/cropped_${file.uri.pathSegments.last}',
+          ).writeAsBytes(img.encodeJpg(croppedImage));
+
+          // Check file size limit (12MB)
+          if (croppedFile.lengthSync() > 12 * 1024 * 1024) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('File size should not be more than 12MB')));
+            return;
+          }
+
+          setState(() {
+            uploadImagePath = croppedFile.path;
+          });
+          debugPrint("Selected file: ${croppedFile.path}");
+
+          // get an authenticated client
+          AuthClient gcpClient = await obtainAuthenticatedClient();
+          debugPrint('Authentication successful');
+
+          var storageClient = StorageApi(gcpClient);
+          var media = Media(croppedFile.openRead(), await croppedFile.length());
+
+          // file name is now jus curr time. will change it to supabase id
+          // update. the file name is now changes to the supabase user uid. (testing awaited)
+          String uniqueFileName = '$userId${path.extension(croppedFile.path).trim()}';
+          debugPrint('Attempting to upload file as: $uniqueFileName');
 
           try {
-            // the role should be READER for us general public, when needed change it to WRITER or OWNER.
-            await storageClient.objectAccessControls.insert(
-              ObjectAccessControl()
-                ..entity = 'allUsers'
-                ..role = 'READER',
+            var object = await storageClient.objects.insert(
+              Object()..name = uniqueFileName,
               'user_image_data',
-              object.name!,
+              uploadMedia: media,
             );
-            debugPrint('Public access set successfully');
+            debugPrint('Object uploaded successfully: ${object.name}');
 
-            // bucket name is now fixed
-            var uploadImageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
-            debugPrint('File available at: $uploadImageUrl');
-          } catch (aclError) {
-            debugPrint('Error setting public access: $aclError');
+            try {
+              // the role should be READER for us general public, when needed change it to WRITER or OWNER.
+              await storageClient.objectAccessControls.insert(
+                ObjectAccessControl()
+                  ..entity = 'allUsers'
+                  ..role = 'READER',
+                'user_image_data',
+                object.name!,
+              );
+              debugPrint('Public access set successfully');
+
+              // bucket name is now fixed
+              var imageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
+              userHiveBox.put('userAvatarUrl', imageUrl);
+
+              UserImageService().updateProfileImageUrl(imageUrl);
+
+              setState(() {
+                userAvatarUrl = imageUrl;
+              });
+              debugPrint('File available at: $imageUrl');
+
+              // Update the state with the new image URL
+              setState(() {
+                uploadImageUrl = imageUrl;
+              });
+            } catch (aclError) {
+              debugPrint('Error setting public access: $aclError');
+            }
+          } catch (uploadError) {
+            debugPrint('Error uploading object: $uploadError');
+            if (uploadError is DetailedApiRequestError) {
+              debugPrint('Error status: ${uploadError.status}');
+              debugPrint('Error message: ${uploadError.message}');
+            }
           }
-        } catch (uploadError) {
-          debugPrint('Error uploading object: $uploadError');
-          if (uploadError is DetailedApiRequestError) {
-            debugPrint('Error status: ${uploadError.status}');
-            debugPrint('Error message: ${uploadError.message}');
-          }
+        } else {
+          debugPrint('Image decoding failed');
         }
       } else {
         debugPrint('No file selected');
@@ -255,14 +469,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<Image> loadProfileImageFromHive() async {
+    final imageUrl = await userHiveBox.get('userAvatarUrl');
+    if (imageUrl != null) {
+      return Image.network(imageUrl);
+    }
+    return fallbackUserAvatar;
+  }
+
+  Widget buildProfileImage() {
+    return ValueListenableBuilder<String?>(
+      valueListenable: UserImageService().profileImageUrl,
+      builder: (context, imageUrl, child) {
+        if (imageUrl != null) {
+          return ClipOval(child: SizedBox(width: 48, height: 48, child: Image.network(imageUrl)));
+        }
+
+        return FutureBuilder<Image>(
+          future: loadProfileImageFromHive(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                width: 48,
+                height: 48,
+                color: Colors.grey[300],
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            } else if (snapshot.hasData) {
+              return ClipOval(child: SizedBox(width: 48, height: 48, child: snapshot.data!));
+            } else {
+              return ClipOval(child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar));
+            }
+          },
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    getUserMetadata();
     getDownloadsDirectory();
     _loadRootDirectoryPath();
     kaggleApiInputFocus = FocusNode();
     kaggleUsernameInputFocus = FocusNode();
-    hfTokenInputFocus = FocusNode();
     credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
 
     // Initialize GCP variables
@@ -275,14 +526,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     kaggleApiInputFocus.dispose();
     kaggleUsernameInputFocus.dispose();
-    hfTokenInputFocus.dispose();
     super.dispose();
   }
 
-  // Function for displaying name
-  String? getDisplayName() {
+  void getUserMetadata() {
     final user = Supabase.instance.client.auth.currentUser;
-    return user?.userMetadata?['display_name']; // Retrieve display name
+    setState(() {
+      displayName = user?.userMetadata?['display_name'];
+      userEmail = user!.email!;
+      userId = user.id;
+    });
   }
 
   @override
@@ -443,17 +696,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           // Profile picture
                           Row(
                             children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundImage:
-                                    uploadImageUrl != null
-                                        ? NetworkImage(uploadImageUrl!)
-                                        : const AssetImage('assets/larry/larry.png')
-                                            as ImageProvider,
-                                // backgroundImage: const AssetImage(
-                                //   'assets/larry/larry.png',
-                                // ),
-                              ),
+                              // TODO: Change the circle avatar into clip oval and use image cropper
+                              buildProfileImage(),
+                              // CircleAvatar(
+                              //   radius: 24,
+                              //   backgroundImage:
+                              //       uploadImageUrl != null
+                              //           ? NetworkImage(uploadImageUrl!)
+                              //           : const AssetImage('assets/larry/larry.png')
+                              //               as ImageProvider,
+                              //   // backgroundImage: const AssetImage(
+                              //   //   'assets/larry/larry.png',
+                              //   // ),
+                              // ),
                               const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +765,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             width: double.infinity,
                             // Show the name on the text widget from supabase
                             child: Text(
-                              getDisplayName() ?? 'User',
+                              displayName,
                               style: TextStyle(
                                 color: isDarkModeEnabled ? Colors.white : Colors.black,
                               ),
@@ -539,7 +794,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   child: Text(
                                     // Keep it static for now
-                                    'john.smith@example.com',
+                                    // imma change this blud
+                                    userEmail,
                                     style: TextStyle(
                                       color: isDarkModeEnabled ? Colors.white : Colors.black,
                                     ),
@@ -559,8 +815,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SizedBox(
                             width: 80,
                             child: ElevatedButton(
-                              onPressed: () {
-                                // todo: sign out from here can clear the hive data
+                              onPressed: () async {
+                                await Hive.box(
+                                  dotenv.env['USER_HIVE_BOX']!,
+                                ).delete('userSessionToken');
+                                if (!context.mounted) return;
+                                Navigator.of(
+                                  context,
+                                ).pushReplacement(RouteBuilder().build(LoginScreen(), 1.0, 0));
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
@@ -877,6 +1139,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               final hiveBox = Hive.box(
                                                 dotenv.env['API_HIVE_BOX_NAME']!,
                                               );
+                                              hiveBox.put('selectedRootDirectoryPath', selectedDir);
+
+                                              DirectoryPathService().notifyPathChange(selectedDir);
                                               hiveBox.put('selectedRootDirectoryPath', selectedDir);
                                               DirectoryPathService().notifyPathChange(selectedDir);
                                             }

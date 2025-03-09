@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
@@ -10,6 +11,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,6 +23,8 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   var selectedIndex = 0;
   late Widget currentScreen;
+  final userHiveBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+  final Image fallbackUserAvatar = Image.asset('assets/fallback/fallback_user_image.png');
 
   @override
   void initState() {
@@ -41,6 +45,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
         return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+      },
+    );
+  }
+
+  Future<Image> loadProfileImageFromHive() async {
+    final imageUrl = await userHiveBox.get('userAvatarUrl');
+    if (imageUrl != null) {
+      return Image.network(imageUrl);
+    }
+    return fallbackUserAvatar;
+  }
+
+  Widget buildProfileImage() {
+    return ValueListenableBuilder<String?>(
+      valueListenable: UserImageService().profileImageUrl,
+      builder: (context, imageUrl, child) {
+        if (imageUrl != null) {
+          return ClipOval(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.network(imageUrl),
+            ),
+          );
+        }
+
+        return FutureBuilder<Image>(
+          future: loadProfileImageFromHive(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                width: 48,
+                height: 48,
+                color: Colors.grey[300],
+                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            } else if (snapshot.hasData) {
+              return ClipOval(
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: snapshot.data!,
+                ),
+              );
+            } else {
+              return ClipOval(
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: fallbackUserAvatar,
+                ),
+              );
+            }
+          },
+        );
       },
     );
   }
@@ -89,7 +148,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       SizedBox(height: 40),
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
-                        child: ClipOval(child: Image.asset(AppIcons.larry, width: 40, height: 40)),
+                        child: buildProfileImage(),
                       ),
                     ],
                   ),
