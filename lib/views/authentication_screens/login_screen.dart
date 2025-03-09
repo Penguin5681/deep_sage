@@ -5,6 +5,7 @@ import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
@@ -57,10 +58,14 @@ class LoginScreen extends StatelessWidget {
 
       if (isEmail() && isThePasswordLengthOk()) {
         try {
-          await supabaseAuthInstance.signInWithPassword(
+          final response = await supabaseAuthInstance.signInWithPassword(
             email: email,
             password: password,
           );
+          if (response.session != null) {
+            await Hive.box(dotenv.env['USER_HIVE_BOX']!).put('userSessionToken', response.session!.accessToken);
+          }
+
           if (!context.mounted) return;
           showTopSnackBar(
             Overlay.of(context),
@@ -70,10 +75,11 @@ class LoginScreen extends StatelessWidget {
             context,
           ).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
         } catch (e) {
+          debugPrint('$e');
           showTopSnackBar(
             Overlay.of(context),
             CustomSnackBar.error(
-              message: 'Error Occurred: Invalid email or password',
+              message: 'Error Occurred: $e',
             ),
           );
         }
