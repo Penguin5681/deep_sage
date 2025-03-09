@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:deep_sage/core/models/dataset_file.dart';
 import 'package:deep_sage/core/services/directory_path_service.dart';
 import 'package:deep_sage/views/core_screens/explorer/file_explorer_view.dart';
 import 'package:file_picker/file_picker.dart';
@@ -32,6 +33,9 @@ class _FolderAllState extends State<FolderAll> {
   StreamSubscription<FileSystemEvent>? directoryWatcher;
   bool isExplorerVisible = false;
   String selectedFolderForExplorer = '';
+  List<DatasetFile> datasetFiles = [];
+  List<StreamSubscription<FileSystemEvent>> fileWatchers = [];
+  Set<String> watchedDirectories = {};
 
   @override
   void initState() {
@@ -40,6 +44,7 @@ class _FolderAllState extends State<FolderAll> {
       if (selectedRootDirectoryPath.isNotEmpty) {
         getDirectoryFileCounts(selectedRootDirectoryPath);
         setupDirectoryWatcher(selectedRootDirectoryPath);
+        scanForDatasetFiles(selectedRootDirectoryPath);
       }
     });
 
@@ -53,6 +58,71 @@ class _FolderAllState extends State<FolderAll> {
         setupDirectoryWatcher(newPath);
       }
     });
+  }
+
+  Future<void> scanForDatasetFiles(String rootPath) async {
+    if (rootPath.isEmpty) return;
+    List<DatasetFile> files = [];
+    try {
+      await _scanDirectory(rootPath, files);
+      setState(() {
+        datasetFiles = files;
+        anyFilesPresent = files.isNotEmpty;
+      });
+    } catch (ex) {
+      debugPrint('Error scanning files: $ex');
+    }
+  }
+
+  Future<void> _scanDirectory(String directoryPath, List<DatasetFile> files) async {
+    final dir = Directory(directoryPath);
+    if (!await dir.exists()) return;
+
+    if (!watchedDirectories.contains(directoryPath)) {
+      setupFileWatcher(directoryPath);
+      watchedDirectories.add(directoryPath);
+    }
+
+    try {
+      await for (var entity in dir.list()) {
+        if (entity is File) {
+          final extension = path.extension(entity.path).toLowerCase();
+          if (['.json', '.csv', '.xlsx', 'xls'].contains(extension)) {
+            final fileStats = await entity.stat();
+            debugPrint('SIZE OF FILE: ${fileStats.size}');
+            final fileSize = await _getFileSize(entity.path, fileStats.size);
+            debugPrint(fileSize);
+
+            files.add(
+              DatasetFile(
+                fileName: path.basename(entity.path),
+                fileType: extension.replaceFirst('.', ''),
+                fileSize: fileSize,
+                filePath: entity.path,
+                modified: fileStats.modified,
+                isStarred: false,
+              ),
+            );
+          } else if (entity is Directory) {
+            await _scanDirectory(entity.path, files);
+          }
+        }
+      }
+    } catch (ex) {
+      debugPrint('Unable to scan directories: $ex');
+    }
+  }
+
+  Future<String> _getFileSize(String filepath, int bytes) async {
+    if (bytes < 1024) {
+      return '$bytes B';
+    } else if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
   }
 
   void setupDirectoryWatcher(String dirPath) {
@@ -71,6 +141,31 @@ class _FolderAllState extends State<FolderAll> {
       });
     } catch (ex) {
       debugPrint('setupDirectoryWatcher(): $ex');
+    }
+  }
+
+  void setupFileWatcher(String directoryPath) {
+    try {
+      final subscription = Directory(directoryPath).watch(recursive: false).listen((event) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            final filePath = event.path;
+            final extension = path.extension(filePath).toLowerCase();
+
+            if ([".json", ".csv", ".xlsx", ".xls"].contains(extension)) {
+              scanForDatasetFiles(selectedRootDirectoryPath);
+              debugPrint('Something happened to your file niga: ${event.path} - ${event.type}');
+            } else if (event.type == FileSystemEvent.create && Directory(event.path).existsSync()) {
+              setupFileWatcher(event.path);
+              watchedDirectories.add(event.path);
+              scanForDatasetFiles(selectedRootDirectoryPath);
+            }
+          }
+        });
+      });
+      fileWatchers.add(subscription);
+    } catch (ex) {
+      debugPrint('Error setting up file stalker: $ex');
     }
   }
 
@@ -149,6 +244,9 @@ class _FolderAllState extends State<FolderAll> {
 
   @override
   void dispose() {
+    for (var watcher in fileWatchers) {
+      watcher.cancel();
+    }
     directoryWatcher?.cancel();
     pathSubscription.cancel();
     super.dispose();
@@ -284,52 +382,7 @@ class _FolderAllState extends State<FolderAll> {
                             ),
                             const SizedBox(height: 12.0),
                             if (folders.isNotEmpty) _buildFoldersSection(),
-                            _buildUploadedDatasetsList(
-                              filesMetaData: [
-                                {
-                                  'fileName': 'mnist.csv',
-                                  'fileType': 'CSV',
-                                  'size': '24 MB',
-                                  'modified': '1 hour ago',
-                                  'starred': 'false',
-                                },
-                                {
-                                  'fileName': 'customer_data.json',
-                                  'fileType': 'JSON',
-                                  'size': '56 KB',
-                                  'modified': 'Yesterday',
-                                  'starred': 'true',
-                                },
-                                {
-                                  'fileName': 'sales_report.xlsx',
-                                  'fileType': 'XLSX',
-                                  'size': '2.3 MB',
-                                  'modified': 'Last week',
-                                  'starred': 'false',
-                                },
-                                {
-                                  'fileName': 'mnist.csv',
-                                  'fileType': 'CSV',
-                                  'size': '24 MB',
-                                  'modified': '1 hour ago',
-                                  'starred': 'false',
-                                },
-                                {
-                                  'fileName': 'customer_data.json',
-                                  'fileType': 'JSON',
-                                  'size': '56 KB',
-                                  'modified': 'Yesterday',
-                                  'starred': 'true',
-                                },
-                                {
-                                  'fileName': 'sales_report.xlsx',
-                                  'fileType': 'XLSX',
-                                  'size': '2.3 MB',
-                                  'modified': 'Last week',
-                                  'starred': 'false',
-                                },
-                              ],
-                            ),
+                            _buildUploadedDatasetsList(),
                           ],
                         ),
                       if (!anyFilesPresent)
@@ -369,8 +422,10 @@ class _FolderAllState extends State<FolderAll> {
     );
   }
 
-  Widget _buildUploadedDatasetsList({required List<Map<String, String>> filesMetaData}) {
+  Widget _buildUploadedDatasetsList() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final filesMetaData = datasetFiles.map((file) => file.toMap()).toList();
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.89,
@@ -381,7 +436,7 @@ class _FolderAllState extends State<FolderAll> {
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: Text(
-              'Recent Datasets',
+              'Uploaded Datasets',
               style: TextStyle(
                 fontSize: 22.0,
                 fontWeight: FontWeight.bold,
@@ -464,121 +519,131 @@ class _FolderAllState extends State<FolderAll> {
                 ),
               ],
             ),
-            child: NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification.depth == 0) {
-                  return true;
-                }
-                return false;
-              },
-              child: ListView.separated(
-                physics: ClampingScrollPhysics(),
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: filesMetaData.length,
-                separatorBuilder:
-                    (context, index) =>
-                        Divider(color: isDarkMode ? Colors.grey[800] : Colors.grey[200], height: 1),
-                itemBuilder: (context, index) {
-                  final fileData = filesMetaData[index];
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
-                      border:
-                          index == filesMetaData.length - 1
-                              ? Border(bottom: BorderSide(color: Colors.transparent))
-                              : null,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          _getFileIcon(fileData['fileType'] ?? ''),
-                          size: 24,
-                          color: _getFileColor(fileData['fileType'] ?? ''),
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          flex: 3,
-                          child: Text(
-                            fileData['fileName'] ?? '',
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.w500,
-                              color: isDarkMode ? Colors.white : Colors.black87,
+            child:
+                filesMetaData.isEmpty
+                    ? Center(
+                      child: Text(
+                        'No datasets found!',
+                        style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+                      ),
+                    )
+                    : NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification.depth == 0) {
+                          return true;
+                        }
+                        return false;
+                      },
+                      child: ListView.separated(
+                        physics: ClampingScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: filesMetaData.length,
+                        separatorBuilder:
+                            (context, index) => Divider(
+                              color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                              height: 1,
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                        itemBuilder: (context, index) {
+                          final fileData = filesMetaData[index];
+                          return Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
                             decoration: BoxDecoration(
-                              color: _getFileColor(
-                                fileData['fileType'] ?? '',
-                              ).withValues(alpha: isDarkMode ? 0.2 : 0.1),
-                              borderRadius: BorderRadius.circular(12.0),
+                              color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+                              border:
+                                  index == filesMetaData.length - 1
+                                      ? Border(bottom: BorderSide(color: Colors.transparent))
+                                      : null,
                             ),
-                            child: Text(
-                              fileData['fileType'] ?? '',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14.0,
-                                color: _getFileColor(fileData['fileType'] ?? ''),
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _getFileIcon(fileData['fileType'] ?? ''),
+                                  size: 24,
+                                  color: _getFileColor(fileData['fileType'] ?? ''),
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    fileData['fileName'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDarkMode ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                    decoration: BoxDecoration(
+                                      color: _getFileColor(
+                                        fileData['fileType'] ?? '',
+                                      ).withValues(alpha: isDarkMode ? 0.2 : 0.1),
+                                      borderRadius: BorderRadius.circular(12.0),
+                                    ),
+                                    child: Text(
+                                      fileData['fileType'] ?? '',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 14.0,
+                                        color: _getFileColor(fileData['fileType'] ?? ''),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Text(
+                                    fileData['size'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 14.0,
+                                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    fileData['modified'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 14.0,
+                                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    fileData['starred'] == 'true' ? Icons.star : Icons.star_border,
+                                    size: 20,
+                                    color:
+                                        fileData['starred'] == 'true'
+                                            ? Colors.amber
+                                            : (isDarkMode ? Colors.grey[400] : null),
+                                  ),
+                                  onPressed: () {},
+                                  tooltip: "Add to favorites",
+                                  splashRadius: 20,
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    size: 20,
+                                    color: isDarkMode ? Colors.grey[400] : null,
+                                  ),
+                                  onPressed: () {},
+                                  tooltip: "More options",
+                                  splashRadius: 20,
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Text(
-                            fileData['size'] ?? '',
-                            style: TextStyle(
-                              fontSize: 14.0,
-                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            fileData['modified'] ?? '',
-                            style: TextStyle(
-                              fontSize: 14.0,
-                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            fileData['starred'] == 'true' ? Icons.star : Icons.star_border,
-                            size: 20,
-                            color:
-                                fileData['starred'] == 'true'
-                                    ? Colors.amber
-                                    : (isDarkMode ? Colors.grey[400] : null),
-                          ),
-                          onPressed: () {},
-                          tooltip: "Add to favorites",
-                          splashRadius: 20,
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.more_vert,
-                            size: 20,
-                            color: isDarkMode ? Colors.grey[400] : null,
-                          ),
-                          onPressed: () {},
-                          tooltip: "More options",
-                          splashRadius: 20,
-                        ),
-                      ],
+                          );
+                        },
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
           ),
         ],
       ),
