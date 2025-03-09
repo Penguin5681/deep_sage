@@ -12,6 +12,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -62,13 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       valueListenable: UserImageService().profileImageUrl,
       builder: (context, imageUrl, child) {
         if (imageUrl != null) {
-          return ClipOval(
-            child: SizedBox(
-              width: 48,
-              height: 48,
-              child: Image.network(imageUrl),
-            ),
-          );
+          return ClipOval(child: SizedBox(width: 48, height: 48, child: Image.network(imageUrl)));
         }
 
         return FutureBuilder<Image>(
@@ -82,21 +77,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
               );
             } else if (snapshot.hasData) {
-              return ClipOval(
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: snapshot.data!,
-                ),
-              );
+              return ClipOval(child: SizedBox(width: 48, height: 48, child: snapshot.data!));
             } else {
-              return ClipOval(
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: fallbackUserAvatar,
-                ),
-              );
+              return ClipOval(child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar));
             }
           },
         );
@@ -146,10 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(height: 40),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: buildProfileImage(),
-                      ),
+                      MouseRegion(cursor: SystemMouseCursors.click, child: buildProfileImage()),
                     ],
                   ),
                 ),
@@ -271,6 +251,20 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   late var isDatasetUploaded = false;
   late var datasetPath = '';
+  late String userName = '';
+
+  Future<void> retrieveDisplayName() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    setState(() {
+      userName = user!.userMetadata?['display_name'] ?? 'User';
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    retrieveDisplayName();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -285,8 +279,8 @@ class _DashboardState extends State<Dashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Welcome back, Larry',
+                  Text(
+                    'Welcome back, $userName',
                     style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 25),
