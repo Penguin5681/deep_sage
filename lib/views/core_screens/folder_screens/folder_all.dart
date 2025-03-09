@@ -87,11 +87,9 @@ class _FolderAllState extends State<FolderAll> {
       await for (var entity in dir.list()) {
         if (entity is File) {
           final extension = path.extension(entity.path).toLowerCase();
-          if (['.json', '.csv', '.xlsx', 'xls'].contains(extension)) {
+          if (['.json', '.csv', '.xlsx', '.xls'].contains(extension)) {
             final fileStats = await entity.stat();
-            debugPrint('SIZE OF FILE: ${fileStats.size}');
             final fileSize = await _getFileSize(entity.path, fileStats.size);
-            debugPrint(fileSize);
 
             files.add(
               DatasetFile(
@@ -103,9 +101,9 @@ class _FolderAllState extends State<FolderAll> {
                 isStarred: false,
               ),
             );
-          } else if (entity is Directory) {
-            await _scanDirectory(entity.path, files);
           }
+        } else if (entity is Directory) {
+          await _scanDirectory(entity.path, files);
         }
       }
     } catch (ex) {
@@ -131,10 +129,11 @@ class _FolderAllState extends State<FolderAll> {
     if (dirPath.isEmpty) return;
 
     try {
-      directoryWatcher = Directory(dirPath).watch(recursive: false).listen((event) {
+      directoryWatcher = Directory(dirPath).watch(recursive: true).listen((event) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             getDirectoryFileCounts(dirPath);
+            scanForDatasetFiles(dirPath);
             debugPrint('Something happened in the root: ${event.path} - ${event.type}');
           }
         });
@@ -146,7 +145,7 @@ class _FolderAllState extends State<FolderAll> {
 
   void setupFileWatcher(String directoryPath) {
     try {
-      final subscription = Directory(directoryPath).watch(recursive: false).listen((event) {
+      final subscription = Directory(directoryPath).watch(recursive: true).listen((event) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             final filePath = event.path;
@@ -546,6 +545,7 @@ class _FolderAllState extends State<FolderAll> {
                             ),
                         itemBuilder: (context, index) {
                           final fileData = filesMetaData[index];
+                          debugPrint('$fileData');
                           return Container(
                             padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
                             decoration: BoxDecoration(
@@ -598,7 +598,7 @@ class _FolderAllState extends State<FolderAll> {
                                 Expanded(
                                   flex: 1,
                                   child: Text(
-                                    fileData['size'] ?? '',
+                                    fileData['fileSize'] ?? '',
                                     style: TextStyle(
                                       fontSize: 14.0,
                                       color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
