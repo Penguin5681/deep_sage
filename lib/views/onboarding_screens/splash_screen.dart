@@ -1,13 +1,35 @@
+import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:word_carousel/word_carousel.dart';
 
-class SplashScreen extends StatelessWidget {
-  final WordCarouselController controller = WordCarouselController();
+class SplashScreen extends StatefulWidget {
 
-  SplashScreen({super.key});
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  final WordCarouselController controller = WordCarouselController();
+  late bool isThereAnyValidSession = false;
+  Future<void> validateSession() async {
+    final accessToken = await Hive.box(dotenv.env['USER_HIVE_BOX']!).get('userSessionToken');
+    if (accessToken != null) {
+      isThereAnyValidSession = true;
+    } else {
+      isThereAnyValidSession = false;
+    }
+  }
+  @override
+  void initState() {
+    validateSession();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,28 +38,34 @@ class SplashScreen extends StatelessWidget {
 
     Route createDashboardRoute() {
       return PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) => DashboardScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => DashboardScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(1.0, 0.0);
           const end = Offset.zero;
           const curve = Curves.ease;
 
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(position: animation.drive(tween), child: child);
+        },
+      );
+    }
+
+    Route createLoginRoute() {
+      return PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.ease;
+
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          return SlideTransition(position: animation.drive(tween), child: child);
         },
       );
     }
 
     return Scaffold(
-      floatingActionButton:
-          env == 'development' ? DevFAB(parentContext: context) : null,
+      floatingActionButton: env == 'development' ? DevFAB(parentContext: context) : null,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -86,10 +114,7 @@ class SplashScreen extends StatelessWidget {
                   rotatingTextStyle: TextStyle(
                     fontSize: 42,
                     fontWeight: FontWeight.w700,
-                    color:
-                        isDarkMode
-                            ? const Color(0xFF2C5364)
-                            : const Color(0xFF0F2027),
+                    color: isDarkMode ? const Color(0xFF2C5364) : const Color(0xFF0F2027),
                     fontFamily: 'RobotoMono',
                     letterSpacing: 1.2,
                   ),
@@ -97,9 +122,11 @@ class SplashScreen extends StatelessWidget {
                   animationDuration: const Duration(milliseconds: 800),
                   onTextChanged: (value) {
                     if (value == 4) {
-                      Navigator.of(
-                        context,
-                      ).pushReplacement(createDashboardRoute());
+                      if (isThereAnyValidSession) {
+                        Navigator.of(context).pushReplacement(createDashboardRoute());
+                      } else {
+                        Navigator.of(context).pushReplacement(createLoginRoute());
+                      }
                     }
                   },
                 ),
@@ -115,18 +142,14 @@ class SplashScreen extends StatelessWidget {
                 const SizedBox(height: 50),
                 CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    isDarkMode
-                        ? Colors.lightBlueAccent
-                        : const Color(0xFF2C5364),
+                    isDarkMode ? Colors.lightBlueAccent : const Color(0xFF2C5364),
                   ),
                   strokeWidth: 2.0,
                 ),
                 const SizedBox(height: 20),
                 Text(
                   'Initializing AI Core...',
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white54 : Colors.grey[600],
-                  ),
+                  style: TextStyle(color: isDarkMode ? Colors.white54 : Colors.grey[600]),
                 ),
               ],
             ),
