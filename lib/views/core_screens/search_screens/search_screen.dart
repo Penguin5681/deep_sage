@@ -3,6 +3,11 @@ import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/helpers/debouncer.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_finances.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_gov.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_health.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_manufacture.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_tech.dart';
 import 'package:flutter/material.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -216,9 +221,7 @@ class _SearchScreenState extends State<SearchScreen>
                                   height: 22,
                                 ),
                                 const SizedBox(height: 8.0),
-                                Text(
-                                  'Kaggle Datasets',
-                                ),
+                                Text('Kaggle Datasets'),
                                 // the dataset title
                                 Text(
                                   title,
@@ -533,6 +536,13 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  void handleSearch(String query) {
+    setState(() {
+      controller.text = query;
+    });
+    searchFocusNode.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     var isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -643,14 +653,19 @@ class _SearchScreenState extends State<SearchScreen>
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [
-                CategoryAll(),
+              children: [
+                CategoryAll(onSearch: handleSearch),
+                CategoryFinances(onSearch: handleSearch),
+                CategoryTechnology(onSearch: handleSearch),
+                CategoryHealthcare(onSearch: handleSearch),
+                CategoryGovernment(onSearch: handleSearch),
+                CategoryManufacturing(onSearch: handleSearch),
                 // TODO: Pass all the filters in the respective screens
-                Center(child: Text('Screen 2')),
-                Center(child: Text('Screen 3')),
-                Center(child: Text('Screen 4')),
-                Center(child: Text('Screen 5')),
-                Center(child: Text('Screen 6')),
+                // Center(child: Text('Screen 2')),
+                // Center(child: Text('Screen 3')),
+                // Center(child: Text('Screen 4')),
+                // Center(child: Text('Screen 5')),
+                // Center(child: Text('Screen 6')),
               ],
             ),
           ),
