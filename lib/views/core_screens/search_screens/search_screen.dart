@@ -3,7 +3,14 @@ import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/helpers/debouncer.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_finances.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_gov.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_health.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_manufacture.dart';
+import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_tech.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -12,16 +19,13 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen>
-    with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   String selectedSource = 'Hugging Face';
 
-  final Debouncer _debouncer = Debouncer(
-    delayBetweenRequests: const Duration(milliseconds: 200),
-  );
+  final Debouncer _debouncer = Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
   List<DatasetSuggestion> _suggestions = [];
   bool _isLoading = false;
   bool _isDatasetCardLoading = false;
@@ -138,10 +142,8 @@ class _SearchScreenState extends State<SearchScreen>
     );
 
     if (source case 'kaggle') {
-      final KaggleDatasetInfoService kaggleDatasetInfoService =
-          KaggleDatasetInfoService();
-      kaggleMetadata = await kaggleDatasetInfoService
-          .retrieveKaggleDatasetMetadata(datasetId);
+      final KaggleDatasetInfoService kaggleDatasetInfoService = KaggleDatasetInfoService();
+      kaggleMetadata = await kaggleDatasetInfoService.retrieveKaggleDatasetMetadata(datasetId);
     } else {
       debugPrint('Something bad happened');
     }
@@ -161,264 +163,306 @@ class _SearchScreenState extends State<SearchScreen>
         String description = '';
         String owner = '';
         String size = '';
-        List<String> configs = [];
+        String url = '';
+        String lastUpdated = '';
+        String id = '';
+        int votes = 0;
+        int downloadCount = 0;
 
         if (source == 'kaggle' && kaggleMetadata != null) {
           title = kaggleMetadata.title;
           description = kaggleMetadata.description;
           owner = kaggleMetadata.owner;
           size = kaggleMetadata.size;
-          configs = [];
+          votes = kaggleMetadata.voteCount;
+          url = kaggleMetadata.url;
+          lastUpdated = kaggleMetadata.lastUpdated;
+          downloadCount = kaggleMetadata.downloadCount;
+          id = kaggleMetadata.id;
         }
 
-        return Center(
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width - 300,
-            height: MediaQuery.of(context).size.height - 300,
-            child: Container(
-              decoration: BoxDecoration(
-                // dataset card background
-                color: isDarkMode ? Colors.black : Colors.white,
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 1
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 75.0,
-                      right: 75.0,
-                      top: 40.0,
-                    ),
-                    child: Container(
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14.0),
-                        color:
-                            isDarkMode
-                                ? Colors.grey.shade900
-                                : Colors.grey.shade300,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Icon Container
-                          const SizedBox(height: 18.0),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 20.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Image.asset(
-                                  AppIcons.kaggleLogo,
-                                  width: 22,
-                                  height: 22,
-                                ),
-                                const SizedBox(height: 8.0),
-                                Text(
-                                  'Kaggle Datasets',
-                                ),
-                                // the dataset title
-                                Text(
-                                  title,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 24.0,
-                                  ),
-                                ),
-                                const SizedBox(height: 8.0),
-                                Text(
-                                  description,
-                                  maxLines: 4,
-                                  softWrap: true,
-                                  style: TextStyle(fontSize: 16.0),
-                                ),
-                                const SizedBox(height: 8.0),
-                                Row(
-                                  children: [
-                                    // buttons
-                                    ElevatedButton(
-                                      onPressed: () {},
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue.shade600,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 12,
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        "Import",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10.0),
-                                    OutlinedButton(
-                                      onPressed: () {
-                                        // onNavigate(1);
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        side: BorderSide(
-                                          color: Colors.blue.shade600,
-                                          width: 2,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                        foregroundColor: Colors.blue.shade600,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 12,
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        "Download",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16.0),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 18.0),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      left: 76.0,
-                      right: 76.0,
-                      top: 16.0,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(),
-                      child: Row(
-                        children: [
-                          // Icon Container
-                          source == 'kaggle'
-                              ? Container(
-                                decoration: BoxDecoration(
-                                  color:
-                                      isDarkMode
-                                          ? Colors.grey.shade300
-                                          : Colors.grey.shade600,
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Image.asset(
-                                    isDarkMode
-                                        ? AppIcons.serverLight
-                                        : AppIcons.serverDark,
-                                    width: 15,
-                                    height: 15,
-                                  ),
-                                ),
-                              )
-                              : Container(),
-                          const SizedBox(width: 12.0),
-                          source == 'kaggle'
-                              ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Dataset Size'),
-                                  Text('$size (compressed)'),
-                                ],
-                              )
-                              : Container(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16.0),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 76.0, right: 76.0),
-                    child: Row(
-                      children: [
-                        // Icon Container
-                        ClipOval(
-                          child: Image.asset(
-                            AppIcons.larry,
-                            width: 32,
-                            height: 32,
-                          ),
-                        ),
-                        const SizedBox(width: 12.0),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [const Text('Owner'), Text(owner)],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // show configs here
-                  const SizedBox(height: 16.0),
-                  // configs here
-                  source == 'huggingface' && configs.isNotEmpty
-                      ? Padding(
-                        padding: const EdgeInsets.only(
-                          left: 76.0,
-                          right: 76.0,
-                          top: 16.0,
-                        ),
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 150, vertical: 50),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey.shade900 : Colors.white,
+              borderRadius: BorderRadius.circular(16.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                  child: Row(
+                    children: [
+                      Image.asset(AppIcons.kaggleLogo, width: 28, height: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Configurations',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              'Kaggle Dataset',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                              ),
                             ),
-                            const SizedBox(height: 8.0),
-                            Wrap(
-                              spacing: 8.0,
-                              runSpacing: 8.0,
-                              children:
-                                  configs.map((config) {
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12.0,
-                                        vertical: 6.0,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            isDarkMode
-                                                ? Colors.grey.shade800
-                                                : Colors.grey.shade200,
-                                        borderRadius: BorderRadius.circular(
-                                          16.0,
-                                        ),
-                                      ),
-                                      child: Text(config),
-                                    );
-                                  }).toList(),
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black,
+                              ),
                             ),
                           ],
                         ),
-                      )
-                      : Container(),
-                ],
-              ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: isDarkMode ? Colors.white : Colors.black),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'ID: $id',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+
+                const Divider(height: 32),
+
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: description.isEmpty
+                              ? Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'No description available',
+                                style: TextStyle(
+                                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          )
+                              : Text(
+                            description,
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Text(
+                          'Dataset Information',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 3,
+                          childAspectRatio: 2.5,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          children: [
+                            _buildInfoItem(isDarkMode, Icons.person, 'Owner', owner),
+                            _buildInfoItem(isDarkMode, Icons.folder, 'Size', size),
+                            _buildInfoItem(isDarkMode, Icons.thumb_up, 'Votes', votes.toString()),
+                            _buildInfoItem(
+                              isDarkMode,
+                              Icons.download,
+                              'Downloads',
+                              NumberFormat.compact().format(downloadCount),
+                            ),
+                            _buildInfoItem(isDarkMode, Icons.update, 'Last Updated', lastUpdated),
+                            _buildInfoItem(
+                              isDarkMode,
+                              Icons.link,
+                              'URL',
+                              'View on Kaggle',
+                              isLink: true,
+                              linkUrl: url,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.black : Colors.grey.shade50,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.cloud_download),
+                        label: const Text('Download'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                          foregroundColor: isDarkMode ? Colors.white : Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.add_chart),
+                        label: const Text('Import'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildInfoItem(
+      bool isDarkMode,
+      IconData icon,
+      String label,
+      String value, {
+        bool isLink = false,
+        String? linkUrl,
+      }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey.shade700 : Colors.white,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              icon,
+              color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+                if (isLink)
+                  InkWell(
+                    onTap: linkUrl != null ? () async {
+                      if (!await launchUrl(Uri.parse(linkUrl))) {
+                        throw Exception('Unable to launch url!');
+                      }
+                      debugPrint('Launch URL: $linkUrl');
+                    } : null,
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  )
+                else
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode ? Colors.white : Colors.black,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -438,16 +482,9 @@ class _SearchScreenState extends State<SearchScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(
-                color: isDarkMode ? Colors.white : Colors.blue.shade600,
-              ),
+              CircularProgressIndicator(color: isDarkMode ? Colors.white : Colors.blue.shade600),
               const SizedBox(height: 16.0),
-              Text(
-                'Loading...',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-              ),
+              Text('Loading...', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
             ],
           ),
         ),
@@ -456,8 +493,7 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   OverlayEntry _createOverlayEntry() {
-    RenderBox renderBox =
-        _textFieldKey.currentContext!.findRenderObject() as RenderBox;
+    RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
     var isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -492,10 +528,8 @@ class _SearchScreenState extends State<SearchScreen>
                             _isDatasetCardLoading = true;
                             debugPrint(_isDatasetCardLoading.toString());
                             debugPrint(suggestion.source);
-                            await openDatasetCard(
-                              suggestion.name,
-                              suggestion.source,
-                            );
+                            await openDatasetCard(suggestion.name, suggestion.source);
+                            debugPrint(suggestion.name);
                             setState(() {
                               _isDatasetCardLoading = false;
                               debugPrint(_isDatasetCardLoading.toString());
@@ -509,16 +543,13 @@ class _SearchScreenState extends State<SearchScreen>
                           child: ListTile(
                             title: Text(
                               suggestion.name,
-                              style: TextStyle(
-                                color: isDarkMode ? Colors.white : Colors.black,
-                              ),
+                              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                             ),
                             subtitle: Text(
                               'Kaggle',
                               style: TextStyle(
                                 fontSize: 14,
-                                color:
-                                    isDarkMode ? Colors.grey[300] : Colors.grey,
+                                color: isDarkMode ? Colors.grey[300] : Colors.grey,
                               ),
                             ),
                           ),
@@ -531,6 +562,13 @@ class _SearchScreenState extends State<SearchScreen>
             ),
           ),
     );
+  }
+
+  void handleSearch(String query) {
+    setState(() {
+      controller.text = query;
+    });
+    searchFocusNode.requestFocus();
   }
 
   @override
@@ -555,10 +593,7 @@ class _SearchScreenState extends State<SearchScreen>
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
                     onTap: () {},
-                    child: const Text(
-                      'Search',
-                      style: TextStyle(fontSize: 16.0),
-                    ),
+                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
                   ),
                 ),
               ],
@@ -586,9 +621,7 @@ class _SearchScreenState extends State<SearchScreen>
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: const Text(
-                                    'Search has been completed',
-                                  ),
+                                  title: const Text('Search has been completed'),
                                   content: Text('You Searched for: $value'),
                                 );
                               },
@@ -602,16 +635,11 @@ class _SearchScreenState extends State<SearchScreen>
                                       width: 24,
                                       height: 24,
                                       padding: const EdgeInsets.all(6.0),
-                                      child: const CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
+                                      child: const CircularProgressIndicator(strokeWidth: 2),
                                     )
                                     : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10.0),
-                            ),
-                            hintText:
-                                'Search Datasets by name, type or category',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
+                            hintText: 'Search Datasets by name, type or category',
                           ),
                         ),
                       ),
@@ -643,14 +671,19 @@ class _SearchScreenState extends State<SearchScreen>
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [
-                CategoryAll(),
+              children: [
+                CategoryAll(onSearch: handleSearch),
+                CategoryFinances(onSearch: handleSearch),
+                CategoryTechnology(onSearch: handleSearch),
+                CategoryHealthcare(onSearch: handleSearch),
+                CategoryGovernment(onSearch: handleSearch),
+                CategoryManufacturing(onSearch: handleSearch),
                 // TODO: Pass all the filters in the respective screens
-                Center(child: Text('Screen 2')),
-                Center(child: Text('Screen 3')),
-                Center(child: Text('Screen 4')),
-                Center(child: Text('Screen 5')),
-                Center(child: Text('Screen 6')),
+                // Center(child: Text('Screen 2')),
+                // Center(child: Text('Screen 3')),
+                // Center(child: Text('Screen 4')),
+                // Center(child: Text('Screen 5')),
+                // Center(child: Text('Screen 6')),
               ],
             ),
           ),

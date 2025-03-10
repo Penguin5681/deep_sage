@@ -6,8 +6,12 @@ class UserImageService {
   UserImageService._internal();
 
   final ValueNotifier<String?> profileImageUrl = ValueNotifier<String?>(null);
+  String? _cachedUrl;
 
   void updateProfileImageUrl(String? url) {
+    _cachedUrl = url;
     profileImageUrl.value = url;
   }
+
+  String? get cachedUrl => _cachedUrl;
 }
