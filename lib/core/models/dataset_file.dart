@@ -1,10 +1,10 @@
 class DatasetFile {
-  final String fileName;
-  final String fileType;
-  final String fileSize;
-  final String filePath;
-  final DateTime modified;
-  final bool isStarred;
+  String fileName;
+  String fileType;
+  String fileSize;
+  String filePath;
+  DateTime modified;
+  bool isStarred;
 
   DatasetFile({
     required this.fileName,
