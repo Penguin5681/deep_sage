@@ -11,14 +11,22 @@ import 'package:hive_flutter/adapters.dart';
 import '../../../../core/models/user_api_model.dart';
 
 class CategoryAll extends StatefulWidget {
-  const CategoryAll({super.key});
+  final Function(String) onSearch;
+
+  const CategoryAll({super.key, required this.onSearch});
 
   @override
   State<CategoryAll> createState() => _CategoryAllState();
 }
 
 class _CategoryAllState extends State<CategoryAll> {
-  final List<String> _sortParams = ['hottest', 'votes', 'updated', 'active', 'published'];
+  final List<String> _sortParams = [
+    'hottest',
+    'votes',
+    'updated',
+    'active',
+    'published',
+  ];
   int _currentSortIndex = 0;
 
   String get _currentSortParam => _sortParams[_currentSortIndex];
@@ -41,7 +49,9 @@ class _CategoryAllState extends State<CategoryAll> {
   Future<void> fetchPopularDatasets() async {
     final service = PopularDatasetService();
     try {
-      final datasets = await service.fetchPopularDatasets(sortBy: _currentSortParam);
+      final datasets = await service.fetchPopularDatasets(
+        sortBy: _currentSortParam,
+      );
       setState(() {
         popularDatasets =
             datasets
@@ -177,6 +187,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         subLabelText: 'Historical Stock prices and data',
                         buttonText: 'Search',
                         darkIconPath: AppIcons.chartDark,
+                        onSearch: () => widget.onSearch('Stock Market Data'),                      
                       ),
                       const SizedBox(width: 25),
                       DatasetCard(
@@ -185,6 +196,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         labelText: 'Explore AI & Tech Trends',
                         subLabelText: 'Latest datasets on AI, ML, and emerging technologies',
                         buttonText: 'Search',
+                        onSearch: () => widget.onSearch('AI & Tech Trends'),
                       ),
                       const SizedBox(width: 25),
                       DatasetCard(
@@ -193,6 +205,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         labelText: 'Explore Healthcare Insights',
                         subLabelText: 'Medical research, patient statistics, and health trends',
                         buttonText: 'Search',
+                        onSearch: () => widget.onSearch('Healthcare Insights'),
                       ),
                       const SizedBox(width: 25),
                       DatasetCard(
@@ -201,6 +214,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         labelText: 'Explore Government Open Data',
                         subLabelText: 'Public reports, policies, and economic indicators',
                         buttonText: 'Search',
+                        onSearch: () => widget.onSearch('Government Open Data'),
                       ),
                       const SizedBox(width: 25),
                       DatasetCard(
@@ -210,6 +224,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         subLabelText:
                             'Production data, supply chain insights, and industrial trends',
                         buttonText: 'Search',
+                        onSearch: () => widget.onSearch('Manufacturing Analytics'),
                       ),
                     ],
                   ),

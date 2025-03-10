@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../../models/user_api_model.dart';
 
-
 class PopularDataset {
   final String id;
   final String title;
@@ -17,6 +16,8 @@ class PopularDataset {
   final String size;
   final int downloadCount;
   final int voteCount;
+  // Experimenting
+  final String category;
 
   String get addedTime => _formatDate(lastUpdated);
   String get fileType => 'CSV';
@@ -32,6 +33,8 @@ class PopularDataset {
     required this.size,
     required this.downloadCount,
     required this.voteCount,
+    // Experimenting
+    required this.category,
   });
 
   factory PopularDataset.fromJson(Map<String, dynamic> json) {
@@ -58,6 +61,8 @@ class PopularDataset {
       size: json['size']?.toString() ?? '0 B',
       downloadCount: safeParseInt(json['downloadCount']),
       voteCount: safeParseInt(json['voteCount']),
+      // Experimenting
+      category: json['category'],
     );
   }
 
@@ -107,11 +112,9 @@ class PopularDatasetService {
       throw Exception('Kaggle credentials not configured');
     }
 
-    final uri = Uri.parse('$baseUrl/api/datasets/kaggle')
-        .replace(queryParameters: {
-      'limit': limit.toString(),
-      'sort_by': sortBy,
-    });
+    final uri = Uri.parse(
+      '$baseUrl/api/datasets/kaggle',
+    ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
 
     final headers = {
       'X-Kaggle-Username': kaggleUsername,
@@ -129,7 +132,9 @@ class PopularDatasetService {
 
         final List<dynamic> data = json.decode(response.body);
 
-        if (data.isNotEmpty && data.first is Map && (data.first as Map).containsKey('error')) {
+        if (data.isNotEmpty &&
+            data.first is Map &&
+            (data.first as Map).containsKey('error')) {
           throw Exception('API error: ${data.first['error']}');
         }
 
@@ -138,11 +143,15 @@ class PopularDatasetService {
         try {
           final errorBody = json.decode(response.body);
           if (errorBody is Map && errorBody.containsKey('error')) {
-            throw Exception('API error (${response.statusCode}): ${errorBody['error']}');
+            throw Exception(
+              'API error (${response.statusCode}): ${errorBody['error']}',
+            );
           }
         } catch (_) {}
 
-        throw Exception('Failed to load datasets (Status: ${response.statusCode})');
+        throw Exception(
+          'Failed to load datasets (Status: ${response.statusCode})',
+        );
       }
     } catch (e) {
       rethrow;

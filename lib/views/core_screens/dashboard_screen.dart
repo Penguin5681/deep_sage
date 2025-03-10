@@ -53,8 +53,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<Image> loadProfileImageFromHive() async {
+    if (UserImageService().cachedUrl != null) {
+      return Image.network(UserImageService().cachedUrl!);
+    }
+
     final imageUrl = await userHiveBox.get('userAvatarUrl');
     if (imageUrl != null) {
+      UserImageService().updateProfileImageUrl(imageUrl);
       return Image.network(imageUrl);
     }
     return fallbackUserAvatar;
@@ -64,18 +69,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ValueListenableBuilder<String?>(
       valueListenable: UserImageService().profileImageUrl,
       builder: (context, imageUrl, child) {
-        if (imageUrl != null) {
-          return ClipOval(child: SizedBox(width: 48, height: 48, child: Image.network(imageUrl)));
+        if (UserImageService().cachedUrl != null) {
+          return ClipOval(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.network(UserImageService().cachedUrl!),
+            ),
+          );
         }
 
         return FutureBuilder<Image>(
           future: loadProfileImageFromHive(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
+              debugPrint('profile loaded');
               return Container(
                 width: 48,
                 height: 48,
-                color: Colors.grey[300],
+                color: Colors.transparent,
                 child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
               );
             } else if (snapshot.hasData) {
@@ -430,6 +442,7 @@ class _DashboardState extends State<Dashboard> {
                           subLabelText: datasetPath,
                           buttonText: 'Analyze',
                           darkIconPath: AppIcons.checkDark,
+                          onSearch: () {},
                         ),
                       ],
                     ),
@@ -471,6 +484,7 @@ class _DashboardState extends State<Dashboard> {
                                     'Analysis 2003',
                                 subLabelText: 'Last opened 2 hours ago',
                                 buttonText: 'Open',
+                                onSearch: () {},
                               ),
                               const SizedBox(width: 15.0),
                               DatasetCard(
@@ -479,6 +493,7 @@ class _DashboardState extends State<Dashboard> {
                                 labelText: 'Customer Behaviour',
                                 subLabelText: 'Last opened yesterday',
                                 buttonText: 'Open',
+                                onSearch: () {},
                               ),
                               const SizedBox(width: 15.0),
                               DatasetCard(
@@ -487,6 +502,7 @@ class _DashboardState extends State<Dashboard> {
                                 labelText: 'Market Research',
                                 subLabelText: 'Last opened 3 days ago',
                                 buttonText: 'Open',
+                                onSearch: () {},
                               ),
                               const SizedBox(width: 15.0),
                             ],
@@ -510,6 +526,7 @@ class _DashboardState extends State<Dashboard> {
                               'Your recent datasets show a 23% increase in customer engagement patterns',
                           subLabelSize: 17.0,
                           buttonText: 'Open',
+                          onSearch: () {},
                         ),
                       ],
                     ),
