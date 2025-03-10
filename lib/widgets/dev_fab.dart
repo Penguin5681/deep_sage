@@ -40,7 +40,10 @@ class DevFAB extends StatelessWidget {
           label: 'Switch Theme',
           onTap: () {
             isDialOpen.value = false;
-            Provider.of<ThemeProvider>(parentContext, listen: false).toggleTheme();
+            Provider.of<ThemeProvider>(
+              parentContext,
+              listen: false,
+            ).toggleTheme();
           },
         ),
         SpeedDialChild(
@@ -102,8 +105,41 @@ class DevFAB extends StatelessWidget {
                 debugPrint('Kaggle Username: ${userApiData.kaggleUserName}');
                 debugPrint('Item 2:');
                 debugPrint('Kaggle API Key: ${userApiData.kaggleApiKey}');
-                debugPrint('Item 3:');
-                debugPrint('HF Token: ${userApiData.hfToken}');
+              }
+            }
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.bug_report),
+          label: 'Debug Print Hive data',
+          onTap: () {
+            final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+            debugPrint('=== HIVE BOX DATA ===');
+            debugPrint('Box name: ${hiveBox.name}');
+            debugPrint('Items count: ${hiveBox.length}');
+
+            for (int i = 0; i < hiveBox.length; i++) {
+              final item = hiveBox.getAt(i);
+              debugPrint('Item $i: ${item.runtimeType}');
+
+              if (item is UserApi) {
+                debugPrint('  Kaggle Username: ${item.kaggleUserName}');
+                debugPrint('  Kaggle API Key: ${item.kaggleApiKey.isNotEmpty ? "[REDACTED]" : "empty"}');
+              } else {
+                debugPrint('  Value: $item');
+              }
+            }
+
+            debugPrint('\n=== KEY-VALUE PAIRS ===');
+            for (var key in hiveBox.keys) {
+              final value = hiveBox.get(key);
+              debugPrint('Key: $key (${key.runtimeType})');
+
+              if (value is UserApi) {
+                debugPrint('  Kaggle Username: ${value.kaggleUserName}');
+                debugPrint('  Kaggle API Key: ${value.kaggleApiKey.isNotEmpty ? "[REDACTED]" : "empty"}');
+              } else {
+                debugPrint('  Value: $value (${value?.runtimeType})');
               }
             }
           },

@@ -9,6 +9,11 @@ class DatasetCard extends StatelessWidget {
   final double subLabelSize;
   final String buttonText;
 
+  final VoidCallback onSearch;
+
+  // no way i forgot to create a onButtonClick prop for ts.
+  // i will do it i need it lol.
+
   const DatasetCard({
     super.key,
     required this.lightIconPath,
@@ -18,6 +23,7 @@ class DatasetCard extends StatelessWidget {
     this.subLabelSize = 14.0,
     required this.buttonText,
     required this.darkIconPath,
+    required this.onSearch,
   });
 
   Widget getIconForTheme({
@@ -85,7 +91,7 @@ class DatasetCard extends StatelessWidget {
             Text(subLabelText, style: TextStyle(fontSize: subLabelSize)),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: onSearch,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
                 foregroundColor: Colors.white,

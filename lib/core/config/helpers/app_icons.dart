@@ -1,6 +1,7 @@
 class AppIcons {
   static const String lightModeBasePath = 'assets/icons/dark';
   static const String darkModeBasePath = 'assets/icons/light';
+  static const String brandIconPath = 'assets/icons/brand';
 
   static const String chartLight = '$lightModeBasePath/chart.png';
   static const String chartDark = '$darkModeBasePath/chart.png';
@@ -68,6 +69,21 @@ class AppIcons {
   static const String governmentLight = '$lightModeBasePath/government.png';
 
   static const String governmentDark = '$darkModeBasePath/government.png';
+
+  static const String downloadLight = '$lightModeBasePath/download.png';
+
+  static const String downloadDark = '$darkModeBasePath/download.png';
+
+  static const String serverLight = '$lightModeBasePath/server.png';
+
+  static const String serverDark = '$darkModeBasePath/server.png';
+
+  static const String checkLight = '$lightModeBasePath/check.png';
+
+  static const String checkDark = '$darkModeBasePath/check.png';
+
+  static const String huggingFaceLogo = '$brandIconPath/hf-logo.png';
+  static const String kaggleLogo = '$brandIconPath/kaggle-logo.png';
 
   static const String larry = 'assets/larry/larry.png';
 }

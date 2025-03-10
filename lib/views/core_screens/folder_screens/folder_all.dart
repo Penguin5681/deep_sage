@@ -1,0 +1,1165 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:deep_sage/core/config/helpers/file_transfer_util.dart';
+import 'package:deep_sage/core/models/dataset_file.dart';
+import 'package:deep_sage/core/services/directory_path_service.dart';
+import 'package:deep_sage/views/core_screens/explorer/file_explorer_view.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
+
+import 'package:path/path.dart' as path;
+
+class FolderAll extends StatefulWidget {
+  const FolderAll({super.key});
+
+  @override
+  State<FolderAll> createState() => _FolderAllState();
+}
+
+class _FolderAllState extends State<FolderAll> {
+  final TextEditingController searchBarController = TextEditingController();
+  final Box hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  final List<Map<String, String>> folders = [];
+
+  late bool anyFilesPresent = true;
+  late bool isRootDirectorySelected = false;
+  late String selectedRootDirectoryPath = '';
+  late String rootDirectory = hiveBox.get('selectedRootDirectoryPath') ?? '';
+  late List<Map<String, String>> folderList = [];
+  late StreamSubscription<String> pathSubscription;
+
+  StreamSubscription<FileSystemEvent>? directoryWatcher;
+  bool isExplorerVisible = false;
+  String selectedFolderForExplorer = '';
+  List<DatasetFile> datasetFiles = [];
+  List<StreamSubscription<FileSystemEvent>> fileWatchers = [];
+  Set<String> watchedDirectories = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRootDirectoryPath().then((_) {
+      if (selectedRootDirectoryPath.isNotEmpty) {
+        getDirectoryFileCounts(selectedRootDirectoryPath);
+        setupDirectoryWatcher(selectedRootDirectoryPath);
+        scanForDatasetFiles(selectedRootDirectoryPath);
+      }
+    });
+
+    pathSubscription = DirectoryPathService().pathStream.listen((newPath) {
+      if (newPath != selectedRootDirectoryPath) {
+        setState(() {
+          selectedRootDirectoryPath = newPath;
+          isRootDirectorySelected = newPath.isNotEmpty;
+        });
+        getDirectoryFileCounts(newPath);
+        setupDirectoryWatcher(newPath);
+      }
+    });
+  }
+
+  Future<void> scanForDatasetFiles(String rootPath) async {
+    if (rootPath.isEmpty) return;
+    List<DatasetFile> files = [];
+    try {
+      await _scanDirectory(rootPath, files);
+      setState(() {
+        datasetFiles = files;
+        anyFilesPresent = files.isNotEmpty;
+      });
+    } catch (ex) {
+      debugPrint('Error scanning files: $ex');
+    }
+  }
+
+  Future<void> _scanDirectory(String directoryPath, List<DatasetFile> files) async {
+    final dir = Directory(directoryPath);
+    if (!await dir.exists()) return;
+
+    if (!watchedDirectories.contains(directoryPath)) {
+      setupFileWatcher(directoryPath);
+      watchedDirectories.add(directoryPath);
+    }
+
+    try {
+      await for (var entity in dir.list()) {
+        if (entity is File) {
+          final extension = path.extension(entity.path).toLowerCase();
+          if (['.json', '.csv', '.xlsx', '.xls'].contains(extension)) {
+            final fileStats = await entity.stat();
+            final fileSize = await _getFileSize(entity.path, fileStats.size);
+
+            files.add(
+              DatasetFile(
+                fileName: path.basename(entity.path),
+                fileType: extension.replaceFirst('.', ''),
+                fileSize: fileSize,
+                filePath: entity.path,
+                modified: fileStats.modified,
+                isStarred: false,
+              ),
+            );
+          }
+        } else if (entity is Directory) {
+          await _scanDirectory(entity.path, files);
+        }
+      }
+    } catch (ex) {
+      debugPrint('Unable to scan directories: $ex');
+    }
+  }
+
+  Future<String> _getFileSize(String filepath, int bytes) async {
+    if (bytes < 1024) {
+      return '$bytes B';
+    } else if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    } else if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    }
+  }
+
+  void setupDirectoryWatcher(String dirPath) {
+    directoryWatcher?.cancel();
+
+    if (dirPath.isEmpty) return;
+
+    try {
+      directoryWatcher = Directory(dirPath).watch(recursive: true).listen((event) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            getDirectoryFileCounts(dirPath);
+            scanForDatasetFiles(dirPath);
+            debugPrint('Something happened in the root: ${event.path} - ${event.type}');
+          }
+        });
+      });
+    } catch (ex) {
+      debugPrint('setupDirectoryWatcher(): $ex');
+    }
+  }
+
+  void setupFileWatcher(String directoryPath) {
+    try {
+      final subscription = Directory(directoryPath).watch(recursive: true).listen((event) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            final filePath = event.path;
+            final extension = path.extension(filePath).toLowerCase();
+
+            if ([".json", ".csv", ".xlsx", ".xls"].contains(extension)) {
+              scanForDatasetFiles(selectedRootDirectoryPath);
+              debugPrint('Something happened to your file niga: ${event.path} - ${event.type}');
+            } else if (event.type == FileSystemEvent.create && Directory(event.path).existsSync()) {
+              setupFileWatcher(event.path);
+              watchedDirectories.add(event.path);
+              scanForDatasetFiles(selectedRootDirectoryPath);
+            }
+          }
+        });
+      });
+      fileWatchers.add(subscription);
+    } catch (ex) {
+      debugPrint('Error setting up file stalker: $ex');
+    }
+  }
+
+  Future<void> _loadRootDirectoryPath() async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+    final savedPath = hiveBox.get('selectedRootDirectoryPath');
+
+    setState(() {
+      if (savedPath != null && savedPath
+          .toString()
+          .isNotEmpty) {
+        selectedRootDirectoryPath = savedPath;
+        isRootDirectorySelected = true;
+      }
+    });
+  }
+
+  Future<void> getDirectoryFileCounts(String directoryPath) async {
+    if (directoryPath.isEmpty) {
+      setState(() {
+        folderList = [];
+        folders.clear();
+      });
+      return;
+    }
+
+    final Directory rootDir = Directory(directoryPath);
+
+    if (!await rootDir.exists()) {
+      throw DirectoryNotFoundException('Directory does not exist: ${rootDir.path}');
+    }
+
+    List<Map<String, String>> result = [];
+    int totalRootFiles = 0;
+
+    try {
+      List<FileSystemEntity> entities = await rootDir.list().toList();
+
+      for (var entity in entities) {
+        if (entity is File) {
+          totalRootFiles++;
+        }
+      }
+
+      List<Directory> directories = entities.whereType<Directory>().toList();
+
+      for (var directory in directories) {
+        String folderName = path.basename(directory.path);
+        int fileCount = 0;
+
+        await for (var entity in directory.list()) {
+          if (entity is File) {
+            fileCount++;
+          }
+        }
+
+        result.add({'name': folderName, 'files': '$fileCount files'});
+      }
+
+      setState(() {
+        folderList = result;
+        folders.clear();
+        folders.addAll(result);
+      });
+
+      setState(() {
+        anyFilesPresent = folders.isNotEmpty || totalRootFiles > 0;
+      });
+
+      debugPrint('Root directory contains $totalRootFiles files');
+      for (var folder in result) {
+        debugPrint('${folder['name']}: ${folder['files']}');
+      }
+    } catch (e) {
+      throw Exception('Error scanning directories: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var watcher in fileWatchers) {
+      watcher.cancel();
+    }
+    directoryWatcher?.cancel();
+    pathSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          if (isExplorerVisible)
+            Container(
+              width: MediaQuery
+                  .of(context)
+                  .size
+                  .width * 0.25,
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Theme
+                      .of(context)
+                      .dividerColor, width: 1.0),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    color: Theme
+                        .of(context)
+                        .cardColor,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          selectedFolderForExplorer,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              isExplorerVisible = false;
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          icon: Icon(Icons.close),
+                          constraints: BoxConstraints(),
+                          iconSize: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: FileExplorerView(
+                      initialPath: path.join(selectedRootDirectoryPath, selectedFolderForExplorer),
+                      onClose: () {
+                        setState(() {
+                          isExplorerVisible = false;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                physics: BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 35.0, top: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (anyFilesPresent)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0, bottom: 20.0),
+                              child: _buildSearchBar(),
+                            ),
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    FilePickerResult? result = await FilePicker.platform.pickFiles(
+                                      dialogTitle: 'Select dataset(s)',
+                                      allowMultiple: true,
+                                      type: FileType.custom,
+                                      allowedExtensions: ["json", "csv", "xlsx", "xls"],
+                                      lockParentWindow: true,
+                                    );
+                                    if (result != null && result.files.isNotEmpty) {
+                                      List<String> filePaths = result.files
+                                          .where((file) => file.path != null)
+                                          .map((file) => file.path!)
+                                          .toList();
+
+                                      if (filePaths.isNotEmpty) {
+                                        for (String path in filePaths) {
+                                          debugPrint('Selected file: $path');
+                                        }
+
+                                        try {
+                                          List<String> newPaths = await FileTransferUtil.moveFiles(
+                                            sourcePaths: filePaths,
+                                            destinationDirectory: selectedRootDirectoryPath,
+                                            overwriteExisting: false,
+                                          );
+
+                                          debugPrint('Files moved successfully to: $newPaths');
+                                          scanForDatasetFiles(selectedRootDirectoryPath);
+                                          setState(() {
+                                            anyFilesPresent = true;
+                                          });
+                                        } catch (ex) {
+                                          debugPrint('Cannot move files: $ex');
+                                        }
+                                      }
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade600,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Upload Dataset",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                OutlinedButton(
+                                  onPressed: () {},
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    foregroundColor: Colors.blue.shade600,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Search Public Datasets",
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12.0),
+                            if (folders.isNotEmpty) _buildFoldersSection(),
+                            _buildUploadedDatasetsList(),
+                          ],
+                        ),
+                      if (!anyFilesPresent)
+                        _buildPlaceholder(
+                          onUploadClicked: () {
+                            if (!isRootDirectorySelected) {
+                              _showRootDirectoryDialog(context);
+                            } else {
+                              _uploadFiles();
+                            }
+                          },
+                          onImportClicked: () {},
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return SizedBox(
+      width: 300,
+      child: TextField(
+        style: TextStyle(),
+        controller: searchBarController,
+        decoration: InputDecoration(
+          hintText: "Search files by name or type",
+          suffixIcon: Icon(Icons.search),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUploadedDatasetsList() {
+    final isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
+
+    final filesMetaData = datasetFiles.map((file) => file.toMap()).toList();
+
+    return Container(
+      width: MediaQuery
+          .of(context)
+          .size
+          .width * 0.89,
+      margin: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Text(
+              'Uploaded Datasets',
+              style: TextStyle(
+                fontSize: 22.0,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Color(0xFF2A2D37) : Colors.grey[200],
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(8.0),
+                topRight: Radius.circular(8.0),
+              ),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: 32),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Name',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'Type',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'Size',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Modified',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ),
+                SizedBox(width: 80),
+              ],
+            ),
+          ),
+
+          Container(
+            height: 300,
+            decoration: BoxDecoration(
+              color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(8.0),
+                bottomRight: Radius.circular(8.0),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.05),
+                  blurRadius: 2.0,
+                  spreadRadius: 0.0,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child:
+            filesMetaData.isEmpty
+                ? Center(
+              child: Text(
+                'No datasets found!',
+                style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+              ),
+            )
+                : NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification.depth == 0) {
+                  return true;
+                }
+                return false;
+              },
+              child: ListView.separated(
+                physics: ClampingScrollPhysics(),
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: filesMetaData.length,
+                separatorBuilder:
+                    (context, index) =>
+                    Divider(
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                      height: 1,
+                    ),
+                itemBuilder: (context, index) {
+                  final fileData = filesMetaData[index];
+                  debugPrint('$fileData');
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+                      border:
+                      index == filesMetaData.length - 1
+                          ? Border(bottom: BorderSide(color: Colors.transparent))
+                          : null,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _getFileIcon(fileData['fileType'] ?? ''),
+                          size: 24,
+                          color: _getFileColor(fileData['fileType'] ?? ''),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            fileData['fileName'] ?? '',
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w500,
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                            decoration: BoxDecoration(
+                              color: _getFileColor(
+                                fileData['fileType'] ?? '',
+                              ).withValues(alpha: isDarkMode ? 0.2 : 0.1),
+                              borderRadius: BorderRadius.circular(12.0),
+                            ),
+                            child: Text(
+                              fileData['fileType'] ?? '',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14.0,
+                                color: _getFileColor(fileData['fileType'] ?? ''),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            fileData['fileSize'] ?? '',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            fileData['modified'] ?? '',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            fileData['starred'] == 'true' ? Icons.star : Icons.star_border,
+                            size: 20,
+                            color:
+                            fileData['starred'] == 'true'
+                                ? Colors.amber
+                                : (isDarkMode ? Colors.grey[400] : null),
+                          ),
+                          onPressed: () {},
+                          tooltip: "Add to favorites",
+                          splashRadius: 20,
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.more_vert,
+                            size: 20,
+                            color: isDarkMode ? Colors.grey[400] : null,
+                          ),
+                          onPressed: () {},
+                          tooltip: "More options",
+                          splashRadius: 20,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getFileIcon(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'csv':
+        return Icons.table_chart;
+      case 'json':
+        return Icons.data_object;
+      case 'xlsx':
+        return Icons.grid_on;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  Color _getFileColor(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'csv':
+        return Colors.green;
+      case 'json':
+        return Colors.orange;
+      case 'xlsx':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildFoldersSection() {
+    final isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
+    final ScrollController folderScrollController = ScrollController();
+
+    return Container(
+      width: MediaQuery
+          .of(context)
+          .size
+          .width * 0.89,
+      margin: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Row(
+              children: [
+                Text(
+                  'Folders',
+                  style: TextStyle(
+                    fontSize: 22.0,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(
+            height: 180,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.grab,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (scrollNotification) {
+                  if (scrollNotification is ScrollStartNotification ||
+                      scrollNotification is ScrollUpdateNotification ||
+                      scrollNotification is ScrollEndNotification) {
+                    return true;
+                  }
+                  return false;
+                },
+                child: Scrollbar(
+                  controller: folderScrollController,
+                  thickness: 6,
+                  radius: const Radius.circular(8),
+                  thumbVisibility: true,
+                  interactive: true,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    controller: folderScrollController,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: folders.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                        child: SizedBox(
+                          width: 280,
+                          child: _buildFolderCard(folders[index], isDarkMode),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFolderCard(Map<String, String> folder, bool isDarkMode) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color:
+            isDarkMode
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4.0,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Color(0xFF3A3E4A) : Color(0xFFF5F7FB),
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Icon(Icons.folder, color: Colors.blue[400], size: 24.0),
+                ),
+                SizedBox(width: 12.0),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        folder['name']!,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.0,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 4.0),
+                      Text(
+                        folder['files']!,
+                        style: TextStyle(
+                          fontSize: 12.0,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton(
+              onPressed: () {
+                openFileExplorer(folder['name']!);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
+                foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
+                elevation: 0,
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                  side: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Open"),
+                  SizedBox(width: 4.0),
+                  Icon(Icons.arrow_forward, size: 16.0),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void openFileExplorer(String folderName) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder:
+          (context) =>
+          Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: EdgeInsets.all(32),
+            child: SizedBox(
+              width: MediaQuery
+                  .of(context)
+                  .size
+                  .width * 0.7,
+              height: MediaQuery
+                  .of(context)
+                  .size
+                  .height * 0.7,
+              child: FileExplorerView(
+                initialPath: path.join(selectedRootDirectoryPath, folderName),
+                onClose: () => Navigator.pop(context),
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildPlaceholder({
+    required Function() onUploadClicked,
+    required Function() onImportClicked,
+  }) {
+    return Column(
+      children: [
+        const Text('No Files Yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26.0)),
+        const Text('This folder is empty. Upload files to get started with your data analysis.'),
+        const SizedBox(height: 18.0),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: onUploadClicked,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Text(
+                'Upload File(s)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 15.0),
+            OutlinedButton(
+              onPressed: onImportClicked,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.blue.shade600, width: 2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                foregroundColor: Colors.blue.shade600,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: const Text(
+                "Import from Kaggle",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showRootDirectoryDialog(BuildContext context) {
+    final isDarkModeEnabled = Theme
+        .of(context)
+        .brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              child: SizedBox(
+                width: MediaQuery
+                    .of(context)
+                    .size
+                    .width - 600,
+                height: MediaQuery
+                    .of(context)
+                    .size
+                    .height - 200,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(50),
+                                color:
+                                Theme
+                                    .of(context)
+                                    .brightness == Brightness.dark
+                                    ? Colors.grey
+                                    : Colors.white,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(Icons.folder_open, size: 17.0),
+                              ),
+                            ),
+                          ),
+                          const Text(
+                            'Select root directory for datasets',
+                            style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.bold),
+                          ),
+                          const Text(
+                            'Choose a location where all your datasets will be stored. This directory will serve as the base for all dataset operations',
+                            maxLines: 2,
+                            softWrap: true,
+                            style: TextStyle(fontSize: 17.0),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4.0),
+                                    color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          selectedRootDirectoryPath.isEmpty
+                                              ? "No path selected"
+                                              : selectedRootDirectoryPath,
+                                          style: TextStyle(
+                                            color:
+                                            isDarkModeEnabled
+                                                ? Colors.grey[400]
+                                                : Colors.grey[500],
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      MouseRegion(
+                                        cursor: SystemMouseCursors.click,
+                                        child: GestureDetector(
+                                          onTap: () async {
+                                            String? selectedDir = await FilePicker.platform
+                                                .getDirectoryPath(
+                                              dialogTitle: 'Select root directory for datasets',
+                                            );
+                                            if (selectedDir != null) {
+                                              setDialogState(() {
+                                                selectedRootDirectoryPath = selectedDir;
+                                              });
+
+                                              setState(() {
+                                                selectedRootDirectoryPath = selectedDir;
+                                                isRootDirectorySelected = true;
+                                              });
+
+                                              final hiveBox = Hive.box(
+                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                              );
+                                              await hiveBox.put(
+                                                'selectedRootDirectoryPath',
+                                                selectedDir,
+                                              );
+                                            }
+                                          },
+                                          child: Icon(
+                                            Icons.folder_open_outlined,
+                                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                            size: 18.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop();
+                                },
+                                child: Text('Cancel'),
+                              ),
+                              SizedBox(width: 8),
+                              ElevatedButton(
+                                onPressed:
+                                selectedRootDirectoryPath.isEmpty
+                                    ? null
+                                    : () {
+                                  Navigator.of(dialogContext).pop();
+                                  _uploadFiles();
+                                },
+                                child: Text('Confirm'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _uploadFiles() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ["json", "csv", "xlsx", "xls"],
+        dialogTitle: 'Select datasets to upload',
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        List<String> sourcePaths = result.paths.where((path) => path != null).map((path) => path!).toList();
+        debugPrint('Source paths to move: $sourcePaths');
+        debugPrint('Destination directory: $selectedRootDirectoryPath');
+
+        if (sourcePaths.isNotEmpty) {
+          try {
+            final destDir = Directory(selectedRootDirectoryPath);
+            if (!await destDir.exists()) {
+              await destDir.create(recursive: true);
+              debugPrint('Created destination directory: $selectedRootDirectoryPath');
+            }
+
+            List<String> newPaths = await FileTransferUtil.moveFiles(
+                sourcePaths: sourcePaths,
+                destinationDirectory: selectedRootDirectoryPath,
+                overwriteExisting: false
+            );
+
+            if (newPaths.isNotEmpty) {
+              debugPrint('Files moved successfully to: $newPaths');
+              scanForDatasetFiles(selectedRootDirectoryPath);
+              setState(() {
+                anyFilesPresent = true;
+              });
+            } else {
+              debugPrint('No files were moved successfully');
+            }
+          } catch (ex) {
+            debugPrint('Error moving files: $ex');
+          }
+        }
+      } else {
+        debugPrint('No files selected or picker was canceled');
+      }
+    } catch (e) {
+      debugPrint('Error picking files: $e');
+    }
+  }
+}
+
+class DirectoryNotFoundException implements Exception {
+  final String message;
+
+  DirectoryNotFoundException(this.message);
+
+  @override
+  String toString() => message;
+}
