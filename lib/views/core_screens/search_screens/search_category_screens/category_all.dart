@@ -2,8 +2,13 @@ import 'package:deep_sage/core/config/api_config/download_dataset.dart';
 import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
+import 'package:deep_sage/widgets/kaggle_credentials_prompt.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
+
+import '../../../../core/models/user_api_model.dart';
 
 class CategoryAll extends StatefulWidget {
   final Function(String) onSearch;
@@ -23,8 +28,10 @@ class _CategoryAllState extends State<CategoryAll> {
     'published',
   ];
   int _currentSortIndex = 0;
+
   String get _currentSortParam => _sortParams[_currentSortIndex];
   final ScrollController scrollController = ScrollController();
+  late bool isKaggleCredsLoaded = false;
 
   List<Map<String, String>> popularDatasets = [];
 
@@ -34,7 +41,9 @@ class _CategoryAllState extends State<CategoryAll> {
   @override
   void initState() {
     super.initState();
-    fetchPopularDatasets();
+    Future.delayed(Duration.zero, () {
+      checkKaggleAuthentication();
+    });
   }
 
   Future<void> fetchPopularDatasets() async {
@@ -58,6 +67,70 @@ class _CategoryAllState extends State<CategoryAll> {
       });
     } catch (e) {
       debugPrint('Error fetching popular datasets: $e');
+    }
+  }
+
+  Future checkKaggleAuthentication() async {
+    try {
+      final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+      final data = hiveBox.getAt(0);
+      UserApi? userApiData;
+
+      if (data is UserApi) {
+        userApiData = data;
+      } else if (data != null) {
+        debugPrint('Invalid data type in Hive: ${data.runtimeType}');
+        // await hiveBox.clear();
+      }
+
+      if (userApiData != null &&
+          userApiData.kaggleUserName.isNotEmpty &&
+          userApiData.kaggleApiKey.isNotEmpty) {
+        setState(() {
+          isKaggleCredsLoaded = true;
+        });
+        fetchPopularDatasets();
+      } else {
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+                child: KaggleCredentialsPrompt(
+                  onCredentialsAdded: () {
+                    Navigator.of(context).pop();
+                    setState(() {
+                      isKaggleCredsLoaded = true;
+                    });
+                    fetchPopularDatasets();
+                  },
+                ),
+              );
+            },
+          );
+        }
+        debugPrint('No valid Kaggle credentials found.');
+      }
+    } catch (e) {
+      debugPrint('Error checking Kaggle authentication: $e');
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Error'),
+            content: Text('Failed to check credentials. Please try again.'),
+            actions: [
+              TextButton(
+                onPressed: Navigator.of(context).pop,
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
@@ -121,8 +194,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         lightIconPath: AppIcons.aiLight,
                         darkIconPath: AppIcons.aiDark,
                         labelText: 'Explore AI & Tech Trends',
-                        subLabelText:
-                            'Latest datasets on AI, ML, and emerging technologies',
+                        subLabelText: 'Latest datasets on AI, ML, and emerging technologies',
                         buttonText: 'Search',
                         onSearch: () => widget.onSearch('AI & Tech Trends'),
                       ),
@@ -131,8 +203,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         lightIconPath: AppIcons.healthLight,
                         darkIconPath: AppIcons.healthDark,
                         labelText: 'Explore Healthcare Insights',
-                        subLabelText:
-                            'Medical research, patient statistics, and health trends',
+                        subLabelText: 'Medical research, patient statistics, and health trends',
                         buttonText: 'Search',
                         onSearch: () => widget.onSearch('Healthcare Insights'),
                       ),
@@ -141,8 +212,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         lightIconPath: AppIcons.governmentLight,
                         darkIconPath: AppIcons.governmentDark,
                         labelText: 'Explore Government Open Data',
-                        subLabelText:
-                            'Public reports, policies, and economic indicators',
+                        subLabelText: 'Public reports, policies, and economic indicators',
                         buttonText: 'Search',
                         onSearch: () => widget.onSearch('Government Open Data'),
                       ),
@@ -185,8 +255,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         addedTime: dataset['addedTime']!,
                         fileType: dataset['fileType']!,
                         fileSize: dataset['fileSize']!,
-                        datasetId:
-                            dataset['title']!, // Assuming title is used as datasetId
+                        datasetId: dataset['title']!,
                       ),
                       Divider(height: 1, thickness: 1, color: Colors.grey[200]),
                     ],
@@ -201,14 +270,9 @@ class _CategoryAllState extends State<CategoryAll> {
                 child: ElevatedButton(
                   onPressed: refreshDatasets,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 15.0,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
                     backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
                   ),
                   child: const Text(
                     'Refresh Datasets',
@@ -254,12 +318,7 @@ class FileListItem extends StatelessWidget {
           Icon(icon, color: textTheme.bodyLarge?.color, size: 24),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              title,
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: Text(title, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -295,10 +354,7 @@ class FileListItem extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(
-              Icons.file_download_outlined,
-              color: textTheme.bodyLarge?.color,
-            ),
+            icon: Icon(Icons.file_download_outlined, color: textTheme.bodyLarge?.color),
             onPressed: () async {
               final service = DownloadDatasetService();
               const downloadPath = 'D:/Downloaded_Dataset';
