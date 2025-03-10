@@ -14,6 +14,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config/helpers/file_transfer_util.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -252,6 +254,7 @@ class _DashboardState extends State<Dashboard> {
   late var isDatasetUploaded = false;
   late var datasetPath = '';
   late String userName = '';
+  late String selectedRootDirectoryPath = '';
 
   Future<void> retrieveDisplayName() async {
     final user = Supabase.instance.client.auth.currentUser;
@@ -260,10 +263,21 @@ class _DashboardState extends State<Dashboard> {
     });
   }
 
+  Future<void> retrieveRootPath() async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+    final savedPath = hiveBox.get('selectedRootDirectoryPath');
+    if (savedPath != null) {
+      setState(() {
+        selectedRootDirectoryPath = savedPath;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     retrieveDisplayName();
+    retrieveRootPath();
   }
 
   @override
@@ -289,20 +303,40 @@ class _DashboardState extends State<Dashboard> {
                       ElevatedButton(
                         onPressed: () async {
                           FilePickerResult? result = await FilePicker.platform.pickFiles(
-                            dialogTitle: "Import a dataset",
-                            lockParentWindow: true,
+                            dialogTitle: 'Select dataset(s)',
+                            allowMultiple: true,
                             type: FileType.custom,
-                            allowedExtensions: ["json", "xlsx", "csv"],
+                            allowedExtensions: ["json", "csv", "xlsx", "xls"],
+                            lockParentWindow: true,
                           );
-                          if (result != null) {
-                            File file = File(result.files.single.path!);
-                            setState(() {
-                              isDatasetUploaded = true;
-                              datasetPath = file.path;
-                            });
-                            debugPrint(file.path);
-                          } else {
-                            debugPrint('file operation cancelled');
+                          if (result != null && result.files.isNotEmpty) {
+                            List<String> filePaths =
+                                result.files
+                                    .where((file) => file.path != null)
+                                    .map((file) => file.path!)
+                                    .toList();
+
+                            if (filePaths.isNotEmpty) {
+                              for (String path in filePaths) {
+                                debugPrint('Selected file: $path');
+                              }
+
+                              try {
+                                List<String> newPaths = await FileTransferUtil.moveFiles(
+                                  sourcePaths: filePaths,
+                                  destinationDirectory: selectedRootDirectoryPath,
+                                  overwriteExisting: false,
+                                );
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Dataset uploaded successfully')),
+                                );
+                                // todo: add a acknowledgement toast
+                                debugPrint('Files moved successfully to: $newPaths');
+                              } catch (ex) {
+                                debugPrint('Cannot move files: $ex');
+                              }
+                            }
                           }
                         },
                         style: ElevatedButton.styleFrom(

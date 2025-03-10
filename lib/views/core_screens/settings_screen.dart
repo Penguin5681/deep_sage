@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import "package:googleapis_auth/auth_io.dart";
 import 'package:image/image.dart' as img;
+import 'package:http/http.dart' as http;
 
 import '../../core/models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
@@ -473,6 +474,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final imageUrl = await userHiveBox.get('userAvatarUrl');
     if (imageUrl != null) {
       return Image.network(imageUrl);
+    }
+    if (userId.isNotEmpty) {
+      final extensions = ['.jpg', '.png', '.jpeg', '.svg'];
+
+      for (final ext in extensions) {
+        final constructedUrl = 'https://storage.googleapis.com/user_image_data/$userId$ext';
+
+        try {
+          final response = await http.head(Uri.parse(constructedUrl));
+
+          if (response.statusCode == 200) {
+            await userHiveBox.put('userAvatarUrl', constructedUrl);
+            return Image.network(constructedUrl);
+          }
+        } catch (e) {
+          debugPrint('Failed to check URL with extension $ext: $e');
+        }
+      }
+
+      debugPrint('No valid image found for user ID: $userId');
     }
     return fallbackUserAvatar;
   }
