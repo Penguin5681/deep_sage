@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:top_snackbar_flutter/custom_snack_bar.dart';
-import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
 class SignupScreen extends StatelessWidget {
   const SignupScreen({super.key});
@@ -29,6 +27,10 @@ class SignupScreen extends StatelessWidget {
     );
   }
 
+  // TODO: Implement the sign up logic for display name (Optional)
+  // Add field for display name in the sign up screen
+  // Add display name to the sign up function
+
   @override
   Widget build(BuildContext context) {
     final _ = dotenv.env['FLUTTER_ENV'];
@@ -37,6 +39,9 @@ class SignupScreen extends StatelessWidget {
     final TextEditingController passwordController = TextEditingController();
     final TextEditingController confirmPasswordController =
         TextEditingController();
+
+    // Controller for name
+    final TextEditingController nameController = TextEditingController();
 
     final backgroundColor =
         Theme.of(
@@ -50,6 +55,7 @@ class SignupScreen extends StatelessWidget {
       String email,
       String password,
       String confirmPassword,
+      String displayName, // Add the display name 
     ) async {
       final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
       bool isEmail() {
@@ -69,48 +75,49 @@ class SignupScreen extends StatelessWidget {
           var response = await supabaseAuthInstance.auth.signUp(
             email: emailController.text,
             password: passwordController.text,
+            data: {'display_name': displayName}, // Store display name in metadata
           );
           if (!context.mounted) return;
           if (response.user!.identities!.isEmpty) {
-            showTopSnackBar(
-              Overlay.of(context),
-              CustomSnackBar.info(message: 'User already exists'),
-            );
+            // showTopSnackBar(
+            //   Overlay.of(context),
+            //   CustomSnackBar.info(message: 'User already exists'),
+            // );
           } else {
-            showTopSnackBar(
-              Overlay.of(context),
-              CustomSnackBar.success(message: 'Sign Up Successful'),
-            );
+            // showTopSnackBar(
+            //   Overlay.of(context),
+            //   CustomSnackBar.success(message: 'Sign Up Successful'),
+            // );
             Navigator.of(
               context,
             ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
           }
         } catch (e) {
-          showTopSnackBar(
-            Overlay.of(context),
-            CustomSnackBar.error(message: 'Sign Up Error: $e'),
-          );
+          // showTopSnackBar(
+          //   Overlay.of(context),
+          //   CustomSnackBar.error(message: 'Sign Up Error: $e'),
+          // );
         }
       } else if (!isEmail()) {
-        showTopSnackBar(
-          Overlay.of(context),
-          CustomSnackBar.error(message: 'Invalid Email'),
-        );
+        // showTopSnackBar(
+        //   Overlay.of(context),
+        //   CustomSnackBar.error(message: 'Invalid Email'),
+        // );
       } else if (doesPasswordMatch()) {
-        showTopSnackBar(
-          Overlay.of(context),
-          CustomSnackBar.error(message: 'Passwords do not match'),
-        );
+        // showTopSnackBar(
+        //   Overlay.of(context),
+        //   CustomSnackBar.error(message: 'Passwords do not match'),
+        // );
       } else if (!isThePasswordLengthOk()) {
-        showTopSnackBar(
-          Overlay.of(context),
-          CustomSnackBar.error(message: 'Minimum password length is 6'),
-        );
+        // showTopSnackBar(
+        //   Overlay.of(context),
+        //   CustomSnackBar.error(message: 'Minimum password length is 6'),
+        // );
       } else {
-        showTopSnackBar(
-          Overlay.of(context),
-          CustomSnackBar.error(message: 'Internal server error occurred!'),
-        );
+        // showTopSnackBar(
+        //   Overlay.of(context),
+        //   CustomSnackBar.error(message: 'Internal server error occurred!'),
+        // );
       }
     }
 
@@ -137,6 +144,14 @@ class SignupScreen extends StatelessWidget {
               width: 300,
               child: Column(
                 children: [
+                  // Added name field to display name in the settings screen from supabase
+                  PrimaryEditText(
+                    placeholderText: 'Name',
+                    controller: nameController,
+                    obscureText: false,
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  SizedBox(height: 25),
                   PrimaryEditText(
                     placeholderText: 'Email',
                     controller: emailController,
@@ -175,7 +190,8 @@ class SignupScreen extends StatelessWidget {
                         await signUp(
                           emailController.text,
                           passwordController.text,
-                          confirmPasswordController.text,
+                          confirmPasswordController.text, 
+                          nameController.text, // Pass the display name
                         );
                       },
                       estimatedTime: const Duration(seconds: 5),
