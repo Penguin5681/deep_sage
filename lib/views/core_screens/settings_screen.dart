@@ -471,8 +471,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<Image> loadProfileImageFromHive() async {
+    if (UserImageService().cachedUrl != null) {
+      return Image.network(UserImageService().cachedUrl!);
+    }
+
     final imageUrl = await userHiveBox.get('userAvatarUrl');
     if (imageUrl != null) {
+      UserImageService().updateProfileImageUrl(imageUrl);
       return Image.network(imageUrl);
     }
     if (userId.isNotEmpty) {
@@ -502,8 +507,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ValueListenableBuilder<String?>(
       valueListenable: UserImageService().profileImageUrl,
       builder: (context, imageUrl, child) {
-        if (imageUrl != null) {
-          return ClipOval(child: SizedBox(width: 48, height: 48, child: Image.network(imageUrl)));
+        if (UserImageService().cachedUrl != null) {
+          return ClipOval(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.network(UserImageService().cachedUrl!),
+            ),
+          );
         }
 
         return FutureBuilder<Image>(
