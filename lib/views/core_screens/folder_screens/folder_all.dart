@@ -21,6 +21,7 @@ class FolderAll extends StatefulWidget {
 
 class _FolderAllState extends State<FolderAll> {
   final TextEditingController searchBarController = TextEditingController();
+  final starredBox = Hive.box('starred_datasets');
   final Box hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
   final List<Map<String, String>> folders = [];
 
@@ -91,6 +92,8 @@ class _FolderAllState extends State<FolderAll> {
           if (['.json', '.csv', '.xlsx', '.xls'].contains(extension)) {
             final fileStats = await entity.stat();
             final fileSize = await _getFileSize(entity.path, fileStats.size);
+            final isStarred = await _loadStarredStatus(entity.path);
+            debugPrint('Is the file starred: $isStarred');
 
             files.add(
               DatasetFile(
@@ -99,7 +102,7 @@ class _FolderAllState extends State<FolderAll> {
                 fileSize: fileSize,
                 filePath: entity.path,
                 modified: fileStats.modified,
-                isStarred: false,
+                isStarred: isStarred,
               ),
             );
           }
@@ -652,14 +655,22 @@ class _FolderAllState extends State<FolderAll> {
                         ),
                         IconButton(
                           icon: Icon(
-                            fileData['starred'] == 'true' ? Icons.star : Icons.star_border,
+                            datasetFiles[index].isStarred ? Icons.star : Icons.star_border,
                             size: 20,
                             color:
-                            fileData['starred'] == 'true'
+                            datasetFiles[index].isStarred
                                 ? Colors.amber
                                 : (isDarkMode ? Colors.grey[400] : null),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            final index = datasetFiles.indexWhere((file) => file.filePath == fileData['filePath']);
+                            if (index != -1) {
+                              setState(() {
+                                datasetFiles[index].isStarred = !datasetFiles[index].isStarred;
+                              });
+                              _saveStarredStatus(datasetFiles[index].filePath, datasetFiles[index].isStarred);
+                            }
+                          },
                           tooltip: "Add to favorites",
                           splashRadius: 20,
                         ),
@@ -683,6 +694,14 @@ class _FolderAllState extends State<FolderAll> {
         ],
       ),
     );
+  }
+
+  Future<void> _saveStarredStatus(String filePath, bool isStarred) async {
+    await starredBox.put(filePath, isStarred);
+  }
+
+  Future<bool> _loadStarredStatus(String filePath) async {
+    return starredBox.get(filePath, defaultValue: false);
   }
 
   IconData _getFileIcon(String fileType) {

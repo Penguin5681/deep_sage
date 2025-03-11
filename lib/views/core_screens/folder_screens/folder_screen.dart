@@ -1,4 +1,5 @@
 import 'package:deep_sage/views/core_screens/folder_screens/folder_all.dart';
+import 'package:deep_sage/views/core_screens/folder_screens/folder_starred.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -86,7 +87,7 @@ class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderSt
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [FolderAll(), FolderAll(), FolderAll(), FolderAll()],
+              children: const [FolderAll(), FolderAll(), FolderStarred(), FolderAll()],
             ),
           ),
         ],
