@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:deep_sage/core/config/api_config/kaggle_dataset_info.dart';
 import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/helpers/debouncer.dart';
+import 'package:deep_sage/core/models/download_item.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_finances.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_gov.dart';
@@ -9,8 +12,10 @@ import 'package:deep_sage/views/core_screens/search_screens/search_category_scre
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_manufacture.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_tech.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -23,24 +28,37 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
-  String selectedSource = 'Hugging Face';
-
   final Debouncer _debouncer = Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
-  List<DatasetSuggestion> _suggestions = [];
-  bool _isLoading = false;
-  bool _isDatasetCardLoading = false;
-  late SuggestionService _suggestionService;
-
-  OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
   final GlobalKey _textFieldKey = GlobalKey();
+  final GlobalKey _downloadIconKey = GlobalKey();
+  final String baseUrl =
+  dotenv.env['FLUTTER_ENV'] == 'production'
+      ? dotenv.env['PROD_BASE_URL']!
+      : dotenv.env['DEV_BASE_URL']!;
+  final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+
+  OverlayEntry? _overlayEntry;
+  OverlayEntry? _downloadOverlayEntry;
+  Timer? _downloadSimulationTimer;
+
+  String selectedSource = 'Hugging Face';
+  List<DatasetSuggestion> _suggestions = [];
+  List<DownloadItem> recentDownloads = [];
+  List<OverlayEntry>? _downloadEntries;
+  bool _isLoading = false;
+  bool _isDatasetCardLoading = false;
+  bool isDownloadOverlayVisible = false;
+
+  late SuggestionService _suggestionService;
+  late String downloadPath = '';
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 6, vsync: this);
     _suggestionService = SuggestionService();
-
     controller.addListener(_onSearchChanged);
     searchFocusNode.addListener(_onFocusChanged);
   }
@@ -52,8 +70,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     searchFocusNode.dispose();
     _debouncer.dispose();
     _removeOverlay();
+    _downloadSimulationTimer?.cancel();
     super.dispose();
   }
+
 
   void _onSearchChanged() {
     final query = controller.text;
@@ -123,13 +143,53 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     Overlay.of(context).insert(_overlayEntry!);
   }
 
+  void _showDownloadOverlay() {
+    if (isDownloadOverlayVisible) {
+      _removeDownloadOverlay();
+      return;
+    }
+
+    final barrierOverlay = OverlayEntry(
+      builder:
+          (context) =>
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _removeDownloadOverlay,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+    );
+
+    _downloadOverlayEntry = _createDownloadOverlayEntry();
+
+    Overlay.of(context).insert(barrierOverlay);
+    Overlay.of(context).insert(_downloadOverlayEntry!);
+
+    _downloadEntries = [barrierOverlay, _downloadOverlayEntry!];
+    isDownloadOverlayVisible = true;
+  }
+
+  void _removeDownloadOverlay() {
+    if (_downloadEntries != null) {
+      for (final entry in _downloadEntries!) {
+        entry.remove();
+      }
+      _downloadEntries = null;
+    }
+    _downloadOverlayEntry = null;
+    isDownloadOverlayVisible = false;
+  }
+
   void _removeOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
   }
 
   Future<void> openDatasetCard(String datasetId, String source) async {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
     KaggleDataset? kaggleMetadata;
     setState(() {
       _isDatasetCardLoading = true;
@@ -273,19 +333,26 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                               color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                             ),
                           ),
-                          child: description.isEmpty
+                          child:
+                          description.isEmpty
                               ? Row(
                             children: [
                               Icon(
                                 Icons.info_outline,
-                                color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                color:
+                                isDarkMode
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade600,
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'No description available',
                                 style: TextStyle(
-                                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
+                                  color:
+                                  isDarkMode
+                                      ? Colors.grey.shade500
+                                      : Colors.grey.shade600,
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -356,7 +423,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
                         icon: const Icon(Icons.cloud_download),
                         label: const Text('Download'),
                         style: ElevatedButton.styleFrom(
@@ -387,8 +456,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildInfoItem(
-      bool isDarkMode,
+  Widget _buildInfoItem(bool isDarkMode,
       IconData icon,
       String label,
       String value, {
@@ -431,12 +499,15 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                 ),
                 if (isLink)
                   InkWell(
-                    onTap: linkUrl != null ? () async {
+                    onTap:
+                    linkUrl != null
+                        ? () async {
                       if (!await launchUrl(Uri.parse(linkUrl))) {
                         throw Exception('Unable to launch url!');
                       }
                       debugPrint('Launch URL: $linkUrl');
-                    } : null,
+                    }
+                        : null,
                     child: Text(
                       value,
                       style: const TextStyle(
@@ -467,7 +538,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   Widget showLoadingIndicator(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -496,11 +569,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
-    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    var isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
 
     return OverlayEntry(
       builder:
-          (context) => Positioned(
+          (context) =>
+          Positioned(
             left: offset.dx,
             top: offset.dy + size.height + 5.0,
             width: size.width,
@@ -564,6 +640,243 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
   }
 
+  OverlayEntry _createDownloadOverlayEntry() {
+    RenderBox renderBox = _downloadIconKey.currentContext!.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    bool isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
+
+    return OverlayEntry(
+      builder:
+          (context) =>
+          Positioned(
+            right: 35.0,
+            top: offset.dy + size.height,
+            width: 350,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(8.0),
+              color: isDarkMode ? Colors.grey[850] : Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Downloads',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.clear_all,
+                            color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              recentDownloads.clear();
+                            });
+                          },
+                          tooltip: 'Clear all',
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints.tightFor(width: 32, height: 32),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    constraints: BoxConstraints(maxHeight: 300),
+                    child:
+                    recentDownloads.isEmpty
+                        ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'No recent downloads',
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    )
+                        : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: recentDownloads.length,
+                      separatorBuilder:
+                          (context, index) =>
+                          Divider(
+                            height: 1,
+                            color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                          ),
+                      itemBuilder: (context, index) {
+                        final download = recentDownloads[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 12.0,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _getFileIcon(download.name),
+                                size: 24,
+                                color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      download.name,
+                                      style: TextStyle(
+                                        color: isDarkMode ? Colors.white : Colors.black,
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 4),
+                                    download.isComplete
+                                        ? Text(
+                                      '${download.size} • Complete',
+                                      style: TextStyle(
+                                        color:
+                                        isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
+                                        fontSize: 12,
+                                      ),
+                                    )
+                                        : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: LinearProgressIndicator(
+                                                value: download.progress,
+                                                backgroundColor:
+                                                isDarkMode
+                                                    ? Colors.grey[700]
+                                                    : Colors.grey[300],
+                                                valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.blue,
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              '${(download.progress * 100).toInt()}%',
+                                              style: TextStyle(
+                                                color:
+                                                isDarkMode
+                                                    ? Colors.grey[400]
+                                                    : Colors.grey[700],
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              download.size,
+                                              style: TextStyle(
+                                                color:
+                                                isDarkMode
+                                                    ? Colors.grey[400]
+                                                    : Colors.grey[700],
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            Text(
+                                              download.downloadSpeed,
+                                              style: TextStyle(
+                                                color:
+                                                isDarkMode
+                                                    ? Colors.grey[400]
+                                                    : Colors.grey[700],
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  size: 20,
+                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                ),
+                                onPressed: () {},
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints.tightFor(width: 32, height: 32),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      _removeDownloadOverlay();
+                      // TODO: create a full download history screen
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                          ),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'View full download history',
+                          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  IconData _getFileIcon(String fileName) {
+    if (fileName.endsWith('.csv')) {
+      return Icons.table_chart;
+    } else if (fileName.endsWith('.json')) {
+      return Icons.data_object;
+    } else if (fileName.endsWith('.zip')) {
+      return Icons.folder_zip;
+    } else {
+      return Icons.insert_drive_file;
+    }
+  }
+
   void handleSearch(String query) {
     setState(() {
       controller.text = query;
@@ -573,27 +886,43 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    var isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
     return Scaffold(
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 35.0, top: 35.0),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: const Text('Home', style: TextStyle(fontSize: 16.0)),
-                  ),
+                Row(
+                  children: [
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: const Text('Home', style: TextStyle(fontSize: 16.0)),
+                      ),
+                    ),
+                    const Text('  >  ', style: TextStyle(fontSize: 16.0)),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: const Text('Search', style: TextStyle(fontSize: 16.0)),
+                      ),
+                    ),
+                  ],
                 ),
-                const Text('  >  ', style: TextStyle(fontSize: 16.0)),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
+                Padding(
+                  padding: const EdgeInsets.only(right: 35.0),
+                  child: IconButton(
+                    key: _downloadIconKey,
+                    onPressed: _showDownloadOverlay,
+                    icon: Icon(Icons.download, color: Color(0xff3091e7)),
+                    tooltip: 'View your current downloads',
                   ),
                 ),
               ],
@@ -630,14 +959,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.search),
                             suffix:
-                                _isLoading
-                                    ? Container(
-                                      width: 24,
-                                      height: 24,
-                                      padding: const EdgeInsets.all(6.0),
-                                      child: const CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                    : null,
+                            _isLoading
+                                ? Container(
+                              width: 24,
+                              height: 24,
+                              padding: const EdgeInsets.all(6.0),
+                              child: const CircularProgressIndicator(strokeWidth: 2),
+                            )
+                                : null,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
                             hintText: 'Search Datasets by name, type or category',
                           ),
