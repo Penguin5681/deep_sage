@@ -346,7 +346,8 @@ class _FolderAllState extends State<FolderAll> {
                                       lockParentWindow: true,
                                     );
                                     if (result != null && result.files.isNotEmpty) {
-                                      List<String> filePaths = result.files
+                                      List<String> filePaths =
+                                      result.files
                                           .where((file) => file.path != null)
                                           .map((file) => file.path!)
                                           .toList();
@@ -663,12 +664,18 @@ class _FolderAllState extends State<FolderAll> {
                                 : (isDarkMode ? Colors.grey[400] : null),
                           ),
                           onPressed: () {
-                            final index = datasetFiles.indexWhere((file) => file.filePath == fileData['filePath']);
+                            final index = datasetFiles.indexWhere(
+                                  (file) => file.filePath == fileData['filePath'],
+                            );
                             if (index != -1) {
                               setState(() {
-                                datasetFiles[index].isStarred = !datasetFiles[index].isStarred;
+                                datasetFiles[index].isStarred =
+                                !datasetFiles[index].isStarred;
                               });
-                              _saveStarredStatus(datasetFiles[index].filePath, datasetFiles[index].isStarred);
+                              _saveStarredStatus(
+                                datasetFiles[index].filePath,
+                                datasetFiles[index].isStarred,
+                              );
                             }
                           },
                           tooltip: "Add to favorites",
@@ -698,10 +705,21 @@ class _FolderAllState extends State<FolderAll> {
 
   Future<void> _saveStarredStatus(String filePath, bool isStarred) async {
     await starredBox.put(filePath, isStarred);
+    if (!isStarred) {
+      await starredBox.delete(filePath);
+    }
   }
 
   Future<bool> _loadStarredStatus(String filePath) async {
     return starredBox.get(filePath, defaultValue: false);
+  }
+
+  Future<void> updateStarredFilePath(String oldPath, String newPath) async {
+    bool wasTheFileStarredBefore = await _loadStarredStatus(oldPath);
+    if (wasTheFileStarredBefore) {
+      await starredBox.delete(oldPath);
+      await starredBox.put(newPath, true);
+    }
   }
 
   IconData _getFileIcon(String fileType) {
@@ -1134,7 +1152,8 @@ class _FolderAllState extends State<FolderAll> {
       );
 
       if (result != null && result.files.isNotEmpty) {
-        List<String> sourcePaths = result.paths.where((path) => path != null).map((path) => path!).toList();
+        List<String> sourcePaths =
+        result.paths.where((path) => path != null).map((path) => path!).toList();
         debugPrint('Source paths to move: $sourcePaths');
         debugPrint('Destination directory: $selectedRootDirectoryPath');
 
@@ -1147,9 +1166,9 @@ class _FolderAllState extends State<FolderAll> {
             }
 
             List<String> newPaths = await FileTransferUtil.moveFiles(
-                sourcePaths: sourcePaths,
-                destinationDirectory: selectedRootDirectoryPath,
-                overwriteExisting: false
+              sourcePaths: sourcePaths,
+              destinationDirectory: selectedRootDirectoryPath,
+              overwriteExisting: false,
             );
 
             if (newPaths.isNotEmpty) {

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:path/path.dart' as path;
 
 class FileTransferUtil {
@@ -11,6 +12,7 @@ class FileTransferUtil {
   }) async {
     List<String> newFilePaths = [];
     final destinationDir = Directory(destinationDirectory);
+    final starredBox = Hive.box('starred_datasets');
 
     if (!await destinationDir.exists() && createDestinationIfMissing) {
       try {
@@ -32,6 +34,8 @@ class FileTransferUtil {
         final destinationPath = path.join(destinationDirectory, fileName);
         final destinationFile = File(destinationPath);
 
+        bool isStarred = starredBox.get(sourcePath, defaultValue: false);
+
         if (await destinationFile.exists()) {
           if (overwriteExisting) {
             await destinationFile.delete();
@@ -46,6 +50,11 @@ class FileTransferUtil {
               debugPrint('Warning: Could not delete original file: $e');
             }
 
+            if (isStarred) {
+              await starredBox.delete(sourcePath);
+              await starredBox.put(uniqueDestinationPath, true);
+            }
+
             newFilePaths.add(uniqueDestinationPath);
             continue;
           }
@@ -56,6 +65,11 @@ class FileTransferUtil {
           await sourceFile.delete();
         } catch (e) {
           debugPrint('Warning: Could not delete original file: $e');
+        }
+
+        if (isStarred) {
+          await starredBox.delete(sourcePath);
+          await starredBox.put(destinationFile, true);
         }
 
         newFilePaths.add(destinationPath);
