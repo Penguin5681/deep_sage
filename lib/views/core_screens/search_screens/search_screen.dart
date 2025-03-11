@@ -14,8 +14,11 @@ import 'package:deep_sage/views/core_screens/search_screens/search_category_scre
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import '../../../core/services/download_service.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -33,11 +36,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   final GlobalKey _textFieldKey = GlobalKey();
   final GlobalKey _downloadIconKey = GlobalKey();
   final String baseUrl =
-  dotenv.env['FLUTTER_ENV'] == 'production'
-      ? dotenv.env['PROD_BASE_URL']!
-      : dotenv.env['DEV_BASE_URL']!;
+      dotenv.env['FLUTTER_ENV'] == 'production'
+          ? dotenv.env['PROD_BASE_URL']!
+          : dotenv.env['DEV_BASE_URL']!;
   final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
-
 
   OverlayEntry? _overlayEntry;
   OverlayEntry? _downloadOverlayEntry;
@@ -53,10 +55,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   late SuggestionService _suggestionService;
   late String downloadPath = '';
+  late DownloadService _downloadService;
 
   @override
   void initState() {
     super.initState();
+    _downloadService = Provider.of<DownloadService>(context, listen: false);
     tabController = TabController(length: 6, vsync: this);
     _suggestionService = SuggestionService();
     controller.addListener(_onSearchChanged);
@@ -74,6 +78,17 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
+  Future<void> _startDownload(String datasetId, String source) async {
+    try {
+      await _downloadService.downloadDataset(source: source, datasetId: datasetId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Download failed: ${e.toString()}')));
+      }
+    }
+  }
 
   void _onSearchChanged() {
     final query = controller.text;
@@ -151,8 +166,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
     final barrierOverlay = OverlayEntry(
       builder:
-          (context) =>
-          Positioned.fill(
+          (context) => Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: _removeDownloadOverlay,
@@ -187,9 +201,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   Future<void> openDatasetCard(String datasetId, String source) async {
-    final isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     KaggleDataset? kaggleMetadata;
     setState(() {
       _isDatasetCardLoading = true;
@@ -334,36 +346,36 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             ),
                           ),
                           child:
-                          description.isEmpty
-                              ? Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color:
-                                isDarkMode
-                                    ? Colors.grey.shade500
-                                    : Colors.grey.shade600,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'No description available',
-                                style: TextStyle(
-                                  color:
-                                  isDarkMode
-                                      ? Colors.grey.shade500
-                                      : Colors.grey.shade600,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          )
-                              : Text(
-                            description,
-                            style: TextStyle(
-                              color: isDarkMode ? Colors.white : Colors.black,
-                            ),
-                          ),
+                              description.isEmpty
+                                  ? Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color:
+                                            isDarkMode
+                                                ? Colors.grey.shade500
+                                                : Colors.grey.shade600,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'No description available',
+                                        style: TextStyle(
+                                          color:
+                                              isDarkMode
+                                                  ? Colors.grey.shade500
+                                                  : Colors.grey.shade600,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                  : Text(
+                                    description,
+                                    style: TextStyle(
+                                      color: isDarkMode ? Colors.white : Colors.black,
+                                    ),
+                                  ),
                         ),
 
                         const SizedBox(height: 24),
@@ -425,6 +437,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.of(context).pop();
+                          _startDownload(id, 'kaggle');
+                          _showDownloadOverlay();
                         },
                         icon: const Icon(Icons.cloud_download),
                         label: const Text('Download'),
@@ -456,13 +470,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
   }
 
-  Widget _buildInfoItem(bool isDarkMode,
-      IconData icon,
-      String label,
-      String value, {
-        bool isLink = false,
-        String? linkUrl,
-      }) {
+  Widget _buildInfoItem(
+    bool isDarkMode,
+    IconData icon,
+    String label,
+    String value, {
+    bool isLink = false,
+    String? linkUrl,
+  }) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -500,14 +515,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                 if (isLink)
                   InkWell(
                     onTap:
-                    linkUrl != null
-                        ? () async {
-                      if (!await launchUrl(Uri.parse(linkUrl))) {
-                        throw Exception('Unable to launch url!');
-                      }
-                      debugPrint('Launch URL: $linkUrl');
-                    }
-                        : null,
+                        linkUrl != null
+                            ? () async {
+                              if (!await launchUrl(Uri.parse(linkUrl))) {
+                                throw Exception('Unable to launch url!');
+                              }
+                              debugPrint('Launch URL: $linkUrl');
+                            }
+                            : null,
                     child: Text(
                       value,
                       style: const TextStyle(
@@ -538,9 +553,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   Widget showLoadingIndicator(BuildContext context) {
-    final isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -569,14 +582,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
-    var isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return OverlayEntry(
       builder:
-          (context) =>
-          Positioned(
+          (context) => Positioned(
             left: offset.dx,
             top: offset.dy + size.height + 5.0,
             width: size.width,
@@ -644,14 +654,11 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     RenderBox renderBox = _downloadIconKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
-    bool isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return OverlayEntry(
       builder:
-          (context) =>
-          Positioned(
+          (context) => Positioned(
             right: 35.0,
             top: offset.dy + size.height,
             width: 350,
@@ -693,144 +700,38 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     ),
                   ),
                   Container(
-                    constraints: BoxConstraints(maxHeight: 300),
-                    child:
-                    recentDownloads.isEmpty
-                        ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Text(
-                          'No recent downloads',
-                          style: TextStyle(
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                          ),
-                        ),
-                      ),
-                    )
-                        : ListView.separated(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      itemCount: recentDownloads.length,
-                      separatorBuilder:
-                          (context, index) =>
-                          Divider(
-                            height: 1,
-                            color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-                          ),
-                      itemBuilder: (context, index) {
-                        final download = recentDownloads[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 12.0,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _getFileIcon(download.name),
-                                size: 24,
-                                color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                              ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      download.name,
-                                      style: TextStyle(
-                                        color: isDarkMode ? Colors.white : Colors.black,
-                                        fontSize: 14,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 4),
-                                    download.isComplete
-                                        ? Text(
-                                      '${download.size} • Complete',
-                                      style: TextStyle(
-                                        color:
-                                        isDarkMode
-                                            ? Colors.grey[400]
-                                            : Colors.grey[700],
-                                        fontSize: 12,
-                                      ),
-                                    )
-                                        : Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: LinearProgressIndicator(
-                                                value: download.progress,
-                                                backgroundColor:
-                                                isDarkMode
-                                                    ? Colors.grey[700]
-                                                    : Colors.grey[300],
-                                                valueColor:
-                                                AlwaysStoppedAnimation<Color>(
-                                                  Colors.blue,
-                                                ),
-                                              ),
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              '${(download.progress * 100).toInt()}%',
-                                              style: TextStyle(
-                                                color:
-                                                isDarkMode
-                                                    ? Colors.grey[400]
-                                                    : Colors.grey[700],
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              download.size,
-                                              style: TextStyle(
-                                                color:
-                                                isDarkMode
-                                                    ? Colors.grey[400]
-                                                    : Colors.grey[700],
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            Text(
-                                              download.downloadSpeed,
-                                              style: TextStyle(
-                                                color:
-                                                isDarkMode
-                                                    ? Colors.grey[400]
-                                                    : Colors.grey[700],
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.more_vert,
-                                  size: 20,
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    child: Consumer<DownloadService>(
+                      builder: (context, downloadService, child) {
+                        final downloads = downloadService.downloads;
+
+                        if (downloads.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Text(
+                                'No recent downloads',
+                                style: TextStyle(
                                   color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
                                 ),
-                                onPressed: () {},
-                                padding: EdgeInsets.zero,
-                                constraints: BoxConstraints.tightFor(width: 32, height: 32),
                               ),
-                            ],
-                          ),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: downloads.length,
+                          separatorBuilder:
+                              (context, index) => Divider(
+                                height: 1,
+                                color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                              ),
+                          itemBuilder: (context, index) {
+                            final download = downloads[index];
+                            return _buildDownloadItem(download, isDarkMode);
+                          },
                         );
                       },
                     ),
@@ -877,6 +778,128 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     }
   }
 
+  Widget _buildDownloadItem(DownloadItem download, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Row(
+        children: [
+          Icon(
+            _getFileIcon(download.name),
+            size: 24,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  download.name,
+                  style: TextStyle(color: isDarkMode ? Colors.white : Colors.black, fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                if (download.isComplete)
+                  Text(
+                    '${download.size} • Complete',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                      fontSize: 12,
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: LinearProgressIndicator(
+                              value: download.progress,
+                              backgroundColor: isDarkMode ? Colors.grey[700] : Colors.grey[300],
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${(download.progress * 100).toInt()}%',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            download.size,
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            download.downloadSpeed,
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.more_vert,
+              size: 20,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+            ),
+            onPressed: () => _showDownloadOptions(download),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDownloadOptions(DownloadItem download) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => SimpleDialog(
+            title: Text('Download Options'),
+            children: [
+              if (!download.isComplete)
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _downloadService.cancelDownload();
+                  },
+                  child: const Text('Cancel Download'),
+                ),
+              if (download.isComplete)
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _downloadService.retryDownload(download.name);
+                  },
+                  child: const Text('Retry Download'),
+                ),
+            ],
+          ),
+    );
+  }
+
   void handleSearch(String query) {
     setState(() {
       controller.text = query;
@@ -886,9 +909,7 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    var isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    var isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Column(
         children: [
@@ -959,14 +980,14 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.search),
                             suffix:
-                            _isLoading
-                                ? Container(
-                              width: 24,
-                              height: 24,
-                              padding: const EdgeInsets.all(6.0),
-                              child: const CircularProgressIndicator(strokeWidth: 2),
-                            )
-                                : null,
+                                _isLoading
+                                    ? Container(
+                                      width: 24,
+                                      height: 24,
+                                      padding: const EdgeInsets.all(6.0),
+                                      child: const CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                    : null,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
                             hintText: 'Search Datasets by name, type or category',
                           ),
