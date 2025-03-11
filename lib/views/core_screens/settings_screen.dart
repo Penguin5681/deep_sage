@@ -45,14 +45,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
   final hiveApiBoxName = dotenv.env['API_HIVE_BOX_NAME'];
   final userHiveBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+  final userPreferencesBox = Hive.box('user_preferences');
   final Image fallbackUserAvatar = Image.asset('assets/fallback/fallback_user_image.png');
 
   late FocusNode kaggleUsernameInputFocus = FocusNode();
   late FocusNode kaggleApiInputFocus = FocusNode();
   late bool isKaggleApiCredsSaved = false;
   late bool isRootDirectorySelected = false;
-  late String selectedRootDirectoryPath = '';
+  late bool isDownloadLocationChecked = false;
   late Map<String, dynamic> credsSavedOrNotLetsFindOutResult = {};
+  late String selectedRootDirectoryPath = '';
   late String uploadImagePath = '';
   late String displayName = '';
   late String userEmail = '';
@@ -63,9 +65,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String projectId;
   late String credentialsPath;
 
+  Future<void> getUserPreferences() async {
+    final value = await userPreferencesBox.get('askForDownloadLocation');
+    setState(() {
+      isDownloadLocationChecked = value ?? false;
+    });
+  }
+
   Future<void> getDownloadsDirectory() async {
     final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
     String? savedPath = hiveBox.get('downloadPath');
+    debugPrint('pathhhhhhhhhhhhhhhhhhhh: $savedPath');
+
 
     if (savedPath != null && savedPath.isNotEmpty) {
       setState(() {
@@ -547,6 +558,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     kaggleApiInputFocus = FocusNode();
     kaggleUsernameInputFocus = FocusNode();
     credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
+    getUserPreferences();
 
     // Initialize GCP variables
     bucketName = 'user_image_data';
@@ -1083,14 +1095,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Ask for location everytime',
+                                        'Ask for download location everytime',
                                         style: TextStyle(
                                           color: isDarkModeEnabled ? Colors.white : Colors.black,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       Text(
-                                        'Prompt for download location before saving files',
+                                        'Prompt for download location before importing / downloading',
                                         style: TextStyle(
                                           color:
                                               isDarkModeEnabled
@@ -1103,11 +1115,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                               Switch(
-                                value: shouldWeAskForDownloadLocation,
-                                onChanged: (value) {
+                                value: isDownloadLocationChecked,
+                                onChanged: (value) async {
                                   setState(() {
-                                    shouldWeAskForDownloadLocation = value;
+                                    isDownloadLocationChecked = value;
                                   });
+                                  await userPreferencesBox.put(
+                                    'askForDownloadLocation',
+                                    isDownloadLocationChecked,
+                                  );
                                 },
                                 activeColor: Colors.blue,
                               ),
