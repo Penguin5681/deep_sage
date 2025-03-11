@@ -23,6 +23,7 @@ Future main() async {
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
   await Hive.openBox(dotenv.env['USER_HIVE_BOX']!);
   await Hive.openBox('starred_datasets');
+  await Hive.openBox('user_preferences');
 
   await CacheService().initCacheBox();
 
