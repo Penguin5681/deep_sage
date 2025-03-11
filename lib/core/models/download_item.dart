@@ -15,6 +15,7 @@ class DownloadItem {
     required this.isComplete,
     required this.source,
     this.downloadSpeed = '0 KB/s',
+
   });
 
   DownloadItem copyWith({
