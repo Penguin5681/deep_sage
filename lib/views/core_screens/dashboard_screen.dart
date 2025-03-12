@@ -508,7 +508,7 @@ class _DashboardState extends State<Dashboard> {
                           subLabelText: datasetPath,
                           buttonText: 'Analyze',
                           darkIconPath: AppIcons.checkDark,
-                          onSearch: () {},
+                          onButtonClick: () {},
                         ),
                       ],
                     ),
@@ -553,7 +553,7 @@ class _DashboardState extends State<Dashboard> {
                                     'Analysis 2003',
                                 subLabelText: 'Last opened 2 hours ago',
                                 buttonText: 'Open',
-                                onSearch: () {},
+                                onButtonClick: () {}
                               ),
                               const SizedBox(width: 15.0),
                               DatasetCard(
@@ -562,7 +562,7 @@ class _DashboardState extends State<Dashboard> {
                                 labelText: 'Customer Behaviour',
                                 subLabelText: 'Last opened yesterday',
                                 buttonText: 'Open',
-                                onSearch: () {},
+                                onButtonClick: () {}
                               ),
                               const SizedBox(width: 15.0),
                               DatasetCard(
@@ -571,7 +571,7 @@ class _DashboardState extends State<Dashboard> {
                                 labelText: 'Market Research',
                                 subLabelText: 'Last opened 3 days ago',
                                 buttonText: 'Open',
-                                onSearch: () {},
+                                onButtonClick: () {}
                               ),
                               const SizedBox(width: 15.0),
                             ],
@@ -595,7 +595,7 @@ class _DashboardState extends State<Dashboard> {
                               'Your recent datasets show a 23% increase in customer engagement patterns',
                           subLabelSize: 17.0,
                           buttonText: 'Open',
-                          onSearch: () {},
+                          onButtonClick: () {}
                         ),
                       ],
                     ),

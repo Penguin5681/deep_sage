@@ -7,9 +7,7 @@ import 'package:deep_sage/core/config/helpers/debouncer.dart';
 import 'package:deep_sage/core/models/download_item.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_finances.dart';
-import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_gov.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_health.dart';
-import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_manufacture.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_tech.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -64,7 +62,8 @@ class _SearchScreenState extends State<SearchScreen>
   void initState() {
     super.initState();
     _downloadService = Provider.of<DownloadService>(context, listen: false);
-    tabController = TabController(length: 6, vsync: this);
+    // Deleted 2 tabs named goverment and manufacture 
+    tabController = TabController(length: 4, vsync: this);
     _suggestionService = SuggestionService();
     controller.addListener(_onSearchChanged);
     searchFocusNode.addListener(_onFocusChanged);
@@ -1032,12 +1031,13 @@ class _SearchScreenState extends State<SearchScreen>
     // );
   }
 
+  // Created a function to handle the search using controller text for the query
   void handleSearch(String query) {
-    setState(() {
-      controller.text = query;
-    });
-    searchFocusNode.requestFocus();
-  }
+     setState(() {
+       controller.text = query;
+     });
+     searchFocusNode.requestFocus();
+   }
 
   @override
   Widget build(BuildContext context) {
@@ -1159,26 +1159,17 @@ class _SearchScreenState extends State<SearchScreen>
               Tab(text: 'Finances'),
               Tab(text: 'Technology'),
               Tab(text: 'Healthcare'),
-              Tab(text: 'Government'),
-              Tab(text: 'Manufacturing'),
             ],
           ),
           Expanded(
             child: TabBarView(
               controller: tabController,
               children: [
+                // Added the required categories
                 CategoryAll(onSearch: handleSearch),
                 CategoryFinances(onSearch: handleSearch),
                 CategoryTechnology(onSearch: handleSearch),
-                CategoryHealthcare(onSearch: handleSearch),
-                CategoryGovernment(onSearch: handleSearch),
-                CategoryManufacturing(onSearch: handleSearch),
-                // TODO: Pass all the filters in the respective screens
-                // Center(child: Text('Screen 2')),
-                // Center(child: Text('Screen 3')),
-                // Center(child: Text('Screen 4')),
-                // Center(child: Text('Screen 5')),
-                // Center(child: Text('Screen 6')),
+                CategoryHealth(onSearch: handleSearch),
               ],
             ),
           ),
