@@ -131,7 +131,6 @@ class PopularDatasetService {
             (data.first as Map).containsKey('error')) {
           throw Exception('API error: ${data.first['error']}');
         }
-
         return data.map((json) => PopularDataset.fromJson(json)).toList();
       } else {
         try {
@@ -165,7 +164,7 @@ class PopularDatasetService {
     }
 
     final uri = Uri.parse(
-      '$baseUrl/api/datasets/kaggle/healthcare',
+      '$baseUrl/api/datasets/healthcare',
     ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
 
     final headers = {
@@ -223,7 +222,7 @@ class PopularDatasetService {
     }
 
     final uri = Uri.parse(
-      '$baseUrl/api/datasets/kaggle/finance',
+      '$baseUrl/api/datasets/finance',
     ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
 
     final headers = {
@@ -281,7 +280,7 @@ class PopularDatasetService {
     }
 
     final uri = Uri.parse(
-      '$baseUrl/api/datasets/kaggle/technology',
+      '$baseUrl/api/datasets/technology',
     ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
 
     final headers = {

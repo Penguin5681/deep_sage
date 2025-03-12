@@ -332,7 +332,7 @@ class DownloadService extends ChangeNotifier {
       final progress = (data['progress'] ?? 0) / 100.0;
       final bytesDownloaded = data['bytes_downloaded'] ?? 0;
       final speed = data['speed'] ?? '0 B/s';
-      final message = data['message'] ?? 'Downloading...';
+      // final message = data['message'] ?? 'Downloading...';
 
       String size = '0 B';
       if (bytesDownloaded > 0) {
