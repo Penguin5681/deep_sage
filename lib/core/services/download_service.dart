@@ -10,8 +10,11 @@ import 'package:http/http.dart' as http;
 
 class DownloadService extends ChangeNotifier {
   final Map<String, DownloadItem> _downloads = {};
-  final Queue<String> _downloadQueue = Queue<String>();
-  // final Box<dynamic> _downloadHistoryBox;
+  final Queue<Map<String, dynamic>> _downloadQueue = Queue<Map<String, dynamic>>();
+  bool _isProcessingQueue = false;
+  final StreamController<void> _downloadStreamController = StreamController<void>.broadcast();
+  Stream<void> get stream => _downloadStreamController.stream;
+
   Future<void> retryDownload(String datasetId) async {
     if (_downloads.containsKey(datasetId)) {
       final download = _downloads[datasetId]!;
@@ -27,6 +30,47 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> cancelDownload([String? datasetId]) async {
+    if (datasetId == null) {
+      if (_currentDownloadDatasetId != null) {
+        await _cancelDownloadRequest(_currentDownloadDatasetId!);
+      }
+    } else if (_downloads.containsKey(datasetId)) {
+      await _cancelDownloadRequest(datasetId);
+      _downloads[datasetId] = _downloads[datasetId]!.copyWith(
+        downloadSpeed: 'Cancelled',
+        progress: 0.0,
+      );
+      notifyListeners();
+    }
+  }
+
+  Future<void> _cancelDownloadRequest(String datasetId) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/datasets/cancel');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'dataset_id': datasetId}),
+      );
+
+      debugPrint('$response');
+
+      if (response.statusCode == 200) {
+        debugPrint('$response');
+        if (datasetId == _currentDownloadDatasetId) {
+          _cleanupDownload();
+        }
+        _downloads.remove(datasetId);
+        notifyListeners();
+      } else {
+        debugPrint('Failed to cancel download: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error cancelling download: $e');
+    }
+  }
+
   List<DownloadItem> get downloads => _downloads.values.toList();
 
   final String _baseUrl = dotenv.env['DEV_BASE_URL'] ?? 'http://localhost:5000';
@@ -36,6 +80,99 @@ class DownloadService extends ChangeNotifier {
   String? _currentDownloadDatasetId;
 
   bool get isDownloading => _currentDownloadDatasetId != null;
+
+  Future<void> _processQueue() async {
+    if (_downloadQueue.isEmpty || _isProcessingQueue) return;
+
+    _isProcessingQueue = true;
+
+    while (_downloadQueue.isNotEmpty) {
+      final downloadInfo = _downloadQueue.first;
+      final datasetId = downloadInfo['datasetId'];
+
+      if (_downloads.containsKey(datasetId)) {
+        final download = _downloads[datasetId]!;
+        _downloads[datasetId] = download.copyWith(
+          size: 'Starting...',
+        );
+        notifyListeners();
+      }
+
+      _currentDownloadDatasetId = datasetId;
+
+      try {
+        final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+        final userApiHive = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+        final userApi = userApiHive.getAt(0);
+        final kaggleUsername = userApi?.kaggleUserName ?? '';
+        final kaggleKey = userApi?.kaggleApiKey ?? '';
+
+        if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
+          _updateDownloadWithError(
+              datasetId,
+              'Kaggle credentials not found. Please update them in settings.'
+          );
+          _downloadQueue.removeFirst();
+          continue;
+        }
+
+        final downloadPath = hiveBox.get('selectedRootDirectoryPath');
+
+        if (downloadPath == null || downloadPath.isEmpty) {
+          _updateDownloadWithError(
+              datasetId,
+              'Download path not set. Please set it in settings.'
+          );
+          _downloadQueue.removeFirst();
+          continue;
+        }
+
+        await _startDownload(
+          datasetId: datasetId,
+          source: downloadInfo['source'],
+          path: downloadPath,
+          unzip: downloadInfo['unzip'],
+          kaggleUsername: kaggleUsername,
+          kaggleKey: kaggleKey,
+        );
+
+        await _waitForDownloadCompletion();
+
+      } catch (e) {
+        _updateDownloadWithError(datasetId, 'Failed to start download: ${e.toString()}');
+      }
+
+      _downloadQueue.removeFirst();
+    }
+
+    _isProcessingQueue = false;
+  }
+
+  Future<void> _waitForDownloadCompletion() {
+    final completer = Completer<void>();
+
+    if (!_isConnected) {
+      completer.complete();
+      return completer.future;
+    }
+
+    late StreamSubscription subscription;
+    subscription = stream.listen(
+          (event) {},
+      onDone: () {
+        subscription.cancel();
+        completer.complete();
+      },
+      onError: (error) {
+        subscription.cancel();
+        completer.completeError(error);
+      },
+    );
+
+    return completer.future;
+  }
+
 
 
   Future<void> downloadDataset({
@@ -49,11 +186,12 @@ class DownloadService extends ChangeNotifier {
 
     _currentDownloadDatasetId = datasetId;
 
+    final fileName = datasetId.split('/').last;
+
     final initialDownload = DownloadItem(
-      name: datasetId
-          .split('/')
-          .last,
-      size: 'Calculating...',
+      name: fileName,
+      datasetId: datasetId,
+      size: 'Queued...',
       timeStarted: DateTime.now(),
       progress: 0.0,
       isComplete: false,
@@ -62,6 +200,16 @@ class DownloadService extends ChangeNotifier {
 
     _downloads[datasetId] = initialDownload;
     notifyListeners();
+
+    _downloadQueue.add({
+      'source': source,
+      'datasetId': datasetId,
+      'unzip': unzip,
+    });
+
+    if (!_isProcessingQueue) {
+      _processQueue();
+    }
 
     try {
       final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
@@ -240,13 +388,10 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void cancelDownload() {
-    _cleanupDownload();
-  }
-
   @override
   void dispose() {
     _sseSubscription?.cancel();
+    _downloadStreamController.close();
     super.dispose();
   }
 }

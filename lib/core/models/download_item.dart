@@ -1,5 +1,6 @@
 class DownloadItem {
   final String name;
+  final String datasetId;
   final String size;
   final DateTime timeStarted;
   late final double progress;
@@ -9,17 +10,18 @@ class DownloadItem {
 
   DownloadItem({
     required this.name,
+    required this.datasetId,
     required this.size,
     required this.timeStarted,
     required this.progress,
     required this.isComplete,
     required this.source,
     this.downloadSpeed = '0 KB/s',
-
   });
 
   DownloadItem copyWith({
     String? name,
+    String? datasetId,
     String? size,
     DateTime? timeStarted,
     double? progress,
@@ -29,6 +31,7 @@ class DownloadItem {
   }) {
     return DownloadItem(
       name: name ?? this.name,
+      datasetId: datasetId ?? this.datasetId,
       size: size ?? this.size,
       timeStarted: timeStarted ?? this.timeStarted,
       progress: progress ?? this.progress,
