@@ -4,11 +4,31 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
+class DirectoryTreeNode {
+  final String name;
+  final String path;
+  List<DirectoryTreeNode> children;
+  bool isExpanded;
+  bool isExpandable;
+
+  DirectoryTreeNode({
+    required this.name,
+    required this.path,
+    List<DirectoryTreeNode> children = const [],
+    this.isExpanded = false,
+    this.isExpandable = false,
+  }) : children = List.of(children);
+}
+
 class FileExplorerView extends StatefulWidget {
   final String initialPath;
   final VoidCallback onClose;
 
-  const FileExplorerView({super.key, required this.initialPath, required this.onClose});
+  const FileExplorerView({
+    super.key,
+    required this.initialPath,
+    required this.onClose,
+  });
 
   @override
   State<FileExplorerView> createState() => _FileExplorerViewState();
@@ -21,6 +41,9 @@ class _FileExplorerViewState extends State<FileExplorerView> {
   List<FileSystemEntity> folderContents = [];
   List<FileSystemEntity> directoryList = [];
   List<FileSystemEntity> filteredContents = [];
+  DirectoryTreeNode? rootNode;
+  bool isLoadingTree = true;
+  bool isLoadingScreen = true;
 
   final List<String> allowedExtensions = ['json', 'csv', 'xlsx', 'xls'];
 
@@ -29,7 +52,7 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     super.initState();
     currentPath = widget.initialPath;
     loadDirectoryContents(currentPath);
-    buildDirectoryTree(widget.initialPath);
+    buildDirectoryTreeNode(widget.initialPath);
   }
 
   Future<void> loadDirectoryContents(String dirPath) async {
@@ -42,6 +65,8 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         folderContents = contents;
         filterContents();
       });
+
+      updateTreeSelection(dirPath);
     } catch (ex) {
       if (kDebugMode) {
         debugPrint('loadDirectoryContents(): Something went wrong => $ex');
@@ -62,19 +87,65 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         }).toList();
   }
 
-  Future<void> buildDirectoryTree(String rootPath) async {
+  Future<void> buildDirectoryTreeNode(String rootPath) async {
+    setState(() => isLoadingTree = true);
+
     try {
-      final rootDir = Directory(rootPath);
-      final entities = await rootDir.list().toList();
+      final _ = Directory(rootPath);
+      final name = path.basename(rootPath);
+
+      rootNode = DirectoryTreeNode(
+        name: name.isEmpty ? 'Root' : name,
+        path: rootPath,
+        isExpanded: true,
+      );
+
+      await _loadChildDirectories(rootNode!);
+    } catch (e) {
+      debugPrint('Error building directory tree: $e');
+    } finally {
+      setState(() => isLoadingTree = false);
+    }
+  }
+
+  Future<void> _loadChildDirectories(DirectoryTreeNode node) async {
+    try {
+      final dir = Directory(node.path);
+      final List<DirectoryTreeNode> directories = [];
+
+      await for (final entity in dir.list()) {
+        if (entity is Directory) {
+          final childNode = DirectoryTreeNode(
+            name: path.basename(entity.path),
+            path: entity.path,
+          );
+
+          final hasSubDirs = await _directoryHasSubDirectories(entity);
+          childNode.isExpandable = hasSubDirs;
+
+          directories.add(childNode);
+        }
+      }
+
+      directories.sort((a, b) => a.name.compareTo(b.name));
 
       setState(() {
-        directoryList = entities.whereType<Directory>().toList();
+        node.children = directories;
       });
-    } catch (ex) {
-      if (kDebugMode) {
-        debugPrint('buildDirectoryTree(): Something went wrong => $ex');
-      }
+    } catch (e) {
+      debugPrint('Error loading child directories: $e');
     }
+  }
+
+  Future<bool> _directoryHasSubDirectories(Directory dir) async {
+    try {
+      await for (final entity in dir.list()) {
+        if (entity is Directory) return true;
+      }
+    } catch (e) {
+      debugPrint('Error checking subdirectories: $e');
+    }
+    return false;
   }
 
   Widget buildFileTypeFilter() {
@@ -102,7 +173,14 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         borderRadius: BorderRadius.circular(4.0),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Text(label, style: TextStyle(fontSize: 18, color: color, fontWeight: FontWeight.bold)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 18,
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
@@ -111,7 +189,9 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8.0, spreadRadius: 1.0)],
+        boxShadow: [
+          BoxShadow(color: Colors.black26, blurRadius: 8.0, spreadRadius: 1.0),
+        ],
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Column(
@@ -119,7 +199,10 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         children: [
           // Header with close button
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.only(
@@ -130,7 +213,10 @@ class _FileExplorerViewState extends State<FileExplorerView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('File Explorer', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'File Explorer',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 IconButton(
                   icon: Icon(Icons.close, size: 18),
                   onPressed: widget.onClose,
@@ -148,7 +234,8 @@ class _FileExplorerViewState extends State<FileExplorerView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.7 * splitPosition,
+                  width:
+                      MediaQuery.of(context).size.width * 0.7 * splitPosition,
                   child: _buildFolderTreeView(),
                 ),
 
@@ -169,7 +256,9 @@ class _FileExplorerViewState extends State<FileExplorerView> {
       height: 32,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor.withValues(alpha: 0.7),
-        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor)),
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -183,7 +272,9 @@ class _FileExplorerViewState extends State<FileExplorerView> {
               children: [
                 TextButton(
                   onPressed: () {
-                    final navigatePath = path.joinAll(pathParts.sublist(0, index + 1));
+                    final navigatePath = path.joinAll(
+                      pathParts.sublist(0, index + 1),
+                    );
                     loadDirectoryContents(navigatePath);
                   },
                   style: TextButton.styleFrom(
@@ -210,24 +301,120 @@ class _FileExplorerViewState extends State<FileExplorerView> {
   }
 
   Widget _buildFolderTreeView() {
-    return ListView.builder(
-      itemCount: directoryList.length,
-      padding: EdgeInsets.all(4.0),
-      itemBuilder: (context, index) {
-        final directory = directoryList[index];
-        final name = path.basename(directory.path);
+    if (isLoadingTree) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-        return ListTile(
-          dense: true,
-          visualDensity: VisualDensity.compact,
-          contentPadding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 0),
-          leading: Icon(Icons.folder, color: Colors.blue[400], size: 16),
-          title: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-          onTap: () => loadDirectoryContents(directory.path),
-          selected: currentPath == directory.path,
-        );
-      },
+    if (rootNode == null) {
+      return const Center(child: Text('Unable to load directory structure'));
+    }
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: _buildDirectoryTree(rootNode!, 0),
+      ),
     );
+  }
+
+  Widget _buildDirectoryTree(DirectoryTreeNode node, int level) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () async {
+            setState(() {
+              node.isExpanded = !node.isExpanded;
+            });
+            if (node.isExpanded && node.children.isEmpty) {
+              await _loadChildDirectories(node);
+            }
+            loadDirectoryContents(node.path);
+          },
+          child: Container(
+            padding: EdgeInsets.only(
+              left: 8.0 * level,
+              top: 4,
+              bottom: 4,
+              right: 8,
+            ),
+            color:
+                currentPath == node.path
+                    ? Colors.transparent
+                    : Colors.transparent,
+            child: Row(
+              children: [
+                Icon(
+                  node.isExpandable
+                      ? (node.isExpanded
+                          ? Icons.keyboard_arrow_down
+                          : Icons.keyboard_arrow_right)
+                      : Icons.circle,
+                  size: node.isExpandable ? 16 : 8,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.folder,
+                  size: 16,
+                  color:
+                      currentPath == node.path
+                          ? Colors.blue[700]
+                          : Colors.blue[400],
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    node.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: currentPath == node.path ? Colors.blue : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (node.isExpanded)
+          ...node.children.map(
+            (child) => _buildDirectoryTree(child, level + 1),
+          ),
+      ],
+    );
+  }
+
+  void updateTreeSelection(String dirPath) {
+    if (rootNode == null) return;
+
+    void traverseAndExpand(
+      DirectoryTreeNode node,
+      List<String> segments,
+      int index,
+    ) {
+      if (index >= segments.length) return;
+
+      final currentSegment = segments[index];
+      final child = node.children.firstWhere(
+        (n) => n.name == currentSegment,
+        orElse: () => DirectoryTreeNode(name: '', path: ''),
+      );
+
+      if (child.path.isNotEmpty) {
+        child.isExpanded = true;
+        if (child.children.isEmpty) {
+          _loadChildDirectories(child).then((_) {
+            traverseAndExpand(child, segments, index + 1);
+          });
+        } else {
+          traverseAndExpand(child, segments, index + 1);
+        }
+      }
+    }
+
+    final segments =
+        path.split(dirPath).where((p) => p != rootNode!.name).toList();
+    traverseAndExpand(rootNode!, segments, 0);
   }
 
   Widget _buildContentView() {
@@ -258,9 +445,18 @@ class _FileExplorerViewState extends State<FileExplorerView> {
             color: isDirectory ? Colors.blue[400] : Colors.grey,
             size: 16,
           ),
-          title: Text(name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+          title: Text(
+            name,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12),
+          ),
           trailing:
-              isDirectory ? null : Text(getFileSize(entity), style: const TextStyle(fontSize: 10)),
+              isDirectory
+                  ? null
+                  : Text(
+                    getFileSize(entity),
+                    style: const TextStyle(fontSize: 10),
+                  ),
           onTap: () {
             if (isDirectory) {
               loadDirectoryContents(entity.path);
@@ -268,7 +464,7 @@ class _FileExplorerViewState extends State<FileExplorerView> {
               setState(() {
                 selectedFilePath = entity.path;
               });
-               }
+            }
           },
           selected: selectedFilePath == entity.path,
         );
@@ -337,3 +533,4 @@ class _FileExplorerViewState extends State<FileExplorerView> {
 // 4. build a simple ui for the split view for now and we'll see later what to change based on my friends opinion.
 // 5. also we gotta build some bread crumbs and the folder tree
 // 6. colors what.
+// 7. building the left pane would require to keep a track of root node and the directories under them

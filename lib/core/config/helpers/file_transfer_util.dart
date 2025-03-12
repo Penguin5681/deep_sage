@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:path/path.dart' as path;
 
 class FileTransferUtil {
@@ -11,6 +12,7 @@ class FileTransferUtil {
   }) async {
     List<String> newFilePaths = [];
     final destinationDir = Directory(destinationDirectory);
+    final starredBox = Hive.box('starred_datasets');
 
     if (!await destinationDir.exists() && createDestinationIfMissing) {
       try {
@@ -32,18 +34,31 @@ class FileTransferUtil {
         final destinationPath = path.join(destinationDirectory, fileName);
         final destinationFile = File(destinationPath);
 
+        bool isStarred = starredBox.get(sourcePath, defaultValue: false);
+
         if (await destinationFile.exists()) {
           if (overwriteExisting) {
             await destinationFile.delete();
           } else {
-            String newFileName = await _getUniqueFileName(destinationDirectory, fileName);
-            final uniqueDestinationPath = path.join(destinationDirectory, newFileName);
+            String newFileName = await _getUniqueFileName(
+              destinationDirectory,
+              fileName,
+            );
+            final uniqueDestinationPath = path.join(
+              destinationDirectory,
+              newFileName,
+            );
 
             await sourceFile.copy(uniqueDestinationPath);
             try {
               await sourceFile.delete();
             } catch (e) {
               debugPrint('Warning: Could not delete original file: $e');
+            }
+
+            if (isStarred) {
+              await starredBox.delete(sourcePath);
+              await starredBox.put(uniqueDestinationPath, true);
             }
 
             newFilePaths.add(uniqueDestinationPath);
@@ -58,6 +73,11 @@ class FileTransferUtil {
           debugPrint('Warning: Could not delete original file: $e');
         }
 
+        if (isStarred) {
+          await starredBox.delete(sourcePath);
+          await starredBox.put(destinationFile, true);
+        }
+
         newFilePaths.add(destinationPath);
       } catch (e) {
         debugPrint('Error moving file $sourcePath: $e');
@@ -67,7 +87,10 @@ class FileTransferUtil {
     return newFilePaths;
   }
 
-  static Future<String> _getUniqueFileName(String directory, String fileName) async {
+  static Future<String> _getUniqueFileName(
+    String directory,
+    String fileName,
+  ) async {
     final fileNameWithoutExtension = path.basenameWithoutExtension(fileName);
     final extension = path.extension(fileName);
 

@@ -30,7 +30,10 @@ class CacheService {
   }
 
   Future<void> cacheDataset(String path, Map<String, dynamic> data) async {
-    await _datasetBox.put(path, {'data': data, 'timestamp': DateTime.now().toIso8601String()});
+    await _datasetBox.put(path, {
+      'data': data,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
   Future<Map<String, dynamic>?> getCacheDataset(String path) async {
@@ -45,8 +48,16 @@ class CacheService {
     return null;
   }
 
-  Future<void> addRecentDataset(String path, String name, String type, String size) async {
-    List<Map<String, dynamic>> recent = _recentDatasetsBox.get('recent', defaultValue: []);
+  Future<void> addRecentDataset(
+    String path,
+    String name,
+    String type,
+    String size,
+  ) async {
+    List<Map<String, dynamic>> recent = _recentDatasetsBox.get(
+      'recent',
+      defaultValue: [],
+    );
 
     final existingIndex = recent.indexWhere((item) => item['path'] == path);
     if (existingIndex != -1) {
@@ -68,10 +79,16 @@ class CacheService {
   }
 
   Future<List<Map<String, dynamic>>> getRecentDatasets() async {
-    return List<Map<String, dynamic>>.from(_recentDatasetsBox.get('recent', defaultValue: []));
+    return List<Map<String, dynamic>>.from(
+      _recentDatasetsBox.get('recent', defaultValue: []),
+    );
   }
 
-  Future<void> cacheSearchResults(String query, String category, List<dynamic> results) async {
+  Future<void> cacheSearchResults(
+    String query,
+    String category,
+    List<dynamic> results,
+  ) async {
     final cacheKey = '${query}_$category';
     await _searchResultsBox.put(cacheKey, {
       'results': results,
@@ -79,7 +96,10 @@ class CacheService {
     });
   }
 
-  Future<List<dynamic>?> getCachedSearchResults(String query, String category) async {
+  Future<List<dynamic>?> getCachedSearchResults(
+    String query,
+    String category,
+  ) async {
     final cacheKey = '${query}_$category';
     final cachedData = _searchResultsBox.get(cacheKey);
 
@@ -92,7 +112,10 @@ class CacheService {
     return null;
   }
 
-  Future<void> cacheAnalysisResult(String datasetPath, Map<String, dynamic> result) async {
+  Future<void> cacheAnalysisResult(
+    String datasetPath,
+    Map<String, dynamic> result,
+  ) async {
     await _analysisResultBox.put(datasetPath, {
       'result': result,
       'timestamp': DateTime.now().toIso8601String(),

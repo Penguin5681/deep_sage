@@ -71,7 +71,8 @@ class SuggestionService {
           final List<dynamic> kaggleSuggestions = data['kaggle'];
           suggestions.addAll(
             kaggleSuggestions.map(
-                  (name) => DatasetSuggestion(name: name.toString(), source: 'kaggle'),
+              (name) =>
+                  DatasetSuggestion(name: name.toString(), source: 'kaggle'),
             ),
           );
         }
