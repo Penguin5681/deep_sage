@@ -63,7 +63,9 @@ class LoginScreen extends StatelessWidget {
             password: password,
           );
           if (response.session != null) {
-            await Hive.box(dotenv.env['USER_HIVE_BOX']!).put('userSessionToken', response.session!.accessToken);
+            await Hive.box(
+              dotenv.env['USER_HIVE_BOX']!,
+            ).put('userSessionToken', response.session!.accessToken);
           }
 
           if (!context.mounted) return;
@@ -78,9 +80,7 @@ class LoginScreen extends StatelessWidget {
           debugPrint('$e');
           showTopSnackBar(
             Overlay.of(context),
-            CustomSnackBar.error(
-              message: 'Error Occurred: $e',
-            ),
+            CustomSnackBar.error(message: 'Error Occurred: $e'),
           );
         }
       } else if (!isEmail()) {

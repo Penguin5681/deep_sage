@@ -10,7 +10,8 @@ class KaggleCredentialsPrompt extends StatefulWidget {
   const KaggleCredentialsPrompt({super.key, required this.onCredentialsAdded});
 
   @override
-  State<KaggleCredentialsPrompt> createState() => _KaggleCredentialsPromptState();
+  State<KaggleCredentialsPrompt> createState() =>
+      _KaggleCredentialsPromptState();
 }
 
 class _KaggleCredentialsPromptState extends State<KaggleCredentialsPrompt> {
@@ -35,7 +36,7 @@ class _KaggleCredentialsPromptState extends State<KaggleCredentialsPrompt> {
 
     if (usernameController.text.isEmpty || apiKeyController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Both username and key are required'))
+        const SnackBar(content: Text('Both username and key are required')),
       );
       return;
     }
@@ -54,8 +55,8 @@ class _KaggleCredentialsPromptState extends State<KaggleCredentialsPrompt> {
       await hiveBox.add(userApiData);
 
       KaggleUpdateService().updateKaggleCreds(
-          usernameController.text,
-          apiKeyController.text
+        usernameController.text,
+        apiKeyController.text,
       );
 
       debugPrint('Credentials saved successfully: ${usernameController.text}');
@@ -67,9 +68,9 @@ class _KaggleCredentialsPromptState extends State<KaggleCredentialsPrompt> {
       debugPrint('Error saving credentials: $e');
       if (!mounted) return;
       if (!_disposed) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to save: $e'))
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
@@ -94,7 +95,11 @@ class _KaggleCredentialsPromptState extends State<KaggleCredentialsPrompt> {
         color: isDarkMode ? Colors.grey.shade800 : Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, spreadRadius: 1),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            spreadRadius: 1,
+          ),
         ],
       ),
       child: Column(
