@@ -657,112 +657,114 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return OverlayEntry(
-      builder:
-          (context) => Positioned(
-            right: 35.0,
-            top: offset.dy + size.height,
-            width: 350,
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(8.0),
-              color: isDarkMode ? Colors.grey[850] : Colors.white,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) => Positioned(
+        right: 35.0,
+        top: offset.dy + size.height,
+        width: 350,
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(8.0),
+          color: isDarkMode ? Colors.grey[850] : Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Downloads',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    Row(
                       children: [
-                        Text(
-                          'Downloads',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isDarkMode ? Colors.white : Colors.black,
-                          ),
-                        ),
                         IconButton(
                           icon: Icon(
                             Icons.clear_all,
                             color: isDarkMode ? Colors.white70 : Colors.grey[700],
                           ),
                           onPressed: () {
-                            setState(() {
-                              recentDownloads.clear();
-                            });
+                            _downloadService.clearCompletedDownloads();
                           },
-                          tooltip: 'Clear all',
+                          tooltip: 'Clear completed',
                           padding: EdgeInsets.zero,
-                          constraints: BoxConstraints.tightFor(width: 32, height: 32),
+                          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
                         ),
                       ],
                     ),
-                  ),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: Consumer<DownloadService>(
-                      builder: (context, downloadService, child) {
-                        final downloads = downloadService.downloads;
+                  ],
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 350,
+                ),
+                child: Consumer<DownloadService>(
+                  builder: (context, downloadService, child) {
+                    final downloads = downloadService.downloads;
 
-                        if (downloads.isEmpty) {
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text(
-                                'No recent downloads',
-                                style: TextStyle(
-                                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                                ),
-                              ),
+                    if (downloads.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Text(
+                            'No recent downloads',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
                             ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          padding: EdgeInsets.zero,
-                          shrinkWrap: true,
-                          itemCount: downloads.length,
-                          separatorBuilder:
-                              (context, index) => Divider(
-                                height: 1,
-                                color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-                              ),
-                          itemBuilder: (context, index) {
-                            final download = downloads[index];
-                            return _buildDownloadItem(download, isDarkMode);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      _removeDownloadOverlay();
-                      // TODO: create a full download history screen
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          top: BorderSide(
-                            color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
                           ),
                         ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: downloads.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
                       ),
-                      child: Center(
-                        child: Text(
-                          'View full download history',
-                          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
-                        ),
+                      itemBuilder: (context, index) {
+                        final download = downloads[index];
+                        return _buildDownloadItem(download, isDarkMode);
+                      },
+                    );
+                  },
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  _removeDownloadOverlay();
+                  // TODO: create a full download history screen
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
                       ),
                     ),
                   ),
-                ],
+                  child: Center(
+                    child: Text(
+                      'View full download history',
+                      style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+        ),
+      ),
     );
   }
 
@@ -805,6 +807,15 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     style: TextStyle(
                       color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
                       fontSize: 12,
+                    ),
+                  )
+                else if (download.size == 'Queued')
+                  Text(
+                    'Queued for download',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
                     ),
                   )
                 else
@@ -856,12 +867,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
             ),
           ),
           IconButton(
-            icon: Icon(
-              Icons.more_vert,
-              size: 20,
-              color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-            ),
-            onPressed: () => _showDownloadOptions(download),
+            icon: download.isComplete
+                ? Icon(Icons.more_vert, size: 20, color: isDarkMode ? Colors.grey[400] : Colors.grey[700])
+                : Icon(Icons.close, size: 20, color: Colors.red[400]),
+            onPressed: () => download.isComplete
+                ? _showDownloadOptions(download)
+                : _downloadService.cancelDownload(download.datasetId),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints.tightFor(width: 32, height: 32),
           ),
@@ -873,31 +884,31 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   void _showDownloadOptions(DownloadItem download) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    showDialog(
-      context: context,
-      builder:
-          (context) => SimpleDialog(
-            title: Text('Download Options'),
-            children: [
-              if (!download.isComplete)
-                SimpleDialogOption(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _downloadService.cancelDownload();
-                  },
-                  child: const Text('Cancel Download'),
-                ),
-              if (download.isComplete)
-                SimpleDialogOption(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _downloadService.retryDownload(download.name);
-                  },
-                  child: const Text('Retry Download'),
-                ),
-            ],
-          ),
-    );
+    // showDialog(
+    //   context: context,
+    //   builder:
+    //       (context) => SimpleDialog(
+    //         title: Text('Download Options'),
+    //         children: [
+    //           if (!download.isComplete)
+    //             SimpleDialogOption(
+    //               onPressed: () {
+    //                 Navigator.pop(context);
+    //                 _downloadService.cancelDownload();
+    //               },
+    //               child: const Text('Cancel Download'),
+    //             ),
+    //           if (download.isComplete)
+    //             SimpleDialogOption(
+    //               onPressed: () {
+    //                 Navigator.pop(context);
+    //                 _downloadService.retryDownload(download.name);
+    //               },
+    //               child: const Text('Retry Download'),
+    //             ),
+    //         ],
+    //       ),
+    // );
   }
 
   void handleSearch(String query) {
