@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
+import 'core/services/download_overlay_service.dart';
 import 'core/services/download_service.dart';
 
 Future main() async {
@@ -46,6 +47,7 @@ Future main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => DownloadService()),
+        ChangeNotifierProvider(create: (_) => DownloadOverlayService()),
       ],
       child: const MyApp(),
     ),

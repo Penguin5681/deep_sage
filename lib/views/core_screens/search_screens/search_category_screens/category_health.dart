@@ -48,6 +48,7 @@ class _CategoryHealthState extends State<CategoryHealth> {
       body: Padding(
         padding: const EdgeInsets.only(top: 25.0, left: 35.0, right: 35.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Scrollbar(
               thumbVisibility: false,
