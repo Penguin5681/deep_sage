@@ -55,7 +55,7 @@ class SignupScreen extends StatelessWidget {
       String email,
       String password,
       String confirmPassword,
-      String displayName, // Add the display name 
+      String displayName, // Add the display name
     ) async {
       final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
       bool isEmail() {
@@ -75,7 +75,9 @@ class SignupScreen extends StatelessWidget {
           var response = await supabaseAuthInstance.auth.signUp(
             email: emailController.text,
             password: passwordController.text,
-            data: {'display_name': displayName}, // Store display name in metadata
+            data: {
+              'display_name': displayName,
+            }, // Store display name in metadata
           );
           if (!context.mounted) return;
           if (response.user!.identities!.isEmpty) {
@@ -190,7 +192,7 @@ class SignupScreen extends StatelessWidget {
                         await signUp(
                           emailController.text,
                           passwordController.text,
-                          confirmPasswordController.text, 
+                          confirmPasswordController.text,
                           nameController.text, // Pass the display name
                         );
                       },

@@ -10,7 +10,9 @@ class KaggleUpdateService {
 
   KaggleUpdateService._internal();
 
-  final ValueNotifier<UserApi?> kaggleCredentials = ValueNotifier<UserApi?>(null);
+  final ValueNotifier<UserApi?> kaggleCredentials = ValueNotifier<UserApi?>(
+    null,
+  );
 
   void updateKaggleCreds(String kaggleUsername, String kaggleApiKey) {
     kaggleCredentials.value = UserApi(

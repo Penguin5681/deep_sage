@@ -40,8 +40,14 @@ class FileTransferUtil {
           if (overwriteExisting) {
             await destinationFile.delete();
           } else {
-            String newFileName = await _getUniqueFileName(destinationDirectory, fileName);
-            final uniqueDestinationPath = path.join(destinationDirectory, newFileName);
+            String newFileName = await _getUniqueFileName(
+              destinationDirectory,
+              fileName,
+            );
+            final uniqueDestinationPath = path.join(
+              destinationDirectory,
+              newFileName,
+            );
 
             await sourceFile.copy(uniqueDestinationPath);
             try {
@@ -81,7 +87,10 @@ class FileTransferUtil {
     return newFilePaths;
   }
 
-  static Future<String> _getUniqueFileName(String directory, String fileName) async {
+  static Future<String> _getUniqueFileName(
+    String directory,
+    String fileName,
+  ) async {
     final fileNameWithoutExtension = path.basenameWithoutExtension(fileName);
     final extension = path.extension(fileName);
 
