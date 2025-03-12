@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:deep_sage/core/config/api_config/kaggle_dataset_info.dart';
 import 'package:deep_sage/core/config/api_config/suggestion_service.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/helpers/debouncer.dart';
+import 'package:deep_sage/core/models/download_item.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_all.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_finances.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_gov.dart';
@@ -9,8 +12,13 @@ import 'package:deep_sage/views/core_screens/search_screens/search_category_scre
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_manufacture.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_category_screens/category_tech.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import '../../../core/services/download_service.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,28 +27,45 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderStateMixin {
+class _SearchScreenState extends State<SearchScreen>
+    with SingleTickerProviderStateMixin {
   late TabController tabController;
   final TextEditingController controller = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
-  String selectedSource = 'Hugging Face';
-
-  final Debouncer _debouncer = Debouncer(delayBetweenRequests: const Duration(milliseconds: 200));
-  List<DatasetSuggestion> _suggestions = [];
-  bool _isLoading = false;
-  bool _isDatasetCardLoading = false;
-  late SuggestionService _suggestionService;
-
-  OverlayEntry? _overlayEntry;
+  final Debouncer _debouncer = Debouncer(
+    delayBetweenRequests: const Duration(milliseconds: 200),
+  );
   final LayerLink _layerLink = LayerLink();
   final GlobalKey _textFieldKey = GlobalKey();
+  final GlobalKey _downloadIconKey = GlobalKey();
+  final String baseUrl =
+      dotenv.env['FLUTTER_ENV'] == 'production'
+          ? dotenv.env['PROD_BASE_URL']!
+          : dotenv.env['DEV_BASE_URL']!;
+  final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+  OverlayEntry? _overlayEntry;
+  OverlayEntry? _downloadOverlayEntry;
+  Timer? _downloadSimulationTimer;
+
+  String selectedSource = 'Hugging Face';
+  List<DatasetSuggestion> _suggestions = [];
+  List<DownloadItem> recentDownloads = [];
+  List<OverlayEntry>? _downloadEntries;
+  bool _isLoading = false;
+  bool _isDatasetCardLoading = false;
+  bool isDownloadOverlayVisible = false;
+
+  late SuggestionService _suggestionService;
+  late String downloadPath = '';
+  late DownloadService _downloadService;
 
   @override
   void initState() {
     super.initState();
+    _downloadService = Provider.of<DownloadService>(context, listen: false);
     tabController = TabController(length: 6, vsync: this);
     _suggestionService = SuggestionService();
-
     controller.addListener(_onSearchChanged);
     searchFocusNode.addListener(_onFocusChanged);
   }
@@ -52,7 +77,23 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     searchFocusNode.dispose();
     _debouncer.dispose();
     _removeOverlay();
+    _downloadSimulationTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _startDownload(String datasetId, String source) async {
+    try {
+      await _downloadService.downloadDataset(
+        source: source,
+        datasetId: datasetId,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   void _onSearchChanged() {
@@ -123,6 +164,43 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     Overlay.of(context).insert(_overlayEntry!);
   }
 
+  void _showDownloadOverlay() {
+    if (isDownloadOverlayVisible) {
+      _removeDownloadOverlay();
+      return;
+    }
+
+    final barrierOverlay = OverlayEntry(
+      builder:
+          (context) => Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _removeDownloadOverlay,
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+    );
+
+    _downloadOverlayEntry = _createDownloadOverlayEntry();
+
+    Overlay.of(context).insert(barrierOverlay);
+    Overlay.of(context).insert(_downloadOverlayEntry!);
+
+    _downloadEntries = [barrierOverlay, _downloadOverlayEntry!];
+    isDownloadOverlayVisible = true;
+  }
+
+  void _removeDownloadOverlay() {
+    if (_downloadEntries != null) {
+      for (final entry in _downloadEntries!) {
+        entry.remove();
+      }
+      _downloadEntries = null;
+    }
+    _downloadOverlayEntry = null;
+    isDownloadOverlayVisible = false;
+  }
+
   void _removeOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
@@ -142,8 +220,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     );
 
     if (source case 'kaggle') {
-      final KaggleDatasetInfoService kaggleDatasetInfoService = KaggleDatasetInfoService();
-      kaggleMetadata = await kaggleDatasetInfoService.retrieveKaggleDatasetMetadata(datasetId);
+      final KaggleDatasetInfoService kaggleDatasetInfoService =
+          KaggleDatasetInfoService();
+      kaggleMetadata = await kaggleDatasetInfoService
+          .retrieveKaggleDatasetMetadata(datasetId);
     } else {
       debugPrint('Something bad happened');
     }
@@ -184,7 +264,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         return Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 150, vertical: 50),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 150,
+            vertical: 50,
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: isDarkMode ? Colors.grey.shade900 : Colors.white,
@@ -214,7 +297,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                               'Kaggle Dataset',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade700,
                               ),
                             ),
                             Text(
@@ -229,7 +315,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close, color: isDarkMode ? Colors.white : Colors.black),
+                        icon: Icon(
+                          Icons.close,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
@@ -242,7 +331,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     'ID: $id',
                     style: TextStyle(
                       fontSize: 14,
-                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                      color:
+                          isDarkMode
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                     ),
                   ),
                 ),
@@ -267,36 +359,52 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                            color:
+                                isDarkMode
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                              color:
+                                  isDarkMode
+                                      ? Colors.grey.shade700
+                                      : Colors.grey.shade300,
                             ),
                           ),
-                          child: description.isEmpty
-                              ? Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'No description available',
-                                style: TextStyle(
-                                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey.shade600,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          )
-                              : Text(
-                            description,
-                            style: TextStyle(
-                              color: isDarkMode ? Colors.white : Colors.black,
-                            ),
-                          ),
+                          child:
+                              description.isEmpty
+                                  ? Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color:
+                                            isDarkMode
+                                                ? Colors.grey.shade500
+                                                : Colors.grey.shade600,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'No description available',
+                                        style: TextStyle(
+                                          color:
+                                              isDarkMode
+                                                  ? Colors.grey.shade500
+                                                  : Colors.grey.shade600,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                  : Text(
+                                    description,
+                                    style: TextStyle(
+                                      color:
+                                          isDarkMode
+                                              ? Colors.white
+                                              : Colors.black,
+                                    ),
+                                  ),
                         ),
 
                         const SizedBox(height: 24),
@@ -318,16 +426,36 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                           children: [
-                            _buildInfoItem(isDarkMode, Icons.person, 'Owner', owner),
-                            _buildInfoItem(isDarkMode, Icons.folder, 'Size', size),
-                            _buildInfoItem(isDarkMode, Icons.thumb_up, 'Votes', votes.toString()),
+                            _buildInfoItem(
+                              isDarkMode,
+                              Icons.person,
+                              'Owner',
+                              owner,
+                            ),
+                            _buildInfoItem(
+                              isDarkMode,
+                              Icons.folder,
+                              'Size',
+                              size,
+                            ),
+                            _buildInfoItem(
+                              isDarkMode,
+                              Icons.thumb_up,
+                              'Votes',
+                              votes.toString(),
+                            ),
                             _buildInfoItem(
                               isDarkMode,
                               Icons.download,
                               'Downloads',
                               NumberFormat.compact().format(downloadCount),
                             ),
-                            _buildInfoItem(isDarkMode, Icons.update, 'Last Updated', lastUpdated),
+                            _buildInfoItem(
+                              isDarkMode,
+                              Icons.update,
+                              'Last Updated',
+                              lastUpdated,
+                            ),
                             _buildInfoItem(
                               isDarkMode,
                               Icons.link,
@@ -356,13 +484,24 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _startDownload(id, 'kaggle');
+                          _showDownloadOverlay();
+                        },
                         icon: const Icon(Icons.cloud_download),
                         label: const Text('Download'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
-                          foregroundColor: isDarkMode ? Colors.white : Colors.black,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          backgroundColor:
+                              isDarkMode
+                                  ? Colors.grey.shade800
+                                  : Colors.grey.shade200,
+                          foregroundColor:
+                              isDarkMode ? Colors.white : Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -373,7 +512,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade600,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
                         ),
                       ),
                     ],
@@ -388,19 +530,21 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   Widget _buildInfoItem(
-      bool isDarkMode,
-      IconData icon,
-      String label,
-      String value, {
-        bool isLink = false,
-        String? linkUrl,
-      }) {
+    bool isDarkMode,
+    IconData icon,
+    String label,
+    String value, {
+    bool isLink = false,
+    String? linkUrl,
+  }) {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+        ),
       ),
       child: Row(
         children: [
@@ -426,17 +570,23 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   label,
                   style: TextStyle(
                     fontSize: 15,
-                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                    color:
+                        isDarkMode
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                   ),
                 ),
                 if (isLink)
                   InkWell(
-                    onTap: linkUrl != null ? () async {
-                      if (!await launchUrl(Uri.parse(linkUrl))) {
-                        throw Exception('Unable to launch url!');
-                      }
-                      debugPrint('Launch URL: $linkUrl');
-                    } : null,
+                    onTap:
+                        linkUrl != null
+                            ? () async {
+                              if (!await launchUrl(Uri.parse(linkUrl))) {
+                                throw Exception('Unable to launch url!');
+                              }
+                              debugPrint('Launch URL: $linkUrl');
+                            }
+                            : null,
                     child: Text(
                       value,
                       style: const TextStyle(
@@ -482,9 +632,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: isDarkMode ? Colors.white : Colors.blue.shade600),
+              CircularProgressIndicator(
+                color: isDarkMode ? Colors.white : Colors.blue.shade600,
+              ),
               const SizedBox(height: 16.0),
-              Text('Loading...', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
+              Text(
+                'Loading...',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+              ),
             ],
           ),
         ),
@@ -493,7 +650,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 
   OverlayEntry _createOverlayEntry() {
-    RenderBox renderBox = _textFieldKey.currentContext!.findRenderObject() as RenderBox;
+    RenderBox renderBox =
+        _textFieldKey.currentContext!.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
     var isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -528,7 +686,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                             _isDatasetCardLoading = true;
                             debugPrint(_isDatasetCardLoading.toString());
                             debugPrint(suggestion.source);
-                            await openDatasetCard(suggestion.name, suggestion.source);
+                            await openDatasetCard(
+                              suggestion.name,
+                              suggestion.source,
+                            );
                             debugPrint(suggestion.name);
                             setState(() {
                               _isDatasetCardLoading = false;
@@ -543,13 +704,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                           child: ListTile(
                             title: Text(
                               suggestion.name,
-                              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                              style: TextStyle(
+                                color: isDarkMode ? Colors.white : Colors.black,
+                              ),
                             ),
                             subtitle: Text(
                               'Kaggle',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isDarkMode ? Colors.grey[300] : Colors.grey,
+                                color:
+                                    isDarkMode ? Colors.grey[300] : Colors.grey,
                               ),
                             ),
                           ),
@@ -562,6 +726,310 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
             ),
           ),
     );
+  }
+
+  OverlayEntry _createDownloadOverlayEntry() {
+    RenderBox renderBox =
+        _downloadIconKey.currentContext!.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return OverlayEntry(
+      builder:
+          (context) => Positioned(
+            right: 35.0,
+            top: offset.dy + size.height,
+            width: 350,
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(8.0),
+              color: isDarkMode ? Colors.grey[850] : Colors.white,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Downloads',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.clear_all,
+                                color:
+                                    isDarkMode
+                                        ? Colors.white70
+                                        : Colors.grey[700],
+                              ),
+                              onPressed: () {
+                                _downloadService.clearCompletedDownloads();
+                              },
+                              tooltip: 'Clear completed',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 32,
+                                height: 32,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 350),
+                    child: Consumer<DownloadService>(
+                      builder: (context, downloadService, child) {
+                        final downloads = downloadService.downloads;
+
+                        if (downloads.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Text(
+                                'No recent downloads',
+                                style: TextStyle(
+                                  color:
+                                      isDarkMode
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: downloads.length,
+                          separatorBuilder:
+                              (context, index) => Divider(
+                                height: 1,
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey[700]
+                                        : Colors.grey[300],
+                              ),
+                          itemBuilder: (context, index) {
+                            final download = downloads[index];
+                            return _buildDownloadItem(download, isDarkMode);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      _removeDownloadOverlay();
+                      // TODO: create a full download history screen
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[700]!
+                                    : Colors.grey[300]!,
+                          ),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'View full download history',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  IconData _getFileIcon(String fileName) {
+    if (fileName.endsWith('.csv')) {
+      return Icons.table_chart;
+    } else if (fileName.endsWith('.json')) {
+      return Icons.data_object;
+    } else if (fileName.endsWith('.zip')) {
+      return Icons.folder_zip;
+    } else {
+      return Icons.insert_drive_file;
+    }
+  }
+
+  Widget _buildDownloadItem(DownloadItem download, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: Row(
+        children: [
+          Icon(
+            _getFileIcon(download.name),
+            size: 24,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  download.name,
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                if (download.isComplete)
+                  Text(
+                    '${download.size} • Complete',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                      fontSize: 12,
+                    ),
+                  )
+                else if (download.size == 'Queued')
+                  Text(
+                    'Queued for download',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: LinearProgressIndicator(
+                              value: download.progress,
+                              backgroundColor:
+                                  isDarkMode
+                                      ? Colors.grey[700]
+                                      : Colors.grey[300],
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.blue,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${(download.progress * 100).toInt()}%',
+                            style: TextStyle(
+                              color:
+                                  isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            download.size,
+                            style: TextStyle(
+                              color:
+                                  isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            download.downloadSpeed,
+                            style: TextStyle(
+                              color:
+                                  isDarkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon:
+                download.isComplete
+                    ? Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                    )
+                    : Icon(Icons.close, size: 20, color: Colors.red[400]),
+            onPressed:
+                () =>
+                    download.isComplete
+                        ? _showDownloadOptions(download)
+                        : _downloadService.cancelDownload(download.datasetId),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDownloadOptions(DownloadItem download) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    // showDialog(
+    //   context: context,
+    //   builder:
+    //       (context) => SimpleDialog(
+    //         title: Text('Download Options'),
+    //         children: [
+    //           if (!download.isComplete)
+    //             SimpleDialogOption(
+    //               onPressed: () {
+    //                 Navigator.pop(context);
+    //                 _downloadService.cancelDownload();
+    //               },
+    //               child: const Text('Cancel Download'),
+    //             ),
+    //           if (download.isComplete)
+    //             SimpleDialogOption(
+    //               onPressed: () {
+    //                 Navigator.pop(context);
+    //                 _downloadService.retryDownload(download.name);
+    //               },
+    //               child: const Text('Retry Download'),
+    //             ),
+    //         ],
+    //       ),
+    // );
   }
 
   void handleSearch(String query) {
@@ -580,20 +1048,40 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
           Padding(
             padding: const EdgeInsets.only(left: 35.0, top: 35.0),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: const Text('Home', style: TextStyle(fontSize: 16.0)),
-                  ),
+                Row(
+                  children: [
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: const Text(
+                          'Home',
+                          style: TextStyle(fontSize: 16.0),
+                        ),
+                      ),
+                    ),
+                    const Text('  >  ', style: TextStyle(fontSize: 16.0)),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: const Text(
+                          'Search',
+                          style: TextStyle(fontSize: 16.0),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Text('  >  ', style: TextStyle(fontSize: 16.0)),
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: GestureDetector(
-                    onTap: () {},
-                    child: const Text('Search', style: TextStyle(fontSize: 16.0)),
+                Padding(
+                  padding: const EdgeInsets.only(right: 35.0),
+                  child: IconButton(
+                    key: _downloadIconKey,
+                    onPressed: _showDownloadOverlay,
+                    icon: Icon(Icons.download, color: Color(0xff3091e7)),
+                    tooltip: 'View your current downloads',
                   ),
                 ),
               ],
@@ -621,7 +1109,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: const Text('Search has been completed'),
+                                  title: const Text(
+                                    'Search has been completed',
+                                  ),
                                   content: Text('You Searched for: $value'),
                                 );
                               },
@@ -635,11 +1125,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                                       width: 24,
                                       height: 24,
                                       padding: const EdgeInsets.all(6.0),
-                                      child: const CircularProgressIndicator(strokeWidth: 2),
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                     : null,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
-                            hintText: 'Search Datasets by name, type or category',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            hintText:
+                                'Search Datasets by name, type or category',
                           ),
                         ),
                       ),

@@ -10,10 +10,13 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
+import 'core/services/download_service.dart';
+
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
+  final appSupportDirectory =
+      await path_provider.getApplicationSupportDirectory();
 
   debugPrint("app data: ${appSupportDirectory.path}");
 
@@ -23,6 +26,7 @@ Future main() async {
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
   await Hive.openBox(dotenv.env['USER_HIVE_BOX']!);
   await Hive.openBox('starred_datasets');
+  await Hive.openBox('user_preferences');
 
   await CacheService().initCacheBox();
 
@@ -30,12 +34,22 @@ Future main() async {
   final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseApi);
-  final session = await Hive.box(dotenv.env['USER_HIVE_BOX']!).get('userSession');
+  final session = await Hive.box(
+    dotenv.env['USER_HIVE_BOX']!,
+  ).get('userSession');
   if (session != null) {
     Supabase.instance.client.auth.setSession(session);
   }
 
-  runApp(ChangeNotifierProvider(create: (_) => ThemeProvider(), child: const MyApp()));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => DownloadService()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

@@ -124,7 +124,9 @@ class DevFAB extends StatelessWidget {
 
               if (item is UserApi) {
                 debugPrint('  Kaggle Username: ${item.kaggleUserName}');
-                debugPrint('  Kaggle API Key: ${item.kaggleApiKey.isNotEmpty ? "[REDACTED]" : "empty"}');
+                debugPrint(
+                  '  Kaggle API Key: ${item.kaggleApiKey.isNotEmpty ? "[REDACTED]" : "empty"}',
+                );
               } else {
                 debugPrint('  Value: $item');
               }
@@ -137,7 +139,9 @@ class DevFAB extends StatelessWidget {
 
               if (value is UserApi) {
                 debugPrint('  Kaggle Username: ${value.kaggleUserName}');
-                debugPrint('  Kaggle API Key: ${value.kaggleApiKey.isNotEmpty ? "[REDACTED]" : "empty"}');
+                debugPrint(
+                  '  Kaggle API Key: ${value.kaggleApiKey.isNotEmpty ? "[REDACTED]" : "empty"}',
+                );
               } else {
                 debugPrint('  Value: $value (${value?.runtimeType})');
               }

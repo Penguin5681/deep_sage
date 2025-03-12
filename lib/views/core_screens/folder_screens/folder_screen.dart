@@ -13,7 +13,8 @@ class FolderScreen extends StatefulWidget {
   State<FolderScreen> createState() => _FolderScreenState();
 }
 
-class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderStateMixin {
+class _FolderScreenState extends State<FolderScreen>
+    with SingleTickerProviderStateMixin {
   late TabController tabController;
   late String rootDirectoryName = '';
 
@@ -52,8 +53,14 @@ class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderSt
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 35.0),
-            child: Text('Datasets', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0)),
+            padding: const EdgeInsets.symmetric(
+              vertical: 18.0,
+              horizontal: 35.0,
+            ),
+            child: Text(
+              'Datasets',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 35.0),
@@ -87,7 +94,12 @@ class _FolderScreenState extends State<FolderScreen> with SingleTickerProviderSt
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [FolderAll(), FolderAll(), FolderStarred(), FolderAll()],
+              children: const [
+                FolderAll(),
+                FolderAll(),
+                FolderStarred(),
+                FolderAll(),
+              ],
             ),
           ),
         ],
