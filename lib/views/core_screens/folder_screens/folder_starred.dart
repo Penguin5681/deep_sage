@@ -148,7 +148,10 @@ class _FolderStarredState extends State<FolderStarred> {
           ),
 
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 16.0,
+            ),
             decoration: BoxDecoration(
               color: isDarkMode ? Color(0xFF2A2D37) : Colors.grey[200],
               borderRadius: BorderRadius.only(
@@ -214,7 +217,9 @@ class _FolderStarredState extends State<FolderStarred> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.05),
+                  color: Colors.black.withValues(
+                    alpha: isDarkMode ? 0.3 : 0.05,
+                  ),
                   blurRadius: 2.0,
                   spreadRadius: 0.0,
                   offset: Offset(0, 1),
@@ -228,7 +233,10 @@ class _FolderStarredState extends State<FolderStarred> {
                     ? Center(
                       child: Text(
                         'No starred datasets found!',
-                        style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+                        style: TextStyle(
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        ),
                       ),
                     )
                     : ListView.separated(
@@ -238,7 +246,10 @@ class _FolderStarredState extends State<FolderStarred> {
                       itemCount: starredDatasetFiles.length,
                       separatorBuilder:
                           (context, index) => Divider(
-                            color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[800]
+                                    : Colors.grey[200],
                             height: 1,
                           ),
                       itemBuilder: (context, index) {
@@ -246,12 +257,20 @@ class _FolderStarredState extends State<FolderStarred> {
                         // final fileData = file.toMap();
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12.0,
+                            horizontal: 16.0,
+                          ),
                           decoration: BoxDecoration(
-                            color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+                            color:
+                                isDarkMode ? Color(0xFF1F222A) : Colors.white,
                             border:
                                 index == starredDatasetFiles.length - 1
-                                    ? Border(bottom: BorderSide(color: Colors.transparent))
+                                    ? Border(
+                                      bottom: BorderSide(
+                                        color: Colors.transparent,
+                                      ),
+                                    )
                                     : null,
                           ),
                           child: Row(
@@ -269,14 +288,20 @@ class _FolderStarredState extends State<FolderStarred> {
                                   style: TextStyle(
                                     fontSize: 16.0,
                                     fontWeight: FontWeight.w500,
-                                    color: isDarkMode ? Colors.white : Colors.black87,
+                                    color:
+                                        isDarkMode
+                                            ? Colors.white
+                                            : Colors.black87,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 flex: 1,
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                    vertical: 4.0,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: _getFileColor(
                                       file.fileType,
@@ -300,22 +325,34 @@ class _FolderStarredState extends State<FolderStarred> {
                                   file.fileSize,
                                   style: TextStyle(
                                     fontSize: 14.0,
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                 ),
                               ),
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  DateFormat('MMM dd, yyyy').format(file.modified),
+                                  DateFormat(
+                                    'MMM dd, yyyy',
+                                  ).format(file.modified),
                                   style: TextStyle(
                                     fontSize: 14.0,
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                 ),
                               ),
                               IconButton(
-                                icon: Icon(Icons.star, size: 20, color: Colors.amber),
+                                icon: Icon(
+                                  Icons.star,
+                                  size: 20,
+                                  color: Colors.amber,
+                                ),
                                 onPressed: () {
                                   _removeFromStarred(file.filePath);
                                 },
@@ -375,7 +412,10 @@ class _FolderStarredState extends State<FolderStarred> {
 
   Future<void> _openFileDetails(DatasetFile file) async {
     // Show file details dialog or navigate to details screen
-    showDialog(context: context, builder: (context) => _buildFileDetailsDialog(file));
+    showDialog(
+      context: context,
+      builder: (context) => _buildFileDetailsDialog(file),
+    );
   }
 
   Widget _buildFileDetailsDialog(DatasetFile file) {
@@ -423,7 +463,8 @@ class _FolderStarredState extends State<FolderStarred> {
                         file.filePath,
                         style: TextStyle(
                           fontSize: 14,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -457,7 +498,10 @@ class _FolderStarredState extends State<FolderStarred> {
                     Navigator.pop(context);
                   },
                   style: TextButton.styleFrom(
-                    foregroundColor: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700,
+                    foregroundColor:
+                        isDarkMode
+                            ? Colors.blue.shade300
+                            : Colors.blue.shade700,
                   ),
                 ),
                 SizedBox(width: 12),
@@ -501,7 +545,10 @@ class _FolderStarredState extends State<FolderStarred> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87),
+              style: TextStyle(
+                fontSize: 14,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
             ),
           ),
         ],

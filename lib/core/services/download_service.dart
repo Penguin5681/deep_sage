@@ -10,18 +10,17 @@ import 'package:http/http.dart' as http;
 
 class DownloadService extends ChangeNotifier {
   final Map<String, DownloadItem> _downloads = {};
-  final Queue<Map<String, dynamic>> _downloadQueue = Queue<Map<String, dynamic>>();
+  final Queue<Map<String, dynamic>> _downloadQueue =
+      Queue<Map<String, dynamic>>();
   bool _isProcessingQueue = false;
-  final StreamController<void> _downloadStreamController = StreamController<void>.broadcast();
+  final StreamController<void> _downloadStreamController =
+      StreamController<void>.broadcast();
   Stream<void> get stream => _downloadStreamController.stream;
 
   Future<void> retryDownload(String datasetId) async {
     if (_downloads.containsKey(datasetId)) {
       final download = _downloads[datasetId]!;
-      await downloadDataset(
-          source: download.source,
-          datasetId: datasetId
-      );
+      await downloadDataset(source: download.source, datasetId: datasetId);
     }
   }
 
@@ -92,9 +91,7 @@ class DownloadService extends ChangeNotifier {
 
       if (_downloads.containsKey(datasetId)) {
         final download = _downloads[datasetId]!;
-        _downloads[datasetId] = download.copyWith(
-          size: 'Starting...',
-        );
+        _downloads[datasetId] = download.copyWith(size: 'Starting...');
         notifyListeners();
       }
 
@@ -110,8 +107,8 @@ class DownloadService extends ChangeNotifier {
 
         if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
           _updateDownloadWithError(
-              datasetId,
-              'Kaggle credentials not found. Please update them in settings.'
+            datasetId,
+            'Kaggle credentials not found. Please update them in settings.',
           );
           _downloadQueue.removeFirst();
           continue;
@@ -121,8 +118,8 @@ class DownloadService extends ChangeNotifier {
 
         if (downloadPath == null || downloadPath.isEmpty) {
           _updateDownloadWithError(
-              datasetId,
-              'Download path not set. Please set it in settings.'
+            datasetId,
+            'Download path not set. Please set it in settings.',
           );
           _downloadQueue.removeFirst();
           continue;
@@ -138,9 +135,11 @@ class DownloadService extends ChangeNotifier {
         );
 
         await _waitForDownloadCompletion();
-
       } catch (e) {
-        _updateDownloadWithError(datasetId, 'Failed to start download: ${e.toString()}');
+        _updateDownloadWithError(
+          datasetId,
+          'Failed to start download: ${e.toString()}',
+        );
       }
 
       _downloadQueue.removeFirst();
@@ -159,7 +158,7 @@ class DownloadService extends ChangeNotifier {
 
     late StreamSubscription subscription;
     subscription = stream.listen(
-          (event) {},
+      (event) {},
       onDone: () {
         subscription.cancel();
         completer.complete();
@@ -172,8 +171,6 @@ class DownloadService extends ChangeNotifier {
 
     return completer.future;
   }
-
-
 
   Future<void> downloadDataset({
     required String source,
@@ -221,8 +218,8 @@ class DownloadService extends ChangeNotifier {
 
       if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
         _updateDownloadWithError(
-            datasetId,
-            'Kaggle credentials not found. Please update them in settings.'
+          datasetId,
+          'Kaggle credentials not found. Please update them in settings.',
         );
         return;
       }
@@ -231,8 +228,8 @@ class DownloadService extends ChangeNotifier {
 
       if (downloadPath == null || downloadPath.isEmpty) {
         _updateDownloadWithError(
-            datasetId,
-            'Download path not set. Please set it in settings.'
+          datasetId,
+          'Download path not set. Please set it in settings.',
         );
         return;
       }
@@ -246,7 +243,10 @@ class DownloadService extends ChangeNotifier {
         kaggleKey: kaggleKey,
       );
     } catch (e) {
-      _updateDownloadWithError(datasetId, 'Failed to start download: ${e.toString()}');
+      _updateDownloadWithError(
+        datasetId,
+        'Failed to start download: ${e.toString()}',
+      );
     }
   }
 
@@ -276,7 +276,9 @@ class DownloadService extends ChangeNotifier {
         'unzip': unzip,
       });
 
-      final response = await client.send(request).timeout(const Duration(seconds: 30));
+      final response = await client
+          .send(request)
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
         final error = await response.stream.bytesToString();
@@ -289,22 +291,22 @@ class DownloadService extends ChangeNotifier {
           .transform(const LineSplitter())
           .listen(
             (line) {
-          if (line.startsWith('data:')) {
-            final jsonData = line.substring(5).trim();
-            _processDownloadUpdate(jsonData);
-          }
-        },
-        onDone: () {
-          _isConnected = false;
-          _cleanupDownload();
-        },
-        onError: (error) {
-          _isConnected = false;
-          _updateDownloadWithError(datasetId, 'Connection error: $error');
-          _cleanupDownload();
-        },
-        cancelOnError: true,
-      );
+              if (line.startsWith('data:')) {
+                final jsonData = line.substring(5).trim();
+                _processDownloadUpdate(jsonData);
+              }
+            },
+            onDone: () {
+              _isConnected = false;
+              _cleanupDownload();
+            },
+            onError: (error) {
+              _isConnected = false;
+              _updateDownloadWithError(datasetId, 'Connection error: $error');
+              _cleanupDownload();
+            },
+            cancelOnError: true,
+          );
 
       _isConnected = true;
     } catch (e) {
@@ -341,7 +343,8 @@ class DownloadService extends ChangeNotifier {
         } else if (bytesDownloaded < 1024 * 1024 * 1024) {
           size = '${(bytesDownloaded / (1024 * 1024)).toStringAsFixed(1)} MB';
         } else {
-          size = '${(bytesDownloaded / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+          size =
+              '${(bytesDownloaded / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
         }
       }
 

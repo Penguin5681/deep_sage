@@ -15,7 +15,8 @@ import 'core/services/download_service.dart';
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
+  final appSupportDirectory =
+      await path_provider.getApplicationSupportDirectory();
 
   debugPrint("app data: ${appSupportDirectory.path}");
 
@@ -33,7 +34,9 @@ Future main() async {
   final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseApi);
-  final session = await Hive.box(dotenv.env['USER_HIVE_BOX']!).get('userSession');
+  final session = await Hive.box(
+    dotenv.env['USER_HIVE_BOX']!,
+  ).get('userSession');
   if (session != null) {
     Supabase.instance.client.auth.setSession(session);
   }
