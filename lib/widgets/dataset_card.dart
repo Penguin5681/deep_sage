@@ -9,7 +9,8 @@ class DatasetCard extends StatelessWidget {
   final double subLabelSize;
   final String buttonText;
 
-  final VoidCallback onSearch;
+  // Created variable for VoidCallBack
+  final VoidCallback onButtonClick;
 
   // no way i forgot to create a onButtonClick prop for ts.
   // i will do it i need it lol.
@@ -23,7 +24,8 @@ class DatasetCard extends StatelessWidget {
     this.subLabelSize = 14.0,
     required this.buttonText,
     required this.darkIconPath,
-    required this.onSearch,
+    // Added in the required 
+    required this.onButtonClick,
   });
 
   Widget getIconForTheme({
@@ -91,7 +93,8 @@ class DatasetCard extends StatelessWidget {
             Text(subLabelText, style: TextStyle(fontSize: subLabelSize)),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: onSearch,
+              // Added the onButtonClick in the onPressed function
+              onPressed: onButtonClick,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
                 foregroundColor: Colors.white,
