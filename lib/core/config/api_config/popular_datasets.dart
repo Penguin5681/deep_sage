@@ -16,8 +16,6 @@ class PopularDataset {
   final String size;
   final int downloadCount;
   final int voteCount;
-  // Experimenting
-  final String category;
 
   String get addedTime => _formatDate(lastUpdated);
   String get fileType => 'CSV';
@@ -33,8 +31,6 @@ class PopularDataset {
     required this.size,
     required this.downloadCount,
     required this.voteCount,
-    // Experimenting
-    required this.category,
   });
 
   factory PopularDataset.fromJson(Map<String, dynamic> json) {
@@ -61,8 +57,6 @@ class PopularDataset {
       size: json['size']?.toString() ?? '0 B',
       downloadCount: safeParseInt(json['downloadCount']),
       voteCount: safeParseInt(json['voteCount']),
-      // Experimenting
-      category: json['category'],
     );
   }
 
@@ -157,4 +151,180 @@ class PopularDatasetService {
       rethrow;
     }
   }
+
+  Future<List<PopularDataset>> fetchPopularHealthcareDatasets({
+    int limit = 10,
+    String sortBy = 'hottest',
+  }) async {
+    if (baseUrl.isEmpty) {
+      throw Exception('Base URL is not configured');
+    }
+
+    if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
+      throw Exception('Kaggle credentials not configured');
+    }
+
+    final uri = Uri.parse(
+      '$baseUrl/api/datasets/kaggle/healthcare',
+    ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
+
+    final headers = {
+      'X-Kaggle-Username': kaggleUsername,
+      'X-Kaggle-Key': kaggleKey,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return [];
+        }
+
+        final List<dynamic> data = json.decode(response.body);
+
+        if (data.isNotEmpty &&
+            data.first is Map &&
+            (data.first as Map).containsKey('error')) {
+          throw Exception('API error: ${data.first['error']}');
+        }
+
+        return data.map((json) => PopularDataset.fromJson(json)).toList();
+      } else {
+        try {
+          final errorBody = json.decode(response.body);
+          if (errorBody is Map && errorBody.containsKey('error')) {
+            throw Exception(
+              'API error (${response.statusCode}): ${errorBody['error']}',
+            );
+          }
+        } catch (_) {}
+
+        throw Exception(
+          'Failed to load datasets (Status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<PopularDataset>> fetchPopularFinanceDatasets({
+    int limit = 10,
+    String sortBy = 'hottest',
+  }) async {
+    if (baseUrl.isEmpty) {
+      throw Exception('Base URL is not configured');
+    }
+
+    if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
+      throw Exception('Kaggle credentials not configured');
+    }
+
+    final uri = Uri.parse(
+      '$baseUrl/api/datasets/kaggle/finance',
+    ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
+
+    final headers = {
+      'X-Kaggle-Username': kaggleUsername,
+      'X-Kaggle-Key': kaggleKey,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return [];
+        }
+
+        final List<dynamic> data = json.decode(response.body);
+
+        if (data.isNotEmpty &&
+            data.first is Map &&
+            (data.first as Map).containsKey('error')) {
+          throw Exception('API error: ${data.first['error']}');
+        }
+
+        return data.map((json) => PopularDataset.fromJson(json)).toList();
+      } else {
+        try {
+          final errorBody = json.decode(response.body);
+          if (errorBody is Map && errorBody.containsKey('error')) {
+            throw Exception(
+              'API error (${response.statusCode}): ${errorBody['error']}',
+            );
+          }
+        } catch (_) {}
+
+        throw Exception(
+          'Failed to load datasets (Status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<PopularDataset>> fetchPopularTechnologyDatasets({
+    int limit = 10,
+    String sortBy = 'hottest',
+  }) async {
+    if (baseUrl.isEmpty) {
+      throw Exception('Base URL is not configured');
+    }
+
+    if (kaggleUsername.isEmpty || kaggleKey.isEmpty) {
+      throw Exception('Kaggle credentials not configured');
+    }
+
+    final uri = Uri.parse(
+      '$baseUrl/api/datasets/kaggle/technology',
+    ).replace(queryParameters: {'limit': limit.toString(), 'sort_by': sortBy});
+
+    final headers = {
+      'X-Kaggle-Username': kaggleUsername,
+      'X-Kaggle-Key': kaggleKey,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        if (response.body.isEmpty) {
+          return [];
+        }
+
+        final List<dynamic> data = json.decode(response.body);
+
+        if (data.isNotEmpty &&
+            data.first is Map &&
+            (data.first as Map).containsKey('error')) {
+          throw Exception('API error: ${data.first['error']}');
+        }
+
+        return data.map((json) => PopularDataset.fromJson(json)).toList();
+      } else {
+        try {
+          final errorBody = json.decode(response.body);
+          if (errorBody is Map && errorBody.containsKey('error')) {
+            throw Exception(
+              'API error (${response.statusCode}): ${errorBody['error']}',
+            );
+          }
+        } catch (_) {}
+
+        throw Exception(
+          'Failed to load datasets (Status: ${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
+
+
