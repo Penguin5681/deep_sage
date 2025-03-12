@@ -1,14 +1,16 @@
-import 'package:deep_sage/core/config/api_config/download_dataset.dart';
 import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/download_overlay_service.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/kaggle_credentials_prompt.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/models/user_api_model.dart';
+import '../../../../core/services/download_service.dart';
 
 class CategoryAll extends StatefulWidget {
   final Function(String) onSearch;
@@ -20,13 +22,7 @@ class CategoryAll extends StatefulWidget {
 }
 
 class _CategoryAllState extends State<CategoryAll> {
-  final List<String> _sortParams = [
-    'hottest',
-    'votes',
-    'updated',
-    'active',
-    'published',
-  ];
+  final List<String> _sortParams = ['hottest', 'votes', 'updated', 'active', 'published'];
   int _currentSortIndex = 0;
 
   String get _currentSortParam => _sortParams[_currentSortIndex];
@@ -37,6 +33,7 @@ class _CategoryAllState extends State<CategoryAll> {
 
   final FocusNode platformFocusNode = FocusNode();
   final FocusNode filterFocusNode = FocusNode();
+  bool isDownloadOverlayVisible = false;
 
   @override
   void initState() {
@@ -49,9 +46,7 @@ class _CategoryAllState extends State<CategoryAll> {
   Future<void> fetchPopularDatasets() async {
     final service = PopularDatasetService();
     try {
-      final datasets = await service.fetchPopularDatasets(
-        sortBy: _currentSortParam,
-      );
+      final datasets = await service.fetchPopularDatasets(sortBy: _currentSortParam);
       setState(() {
         popularDatasets =
             datasets
@@ -61,6 +56,7 @@ class _CategoryAllState extends State<CategoryAll> {
                     'addedTime': dataset.addedTime,
                     'fileType': dataset.fileType,
                     'fileSize': dataset.fileSize,
+                    'id': dataset.id,
                   },
                 )
                 .toList();
@@ -119,16 +115,12 @@ class _CategoryAllState extends State<CategoryAll> {
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Error'),
-            content: Text('Failed to check credentials. Please try again.'),
-            actions: [
-              TextButton(
-                onPressed: Navigator.of(context).pop,
-                child: Text('OK'),
+          builder:
+              (context) => AlertDialog(
+                title: Text('Error'),
+                content: Text('Failed to check credentials. Please try again.'),
+                actions: [TextButton(onPressed: Navigator.of(context).pop, child: Text('OK'))],
               ),
-            ],
-          ),
         );
       }
     }
@@ -155,6 +147,7 @@ class _CategoryAllState extends State<CategoryAll> {
       body: Padding(
         padding: const EdgeInsets.only(top: 25.0, left: 35.0, right: 35.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Listener(
               onPointerSignal: (PointerSignalEvent event) {
@@ -237,7 +230,7 @@ class _CategoryAllState extends State<CategoryAll> {
                         addedTime: dataset['addedTime']!,
                         fileType: dataset['fileType']!,
                         fileSize: dataset['fileSize']!,
-                        datasetId: dataset['title']!,
+                        datasetId: dataset['id']!,
                       ),
                       Divider(height: 1, thickness: 1, color: Colors.grey[200]),
                     ],
@@ -291,6 +284,7 @@ class FileListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final downloadService = Provider.of<DownloadService>(context, listen: false);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -338,14 +332,10 @@ class FileListItem extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.file_download_outlined, color: textTheme.bodyLarge?.color),
             onPressed: () async {
-              final service = DownloadDatasetService();
-              const downloadPath = 'D:/Downloaded_Dataset';
-              await service.downloadDataset(
-                source: 'huggingface',
-                datasetId: datasetId,
-                path: downloadPath,
-              );
-              debugPrint('Download initiated for dataset: $datasetId');
+              await downloadService.downloadDataset(source: 'kaggle', datasetId: datasetId);
+              if (!context.mounted) return;
+              final overlayService = Provider.of<DownloadOverlayService>(context, listen: false);
+              overlayService.showDownloadOverlay();
             },
           ),
         ],
