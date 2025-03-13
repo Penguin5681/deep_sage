@@ -61,7 +61,10 @@ class _RawDataTabState extends State<RawDataTab> {
                       ),
                       child: Text(
                         'Import Locally',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 15.0),
@@ -80,7 +83,10 @@ class _RawDataTabState extends State<RawDataTab> {
                       ),
                       child: const Text(
                         "Browse Kaggle",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
