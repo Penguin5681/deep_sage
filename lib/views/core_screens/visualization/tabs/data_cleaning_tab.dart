@@ -5,8 +5,6 @@ class DataCleaningTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: const Text('Data Cleaning'),
-    );
+    return Center(child: const Text('Data Cleaning'));
   }
 }

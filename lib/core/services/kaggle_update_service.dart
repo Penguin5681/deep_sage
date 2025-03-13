@@ -1,4 +1,4 @@
-import 'package:deep_sage/core/models/user_api_model.dart';
+import 'package:deep_sage/core/models/hive_models/user_api_model.dart';
 import 'package:flutter/cupertino.dart';
 
 class KaggleUpdateService {

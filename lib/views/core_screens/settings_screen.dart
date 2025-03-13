@@ -19,7 +19,7 @@ import "package:googleapis_auth/auth_io.dart";
 import 'package:image/image.dart' as img;
 import 'package:http/http.dart' as http;
 
-import '../../core/models/user_api_model.dart';
+import '../../core/models/hive_models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {

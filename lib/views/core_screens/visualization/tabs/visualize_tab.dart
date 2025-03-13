@@ -5,8 +5,6 @@ class VisualizeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: const Text('Actual charts here'),
-    );
+    return Center(child: const Text('Actual charts here'));
   }
 }
