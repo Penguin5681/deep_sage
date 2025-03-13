@@ -1,4 +1,4 @@
-import 'package:deep_sage/core/models/user_api_model.dart';
+import 'package:deep_sage/core/models/hive_models/user_api_model.dart';
 import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';

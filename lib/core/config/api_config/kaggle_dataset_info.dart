@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
 
-import '../../models/user_api_model.dart';
+import '../../models/hive_models/user_api_model.dart';
 
 class KaggleDatasetInfoService {
   final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);

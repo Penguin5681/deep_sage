@@ -9,7 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/models/user_api_model.dart';
+import '../../../../core/models/hive_models/user_api_model.dart';
 import '../../../../core/services/download_service.dart';
 
 class CategoryAll extends StatefulWidget {
@@ -22,7 +22,13 @@ class CategoryAll extends StatefulWidget {
 }
 
 class _CategoryAllState extends State<CategoryAll> {
-  final List<String> _sortParams = ['hottest', 'votes', 'updated', 'active', 'published'];
+  final List<String> _sortParams = [
+    'hottest',
+    'votes',
+    'updated',
+    'active',
+    'published',
+  ];
   int _currentSortIndex = 0;
 
   String get _currentSortParam => _sortParams[_currentSortIndex];
@@ -46,7 +52,9 @@ class _CategoryAllState extends State<CategoryAll> {
   Future<void> fetchPopularDatasets() async {
     final service = PopularDatasetService();
     try {
-      final datasets = await service.fetchPopularDatasets(sortBy: _currentSortParam);
+      final datasets = await service.fetchPopularDatasets(
+        sortBy: _currentSortParam,
+      );
       setState(() {
         popularDatasets =
             datasets
@@ -94,7 +102,9 @@ class _CategoryAllState extends State<CategoryAll> {
             barrierDismissible: false,
             builder: (BuildContext context) {
               return Dialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
                 child: KaggleCredentialsPrompt(
                   onCredentialsAdded: () {
                     Navigator.of(context).pop();
@@ -119,7 +129,12 @@ class _CategoryAllState extends State<CategoryAll> {
               (context) => AlertDialog(
                 title: Text('Error'),
                 content: Text('Failed to check credentials. Please try again.'),
-                actions: [TextButton(onPressed: Navigator.of(context).pop, child: Text('OK'))],
+                actions: [
+                  TextButton(
+                    onPressed: Navigator.of(context).pop,
+                    child: Text('OK'),
+                  ),
+                ],
               ),
         );
       }
@@ -180,25 +195,30 @@ class _CategoryAllState extends State<CategoryAll> {
                         subLabelText: 'Historical Stock prices and data',
                         buttonText: 'Search',
                         darkIconPath: AppIcons.chartDark,
-                        onButtonClick: () => widget.onSearch('Stock Market Data'),
+                        onButtonClick:
+                            () => widget.onSearch('Stock Market Data'),
                       ),
                       const SizedBox(width: 25),
                       DatasetCard(
                         lightIconPath: AppIcons.aiLight,
                         darkIconPath: AppIcons.aiDark,
                         labelText: 'Explore AI & Tech Trends',
-                        subLabelText: 'Latest datasets on AI, ML, and emerging technologies',
+                        subLabelText:
+                            'Latest datasets on AI, ML, and emerging technologies',
                         buttonText: 'Search',
-                        onButtonClick: () => widget.onSearch('AI & Tech Trends'),
+                        onButtonClick:
+                            () => widget.onSearch('AI & Tech Trends'),
                       ),
                       const SizedBox(width: 25),
                       DatasetCard(
                         lightIconPath: AppIcons.healthLight,
                         darkIconPath: AppIcons.healthDark,
                         labelText: 'Explore Healthcare Insights',
-                        subLabelText: 'Medical research, patient statistics, and health trends',
+                        subLabelText:
+                            'Medical research, patient statistics, and health trends',
                         buttonText: 'Search',
-                        onButtonClick: () => widget.onSearch('Healthcare Insights'),
+                        onButtonClick:
+                            () => widget.onSearch('Healthcare Insights'),
                       ),
                       const SizedBox(width: 25),
                     ],
@@ -245,9 +265,14 @@ class _CategoryAllState extends State<CategoryAll> {
                 child: ElevatedButton(
                   onPressed: refreshDatasets,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 15.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 15.0,
+                    ),
                     backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
                   ),
                   child: const Text(
                     'Refresh Datasets',
@@ -284,7 +309,10 @@ class FileListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final downloadService = Provider.of<DownloadService>(context, listen: false);
+    final downloadService = Provider.of<DownloadService>(
+      context,
+      listen: false,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -294,7 +322,12 @@ class FileListItem extends StatelessWidget {
           Icon(icon, color: textTheme.bodyLarge?.color, size: 24),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(title, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            child: Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -330,11 +363,20 @@ class FileListItem extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(Icons.file_download_outlined, color: textTheme.bodyLarge?.color),
+            icon: Icon(
+              Icons.file_download_outlined,
+              color: textTheme.bodyLarge?.color,
+            ),
             onPressed: () async {
-              await downloadService.downloadDataset(source: 'kaggle', datasetId: datasetId);
+              await downloadService.downloadDataset(
+                source: 'kaggle',
+                datasetId: datasetId,
+              );
               if (!context.mounted) return;
-              final overlayService = Provider.of<DownloadOverlayService>(context, listen: false);
+              final overlayService = Provider.of<DownloadOverlayService>(
+                context,
+                listen: false,
+              );
               overlayService.showDownloadOverlay();
             },
           ),
