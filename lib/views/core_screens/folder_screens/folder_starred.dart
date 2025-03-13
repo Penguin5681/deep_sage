@@ -559,10 +559,16 @@ class _FolderStarredState extends State<FolderStarred> {
   Future<void> _openContainingFolder(String filePath) async {
     final directory = path.dirname(filePath);
     try {
-      // This would require a platform-specific implementation
-      // For example using url_launcher package
+      if (Platform.isWindows) {
+        Process.run('explorer.exe', [directory]);
+      } else if (Platform.isMacOS) {
+        Process.run('open', [directory]);
+      } else if (Platform.isLinux) {
+        Process.run('xdg-open', [directory]);
+      } else {
+        debugPrint('Platform not supported for opening folders');
+      }
       debugPrint('Opening folder: $directory');
-      // Implementation depends on platform (Windows, macOS, Linux)
     } catch (e) {
       debugPrint('Error opening folder: $e');
     }
@@ -570,10 +576,16 @@ class _FolderStarredState extends State<FolderStarred> {
 
   Future<void> _openFile(String filePath) async {
     try {
-      // This would require a platform-specific implementation
-      // For example using url_launcher package
+      if (Platform.isWindows) {
+        Process.run('explorer.exe', [filePath]);
+      } else if (Platform.isMacOS) {
+        Process.run('open', [filePath]);
+      } else if (Platform.isLinux) {
+        Process.run('xdg-open', [filePath]);
+      } else {
+        debugPrint('Platform not supported for opening files');
+      }
       debugPrint('Opening file: $filePath');
-      // Implementation depends on platform (Windows, macOS, Linux)
     } catch (e) {
       debugPrint('Error opening file: $e');
     }

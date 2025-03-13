@@ -4,7 +4,7 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import '../../models/user_api_model.dart';
+import '../../models/hive_models/user_api_model.dart';
 
 class PopularDataset {
   final String id;
@@ -325,5 +325,3 @@ class PopularDatasetService {
     }
   }
 }
-
-

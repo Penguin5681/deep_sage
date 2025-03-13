@@ -21,7 +21,6 @@
 //     super.initState();
 //   }
 
-
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
@@ -166,7 +165,8 @@ class _CategoryFinancesState extends State<CategoryFinances> {
                       lightIconPath: AppIcons.chartLight,
                       darkIconPath: AppIcons.chartDark,
                       labelText: 'Explore Stock Market Data',
-                      subLabelText: 'Latest datasets on stock market trends and analysis',
+                      subLabelText:
+                          'Latest datasets on stock market trends and analysis',
                       buttonText: 'Search',
                       onButtonClick: () => widget.onSearch('Stock Market Data'),
                     ),
@@ -177,7 +177,8 @@ class _CategoryFinancesState extends State<CategoryFinances> {
                       labelText: 'Explore Cryptocurrency Data',
                       subLabelText: 'Cryptocurrency trends and analysis',
                       buttonText: 'Search',
-                      onButtonClick: () => widget.onSearch('Cryptocurrency Data'),
+                      onButtonClick:
+                          () => widget.onSearch('Cryptocurrency Data'),
                     ),
                     const SizedBox(width: 25),
                     DatasetCard(
@@ -199,27 +200,32 @@ class _CategoryFinancesState extends State<CategoryFinances> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: popularDatasets.length,
-                      itemBuilder: (context, index) {
-                        final dataset = popularDatasets[index];
-                        return Column(
-                          children: [
-                            FileListItem(
-                              icon: Icons.dataset_sharp,
-                              title: dataset.title,
-                              addedTime: dataset.addedTime,
-                              fileType: dataset.fileType,
-                              fileSize: dataset.fileSize,
-                              datasetId: dataset.id,
-                            ),
-                            Divider(height: 1, thickness: 1, color: Colors.grey[200]),
-                          ],
-                        );
-                      },
-                    ),
+              child:
+                  isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                        itemCount: popularDatasets.length,
+                        itemBuilder: (context, index) {
+                          final dataset = popularDatasets[index];
+                          return Column(
+                            children: [
+                              FileListItem(
+                                icon: Icons.dataset_sharp,
+                                title: dataset.title,
+                                addedTime: dataset.addedTime,
+                                fileType: dataset.fileType,
+                                fileSize: dataset.fileSize,
+                                datasetId: dataset.id,
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Colors.grey[200],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
             ),
           ],
         ),

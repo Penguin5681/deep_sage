@@ -24,7 +24,7 @@ class DatasetCard extends StatelessWidget {
     this.subLabelSize = 14.0,
     required this.buttonText,
     required this.darkIconPath,
-    // Added in the required 
+    // Added in the required
     required this.onButtonClick,
   });
 

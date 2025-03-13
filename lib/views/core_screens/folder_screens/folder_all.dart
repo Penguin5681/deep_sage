@@ -3,17 +3,21 @@ import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/file_transfer_util.dart';
 import 'package:deep_sage/core/models/dataset_file.dart';
+import 'package:deep_sage/core/models/hive_models/recent_imports_model.dart';
 import 'package:deep_sage/core/services/directory_path_service.dart';
 import 'package:deep_sage/views/core_screens/explorer/file_explorer_view.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:intl/intl.dart';
 
 import 'package:path/path.dart' as path;
 
 class FolderAll extends StatefulWidget {
-  const FolderAll({super.key});
+  final Function(int)? onNavigate;
+
+  const FolderAll({super.key, required this.onNavigate});
 
   @override
   State<FolderAll> createState() => _FolderAllState();
@@ -21,8 +25,9 @@ class FolderAll extends StatefulWidget {
 
 class _FolderAllState extends State<FolderAll> {
   final TextEditingController searchBarController = TextEditingController();
-  final starredBox = Hive.box('starred_datasets');
+  final Box starredBox = Hive.box('starred_datasets');
   final Box hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+  final Box recentImportsBox = Hive.box(dotenv.env['RECENT_IMPORTS_HISTORY']!);
   final List<Map<String, String>> folders = [];
 
   late bool anyFilesPresent = true;
@@ -767,7 +772,9 @@ class _FolderAllState extends State<FolderAll> {
                                     size: 20,
                                     color: isDarkMode ? Colors.grey[400] : null,
                                   ),
-                                  onPressed: () {},
+                                  onPressed:
+                                      () =>
+                                          _openFileDetails(datasetFiles[index]),
                                   tooltip: "More options",
                                   splashRadius: 20,
                                 ),
@@ -780,6 +787,415 @@ class _FolderAllState extends State<FolderAll> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openFileDetails(DatasetFile file) async {
+    showDialog(
+      context: context,
+      builder: (context) => _buildFileDetailsDialog(file),
+    );
+  }
+
+  Widget _buildFileDetailsDialog(DatasetFile file) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Dialog(
+      backgroundColor: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _getFileColor(file.fileType).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _getFileIcon(file.fileType),
+                    color: _getFileColor(file.fileType),
+                    size: 32,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        file.fileName,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        file.filePath,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                ),
+              ],
+            ),
+            SizedBox(height: 24),
+            _buildFileInfoItem("Type", file.fileType.toUpperCase(), isDarkMode),
+            _buildFileInfoItem("Size", file.fileSize, isDarkMode),
+            _buildFileInfoItem(
+              "Last Modified",
+              DateFormat('MMMM dd, yyyy - HH:mm').format(file.modified),
+              isDarkMode,
+            ),
+            SizedBox(height: 24),
+
+            _buildOptionButton(
+              icon: Icons.download,
+              label: "Import Dataset",
+              onClick: () {
+                _handleImportDataset(file.filePath);
+                Navigator.pop(context);
+              },
+              isDarkMode: isDarkMode,
+              color: Colors.blue.shade600,
+            ),
+            SizedBox(height: 12),
+            _buildOptionButton(
+              icon: Icons.edit,
+              label: "Rename Dataset",
+              onClick: () {
+                Navigator.pop(context);
+                _handleRenameDataset(file.filePath);
+              },
+              isDarkMode: isDarkMode,
+            ),
+            SizedBox(height: 12),
+            _buildOptionButton(
+              icon: Icons.delete,
+              label: "Delete Dataset",
+              onClick: () {
+                Navigator.pop(context);
+                _handleDeleteDataset(file.filePath);
+              },
+              isDarkMode: isDarkMode,
+              color: Colors.red.shade600,
+            ),
+            SizedBox(height: 24),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  icon: Icon(Icons.folder_open),
+                  label: Text("Show in folder"),
+                  onPressed: () {
+                    _openContainingFolder(file.filePath);
+                    Navigator.pop(context);
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        isDarkMode
+                            ? Colors.blue.shade300
+                            : Colors.blue.shade700,
+                  ),
+                ),
+                SizedBox(width: 12),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.open_in_new),
+                  label: Text("Open file"),
+                  onPressed: () {
+                    _openFile(file.filePath);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileInfoItem(String label, String value, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionButton({
+    required IconData icon,
+    required String label,
+    required Function onClick,
+    required bool isDarkMode,
+    Color? color,
+  }) {
+    return InkWell(
+      onTap: () => onClick(),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color:
+                  color ?? (isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+            ),
+            SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                color: color ?? (isDarkMode ? Colors.white : Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openContainingFolder(String filePath) async {
+    final directory = path.dirname(filePath);
+    try {
+      if (Platform.isWindows) {
+        Process.run('explorer.exe', [directory]);
+      } else if (Platform.isMacOS) {
+        Process.run('open', [directory]);
+      } else if (Platform.isLinux) {
+        Process.run('xdg-open', [directory]);
+      } else {
+        debugPrint('Platform not supported for opening folders');
+      }
+      debugPrint('Opening folder: $directory');
+    } catch (e) {
+      debugPrint('Error opening folder: $e');
+    }
+  }
+
+  Future<void> _openFile(String filePath) async {
+    try {
+      if (Platform.isWindows) {
+        Process.run('explorer.exe', [filePath]);
+      } else if (Platform.isMacOS) {
+        Process.run('open', [filePath]);
+      } else if (Platform.isLinux) {
+        Process.run('xdg-open', [filePath]);
+      } else {
+        debugPrint('Platform not supported for opening files');
+      }
+      debugPrint('Opening file: $filePath');
+    } catch (e) {
+      debugPrint('Error opening file: $e');
+    }
+  }
+
+  void _handleImportDataset(String filePath) async {
+    // todo: i will have to manage an onNavigate type function for folder_all and visualization screen
+    // alr, what plan do we have here?
+    // imma make a section called, recent imports or history, i think history looks pretty odd
+    // since we are not immediately performing any operations on data
+    // imma save this as an hive object
+    // i need to create an hive model first
+    // what fields to include?? file name, file path, time of import
+    // gotta make sure that this shit is backwards compatible
+    final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
+    debugPrint('Importing dataset: ${file.filePath}');
+
+    List<RecentImportsModel> recentImports = [];
+    final existingImports = recentImportsBox.get('recentImports');
+
+    if (existingImports != null) {
+      if (existingImports is List) {
+        recentImports = existingImports.cast<RecentImportsModel>();
+      } else if (existingImports is RecentImportsModel) {
+        recentImports = [existingImports];
+      }
+    }
+
+    final newImport = RecentImportsModel(
+      fileName: file.fileName,
+      fileType: file.fileType,
+      fileSize: file.fileSize,
+      importTime: DateTime.now(),
+      filePath: file.filePath,
+    );
+
+    recentImports.insert(0, newImport);
+
+    if (recentImports.length > 10) {
+      recentImports = recentImports.sublist(0, 10);
+    }
+
+    await recentImportsBox.put('recentImports', recentImports);
+
+    await recentImportsBox.put('currentDatasetName', file.fileName);
+    await recentImportsBox.put('currentDatasetPath', file.filePath);
+    await recentImportsBox.put('currentDatasetType', file.fileType);
+
+    if (widget.onNavigate != null) {
+      widget.onNavigate!(3);
+    }
+  }
+
+  void _handleRenameDataset(String filePath) {
+    final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
+
+    TextEditingController renameController = TextEditingController(
+      text: file.fileName,
+    );
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Rename Dataset'),
+            content: TextField(
+              controller: renameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Enter new name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (renameController.text.isNotEmpty &&
+                      renameController.text != file.fileName) {
+                    String newName = renameController.text;
+                    String extension = path.extension(file.filePath);
+
+                    if (!newName.endsWith(extension)) {
+                      newName += extension;
+                    }
+
+                    String directory = path.dirname(file.filePath);
+                    String newPath = path.join(directory, newName);
+
+                    try {
+                      File originalFile = File(file.filePath);
+                      await originalFile.rename(newPath);
+
+                      await updateStarredFilePath(file.filePath, newPath);
+
+                      scanForDatasetFiles(selectedRootDirectoryPath);
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                    } catch (e) {
+                      debugPrint('Error renaming file: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to rename file: $e')),
+                      );
+                      Navigator.pop(context);
+                    }
+                  }
+                },
+                child: Text('Rename'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _handleDeleteDataset(String filePath) {
+    final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Delete Dataset'),
+            content: Text(
+              'Are you sure you want to delete "${file.fileName}"? This cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                onPressed: () async {
+                  try {
+                    File fileToDelete = File(file.filePath);
+                    await fileToDelete.delete();
+
+                    if (file.isStarred) {
+                      await starredBox.delete(file.filePath);
+                    }
+
+                    scanForDatasetFiles(selectedRootDirectoryPath);
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                  } catch (e) {
+                    debugPrint('Error deleting file: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to delete file: $e')),
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('Delete'),
+              ),
+            ],
+          ),
     );
   }
 
