@@ -13,11 +13,21 @@ class VisualizationAndExplorerScreens extends StatefulWidget {
 class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplorerScreens>
     with TickerProviderStateMixin {
   late TabController tabController;
-
+  late int tabControllerIndex;
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 3, vsync: this);
+    tabControllerIndex = 0;
+  }
+
+  String returnTextBasedOnIndex() {
+    if (tabControllerIndex == 0) {
+      return 'Raw Data';
+    } else if (tabControllerIndex == 1) {
+      return 'Data Cleaning';
+    }
+    return 'Visualize';
   }
 
   @override
@@ -29,7 +39,7 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 35.0, top: 35.0),
-            child: const Text('Explorer > Raw Data'),
+            child: Text('Explorer > ${returnTextBasedOnIndex()}'),
           ),
           TabBar(
             padding: const EdgeInsets.only(left: 35.0, right: 35.0),
@@ -41,6 +51,11 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
             indicatorAnimation: TabIndicatorAnimation.elastic,
             controller: tabController,
             tabs: const [Tab(text: 'Raw Data'), Tab(text: 'Data cleaning'), Tab(text: 'Visualize')],
+            onTap: ((index) {
+              setState(() {
+                tabControllerIndex = index;
+              });
+            }),
           ),
           Expanded(
             child: TabBarView(
