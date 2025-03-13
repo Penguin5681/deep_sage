@@ -1065,8 +1065,6 @@ class _FolderAllState extends State<FolderAll> {
       }
     }
 
-    // debugPrint("The path to be added: ${file.filePath}");
-
     final newImport = RecentImportsModel(
       fileName: file.fileName,
       fileType: file.fileType,
@@ -1082,6 +1080,10 @@ class _FolderAllState extends State<FolderAll> {
     }
 
     await recentImportsBox.put('recentImports', recentImports);
+
+    await recentImportsBox.put('currentDatasetName', file.fileName);
+    await recentImportsBox.put('currentDatasetPath', file.filePath);
+    await recentImportsBox.put('currentDatasetType', file.fileType);
 
     if (widget.onNavigate != null) {
       widget.onNavigate!(3);
