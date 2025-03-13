@@ -15,17 +15,19 @@ class VisualizationAndExplorerScreens extends StatefulWidget {
   const VisualizationAndExplorerScreens({super.key});
 
   @override
-  State<VisualizationAndExplorerScreens> createState() =>
-      _VisualizationAndExplorerScreensState();
+  State<VisualizationAndExplorerScreens> createState() => _VisualizationAndExplorerScreensState();
 }
 
-class _VisualizationAndExplorerScreensState
-    extends State<VisualizationAndExplorerScreens>
+class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplorerScreens>
     with TickerProviderStateMixin {
   late TabController tabController;
   late int tabControllerIndex;
+  late String? currentDataset = '';
+  late String? currentDatasetPath = '';
+  late String? currentDatasetType = '';
 
   final Box recentImportsBox = Hive.box(dotenv.env['RECENT_IMPORTS_HISTORY']!);
+  final ValueNotifier<String?> selectedDatasetNotifier = ValueNotifier<String?>(null);
   List<StreamSubscription<FileSystemEvent>> fileWatchers = [];
   Set<String> watchedFiles = {};
 
@@ -35,9 +37,51 @@ class _VisualizationAndExplorerScreensState
     tabController = TabController(length: 3, vsync: this);
     tabControllerIndex = 0;
 
-    setupImportWatchers();
+    _loadLastSelectedDataset();
 
+    setupImportWatchers();
     recentImportsBox.listenable().addListener(setupImportWatchers);
+    selectedDatasetNotifier.addListener(_handleDatasetSelectionChange);
+  }
+
+  void _loadLastSelectedDataset() {
+    currentDataset = recentImportsBox.get('currentDatasetName');
+    currentDatasetPath = recentImportsBox.get('currentDatasetPath');
+    currentDatasetType = recentImportsBox.get('currentDatasetType');
+
+    if (currentDatasetPath != null &&
+        File(currentDatasetPath!).existsSync() &&
+        currentDataset != null) {
+      selectedDatasetNotifier.value = currentDataset;
+    } else {
+      recentImportsBox.delete('currentDatasetName');
+      recentImportsBox.delete('currentDatasetPath');
+      recentImportsBox.delete('currentDatasetType');
+    }
+  }
+
+  void _handleDatasetSelectionChange() {
+    if (selectedDatasetNotifier.value != null && selectedDatasetNotifier.value != currentDataset) {
+      setState(() {
+        currentDataset = selectedDatasetNotifier.value;
+
+        recentImportsBox.put('currentDatasetName', currentDataset);
+        recentImportsBox.put('currentDatasetPath', currentDatasetPath);
+        recentImportsBox.put('currentDatasetType', currentDatasetType);
+      });
+    }
+  }
+
+  void selectDataset(RecentImportsModel import) {
+    currentDataset = import.fileName;
+    currentDatasetPath = import.filePath;
+    currentDatasetType = import.fileType;
+
+    selectedDatasetNotifier.value = import.fileName;
+
+    recentImportsBox.put('currentDatasetName', currentDataset);
+    recentImportsBox.put('currentDatasetPath', currentDatasetPath);
+    recentImportsBox.put('currentDatasetType', currentDatasetType);
   }
 
   void setupImportWatchers() {
@@ -73,10 +117,8 @@ class _VisualizationAndExplorerScreensState
 
       if (directory.existsSync()) {
         final subscription = directory.watch(recursive: false).listen((event) {
-          if (event.path == filePath ||
-              event.path.contains(file.uri.pathSegments.last)) {
-            if (event.type == FileSystemEvent.delete ||
-                !File(filePath).existsSync()) {
+          if (event.path == filePath || event.path.contains(file.uri.pathSegments.last)) {
+            if (event.type == FileSystemEvent.delete || !File(filePath).existsSync()) {
               debugPrint('File was deleted or moved: $filePath');
               setState(() {});
             }
@@ -93,12 +135,16 @@ class _VisualizationAndExplorerScreensState
   }
 
   String returnTextBasedOnIndex() {
-    if (tabControllerIndex == 0) {
-      return 'Raw Data';
-    } else if (tabControllerIndex == 1) {
-      return 'Data Cleaning';
-    }
-    return 'Visualize';
+    String tabName =
+        tabControllerIndex == 0
+            ? 'Raw Data'
+            : tabControllerIndex == 1
+            ? 'Data Cleaning'
+            : 'Visualize';
+
+    String datasetName = currentDataset ?? 'No Dataset';
+
+    return '$tabName > $datasetName';
   }
 
   @override
@@ -108,6 +154,7 @@ class _VisualizationAndExplorerScreensState
     }
     tabController.dispose();
     recentImportsBox.listenable().removeListener(setupImportWatchers);
+    selectedDatasetNotifier.dispose();
     super.dispose();
   }
 
@@ -163,7 +210,11 @@ class _VisualizationAndExplorerScreensState
                 Expanded(
                   child: TabBarView(
                     controller: tabController,
-                    children: [RawDataTab(), DataCleaningTab(), VisualizeTab()],
+                    children: [
+                      RawDataTab(selectedDatasetNotifier: selectedDatasetNotifier),
+                      DataCleaningTab(),
+                      VisualizeTab(),
+                    ],
                   ),
                 ),
               ],
@@ -189,10 +240,43 @@ class _VisualizationAndExplorerScreensState
             ),
           ),
         ),
-        Divider(
-          height: 1,
-          color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+        Padding(
+          padding: EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+          child: InkWell(
+            onTap: _showClearConfirmationDialog,
+            borderRadius: BorderRadius.circular(8.0),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.0),
+                color:
+                    isDarkMode
+                        ? Colors.grey[800]!.withValues(alpha: 0.3)
+                        : Colors.grey[200]!.withValues(alpha: 0.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.delete_outline,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Clear All',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
+        Divider(height: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
         Expanded(
           child: ValueListenableBuilder(
             valueListenable: recentImportsBox.listenable(),
@@ -211,9 +295,7 @@ class _VisualizationAndExplorerScreensState
               recentImports =
                   recentImports
                       .where(
-                        (import) =>
-                            import.filePath != null &&
-                            File(import.filePath!).existsSync(),
+                        (import) => import.filePath != null && File(import.filePath!).existsSync(),
                       )
                       .toList();
 
@@ -230,17 +312,13 @@ class _VisualizationAndExplorerScreensState
                       SizedBox(height: 16),
                       Text(
                         'No recent imports',
-                        style: TextStyle(
-                          color:
-                              isDarkMode ? Colors.grey[500] : Colors.grey[600],
-                        ),
+                        style: TextStyle(color: isDarkMode ? Colors.grey[500] : Colors.grey[600]),
                       ),
                       Text(
                         'Import datasets to see them here',
                         style: TextStyle(
                           fontSize: 12,
-                          color:
-                              isDarkMode ? Colors.grey[600] : Colors.grey[500],
+                          color: isDarkMode ? Colors.grey[600] : Colors.grey[500],
                         ),
                       ),
                     ],
@@ -266,8 +344,7 @@ class _VisualizationAndExplorerScreensState
   }
 
   Widget _buildImportItem(RecentImportsModel import, bool isDarkMode) {
-    final fileExists =
-        import.filePath != null && File(import.filePath!).existsSync();
+    final fileExists = import.filePath != null && File(import.filePath!).existsSync();
 
     if (!fileExists) {
       return SizedBox.shrink();
@@ -292,11 +369,7 @@ class _VisualizationAndExplorerScreensState
         children: [
           Row(
             children: [
-              Icon(
-                _getFileIcon(import.fileType),
-                color: _getFileColor(import.fileType),
-                size: 24,
-              ),
+              Icon(_getFileIcon(import.fileType), color: _getFileColor(import.fileType), size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -333,17 +406,17 @@ class _VisualizationAndExplorerScreensState
               _buildInfoTag(import.fileSize, isDarkMode),
               Spacer(),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   // todo:  in next commit i'll prolly make the imports work
+                  selectDataset(import);
+                  tabController.animateTo(0);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade600,
                   foregroundColor: Colors.white,
                   minimumSize: Size(60, 30),
                   padding: EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
                 child: Text('Use', style: TextStyle(fontSize: 12)),
               ),
@@ -363,10 +436,7 @@ class _VisualizationAndExplorerScreensState
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 12,
-          color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-        ),
+        style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.grey[300] : Colors.grey[700]),
       ),
     );
   }
@@ -412,5 +482,56 @@ class _VisualizationAndExplorerScreensState
       default:
         return Colors.grey;
     }
+  }
+
+  void _showClearConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Clear Recent Imports'),
+          content: Text(
+            'Are you sure you want to clear all recent imports? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _clearAllRecentImports();
+                Navigator.of(context).pop();
+              },
+              child: Text('Clear All', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _clearAllRecentImports() {
+    recentImportsBox.delete('recentImports');
+    recentImportsBox.delete('currentDatasetName');
+    recentImportsBox.delete('currentDatasetPath');
+    recentImportsBox.delete('currentDatasetType');
+
+    setState(() {
+      currentDataset = null;
+      currentDatasetPath = null;
+      currentDatasetType = null;
+    });
+
+    selectedDatasetNotifier.value = null;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('All recent imports have been cleared'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 }
