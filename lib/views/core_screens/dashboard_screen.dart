@@ -5,6 +5,7 @@ import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
+import 'package:deep_sage/views/core_screens/visualization/visualization_and_explorer_screens.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:file_picker/file_picker.dart';
@@ -129,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
       FolderScreen(),
-      const Center(child: Text('Visualizations')),
+      VisualizationAndExplorerScreens(),
       const Center(child: Text('Reports')),
       SettingsScreen(),
     ];
