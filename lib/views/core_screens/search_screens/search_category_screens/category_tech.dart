@@ -21,7 +21,6 @@
 //     super.initState();
 //   }
 
-
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
@@ -166,7 +165,8 @@ class _CategoryTechnologyState extends State<CategoryTechnology> {
                       lightIconPath: AppIcons.aiLight,
                       darkIconPath: AppIcons.aiDark,
                       labelText: 'Explore AI & Tech Trends',
-                      subLabelText: 'Latest datasets on AI, ML, and emerging technologies',
+                      subLabelText:
+                          'Latest datasets on AI, ML, and emerging technologies',
                       buttonText: 'Search',
                       onButtonClick: () => widget.onSearch('AI & Tech Trends'),
                     ),
@@ -199,27 +199,32 @@ class _CategoryTechnologyState extends State<CategoryTechnology> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: popularDatasets.length,
-                      itemBuilder: (context, index) {
-                        final dataset = popularDatasets[index];
-                        return Column(
-                          children: [
-                            FileListItem(
-                              icon: Icons.dataset_sharp,
-                              title: dataset.title,
-                              addedTime: dataset.addedTime,
-                              fileType: dataset.fileType,
-                              fileSize: dataset.fileSize,
-                              datasetId: dataset.id,
-                            ),
-                            Divider(height: 1, thickness: 1, color: Colors.grey[200]),
-                          ],
-                        );
-                      },
-                    ),
+              child:
+                  isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                        itemCount: popularDatasets.length,
+                        itemBuilder: (context, index) {
+                          final dataset = popularDatasets[index];
+                          return Column(
+                            children: [
+                              FileListItem(
+                                icon: Icons.dataset_sharp,
+                                title: dataset.title,
+                                addedTime: dataset.addedTime,
+                                fileType: dataset.fileType,
+                                fileSize: dataset.fileSize,
+                                datasetId: dataset.id,
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Colors.grey[200],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
             ),
           ],
         ),

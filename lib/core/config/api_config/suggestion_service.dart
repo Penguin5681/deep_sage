@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:http/http.dart' as http;
 
-import '../../models/user_api_model.dart';
+import '../../models/hive_models/user_api_model.dart';
 
 class DatasetSuggestion {
   final String name;

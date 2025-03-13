@@ -5,6 +5,7 @@ import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
+import 'package:deep_sage/views/core_screens/visualization/visualization_and_explorer_screens.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:file_picker/file_picker.dart';
@@ -128,8 +129,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // This is an array of Screens
       Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
-      FolderScreen(),
-      const Center(child: Text('Visualizations')),
+      FolderScreen(onNavigate: navigateToIndex),
+      VisualizationAndExplorerScreens(),
       const Center(child: Text('Reports')),
       SettingsScreen(),
     ];
@@ -553,7 +554,7 @@ class _DashboardState extends State<Dashboard> {
                                     'Analysis 2003',
                                 subLabelText: 'Last opened 2 hours ago',
                                 buttonText: 'Open',
-                                onButtonClick: () {}
+                                onButtonClick: () {},
                               ),
                               const SizedBox(width: 15.0),
                               DatasetCard(
@@ -562,7 +563,7 @@ class _DashboardState extends State<Dashboard> {
                                 labelText: 'Customer Behaviour',
                                 subLabelText: 'Last opened yesterday',
                                 buttonText: 'Open',
-                                onButtonClick: () {}
+                                onButtonClick: () {},
                               ),
                               const SizedBox(width: 15.0),
                               DatasetCard(
@@ -571,7 +572,7 @@ class _DashboardState extends State<Dashboard> {
                                 labelText: 'Market Research',
                                 subLabelText: 'Last opened 3 days ago',
                                 buttonText: 'Open',
-                                onButtonClick: () {}
+                                onButtonClick: () {},
                               ),
                               const SizedBox(width: 15.0),
                             ],
@@ -595,7 +596,7 @@ class _DashboardState extends State<Dashboard> {
                               'Your recent datasets show a 23% increase in customer engagement patterns',
                           subLabelSize: 17.0,
                           buttonText: 'Open',
-                          onButtonClick: () {}
+                          onButtonClick: () {},
                         ),
                       ],
                     ),

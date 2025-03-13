@@ -7,7 +7,8 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:path/path.dart' as path;
 
 class FolderScreen extends StatefulWidget {
-  const FolderScreen({super.key});
+  final Function(int)? onNavigate;
+  const FolderScreen({super.key, this.onNavigate});
 
   @override
   State<FolderScreen> createState() => _FolderScreenState();
@@ -94,11 +95,11 @@ class _FolderScreenState extends State<FolderScreen>
           Expanded(
             child: TabBarView(
               controller: tabController,
-              children: const [
-                FolderAll(),
-                FolderAll(),
+              children: [
+                FolderAll(onNavigate: widget.onNavigate),
                 FolderStarred(),
-                FolderAll(),
+                FolderStarred(),
+                FolderStarred(),
               ],
             ),
           ),
