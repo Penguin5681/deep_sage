@@ -28,7 +28,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   var selectedIndex = 0;
   late Widget currentScreen;
   final userHiveBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
-  final Image fallbackUserAvatar = Image.asset('assets/fallback/fallback_user_image.png');
+  final Image fallbackUserAvatar = Image.asset(
+    'assets/fallback/fallback_user_image.png',
+  );
 
   @override
   void initState() {
@@ -44,11 +46,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final navigatorKey = GlobalKey<NavigatorState>();
 
-  Widget getIconForTheme({required String lightIcon, required String darkIcon, double size = 24}) {
+  Widget getIconForTheme({
+    required String lightIcon,
+    required String darkIcon,
+    double size = 24,
+  }) {
     return Builder(
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+        return Image.asset(
+          isDarkMode ? darkIcon : lightIcon,
+          width: size,
+          height: size,
+        );
       },
     );
   }
@@ -89,12 +99,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 48,
                 height: 48,
                 color: Colors.transparent,
-                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               );
             } else if (snapshot.hasData) {
-              return ClipOval(child: SizedBox(width: 48, height: 48, child: snapshot.data!));
+              return ClipOval(
+                child: SizedBox(width: 48, height: 48, child: snapshot.data!),
+              );
             } else {
-              return ClipOval(child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar));
+              return ClipOval(
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: fallbackUserAvatar,
+                ),
+              );
             }
           },
         );
@@ -109,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // This is an array of Screens
       Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
-      FolderScreen(onNavigate: navigateToIndex,),
+      FolderScreen(onNavigate: navigateToIndex),
       VisualizationAndExplorerScreens(),
       const Center(child: Text('Reports')),
       SettingsScreen(),
@@ -144,7 +164,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(height: 40),
-                      MouseRegion(cursor: SystemMouseCursors.click, child: buildProfileImage()),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: buildProfileImage(),
+                      ),
                     ],
                   ),
                 ),
@@ -247,7 +270,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(child: screens[selectedIndex]),
         ],
       ),
-      floatingActionButton: env == 'development' ? DevFAB(parentContext: context) : null,
+      floatingActionButton:
+          env == 'development' ? DevFAB(parentContext: context) : null,
     );
   }
 }
@@ -308,20 +332,29 @@ class _DashboardState extends State<Dashboard> {
                 children: [
                   Text(
                     'Welcome back, $userName',
-                    style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 24.0,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 25),
                   Row(
                     children: [
                       ElevatedButton(
                         onPressed: () async {
-                          FilePickerResult? result = await FilePicker.platform.pickFiles(
-                            dialogTitle: 'Select dataset(s)',
-                            allowMultiple: true,
-                            type: FileType.custom,
-                            allowedExtensions: ["json", "csv", "xlsx", "xls"],
-                            lockParentWindow: true,
-                          );
+                          FilePickerResult? result = await FilePicker.platform
+                              .pickFiles(
+                                dialogTitle: 'Select dataset(s)',
+                                allowMultiple: true,
+                                type: FileType.custom,
+                                allowedExtensions: [
+                                  "json",
+                                  "csv",
+                                  "xlsx",
+                                  "xls",
+                                ],
+                                lockParentWindow: true,
+                              );
                           if (result != null && result.files.isNotEmpty) {
                             List<String> filePaths =
                                 result.files
@@ -335,17 +368,25 @@ class _DashboardState extends State<Dashboard> {
                               }
 
                               try {
-                                List<String> newPaths = await FileTransferUtil.moveFiles(
-                                  sourcePaths: filePaths,
-                                  destinationDirectory: selectedRootDirectoryPath,
-                                  overwriteExisting: false,
-                                );
+                                List<String> newPaths =
+                                    await FileTransferUtil.moveFiles(
+                                      sourcePaths: filePaths,
+                                      destinationDirectory:
+                                          selectedRootDirectoryPath,
+                                      overwriteExisting: false,
+                                    );
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Dataset uploaded successfully')),
+                                  SnackBar(
+                                    content: Text(
+                                      'Dataset uploaded successfully',
+                                    ),
+                                  ),
                                 );
                                 // todo: add a acknowledgement toast
-                                debugPrint('Files moved successfully to: $newPaths');
+                                debugPrint(
+                                  'Files moved successfully to: $newPaths',
+                                );
                               } catch (ex) {
                                 debugPrint('Cannot move files: $ex');
                               }
@@ -355,12 +396,20 @@ class _DashboardState extends State<Dashboard> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade600,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                         ),
                         child: const Text(
                           "Upload Dataset",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -369,14 +418,25 @@ class _DashboardState extends State<Dashboard> {
                           widget.onNavigate(1);
                         },
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.blue.shade600, width: 2),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          side: BorderSide(
+                            color: Colors.blue.shade600,
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           foregroundColor: Colors.blue.shade600,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
                         ),
                         child: const Text(
                           "Search Public Datasets",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -407,12 +467,18 @@ class _DashboardState extends State<Dashboard> {
                                   setState(() {
                                     isDatasetUploaded = false;
                                   });
-                                  FilePickerResult? result = await FilePicker.platform.pickFiles(
-                                    dialogTitle: "Import a dataset",
-                                    lockParentWindow: true,
-                                    type: FileType.custom,
-                                    allowedExtensions: ["json", "xlsx", "csv"],
-                                  );
+                                  FilePickerResult? result = await FilePicker
+                                      .platform
+                                      .pickFiles(
+                                        dialogTitle: "Import a dataset",
+                                        lockParentWindow: true,
+                                        type: FileType.custom,
+                                        allowedExtensions: [
+                                          "json",
+                                          "xlsx",
+                                          "csv",
+                                        ],
+                                      );
                                   if (result != null) {
                                     File file = File(result.files.single.path!);
                                     setState(() {
@@ -449,7 +515,10 @@ class _DashboardState extends State<Dashboard> {
                     ),
 
                   const SizedBox(height: 16.0),
-                  const Text('Recent Datasets', style: TextStyle(fontSize: 20.0)),
+                  const Text(
+                    'Recent Datasets',
+                    style: TextStyle(fontSize: 20.0),
+                  ),
                   const SizedBox(height: 20),
                   Listener(
                     onPointerSignal: (PointerSignalEvent event) {

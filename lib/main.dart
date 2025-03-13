@@ -1,5 +1,6 @@
 import 'package:deep_sage/core/config/theme/app_theme.dart';
-import 'package:deep_sage/core/models/user_api_model.dart';
+import 'package:deep_sage/core/models/hive_models/recent_imports_model.dart';
+import 'package:deep_sage/core/models/hive_models/user_api_model.dart';
 import 'package:deep_sage/core/services/cache_service.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
@@ -23,9 +24,11 @@ Future main() async {
 
   Hive.init(appSupportDirectory.path);
   Hive.registerAdapter(UserApiAdapter());
+  Hive.registerAdapter(RecentImportsModelAdapter());
 
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
   await Hive.openBox(dotenv.env['USER_HIVE_BOX']!);
+  await Hive.openBox(dotenv.env['RECENT_IMPORTS_HISTORY']!);
   await Hive.openBox('starred_datasets');
   await Hive.openBox('user_preferences');
 

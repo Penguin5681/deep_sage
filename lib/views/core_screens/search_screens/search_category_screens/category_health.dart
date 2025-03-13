@@ -14,7 +14,6 @@ class CategoryHealth extends StatefulWidget {
 }
 
 class _CategoryHealthState extends State<CategoryHealth> {
-    
   final ScrollController scrollController = ScrollController();
   List<PopularDataset> popularDatasets = [];
   bool isLoading = true;
@@ -63,7 +62,8 @@ class _CategoryHealthState extends State<CategoryHealth> {
                       lightIconPath: AppIcons.healthLight,
                       darkIconPath: AppIcons.healthDark,
                       labelText: 'Explore Healthcare Data',
-                      subLabelText: 'Latest datasets on healthcare trends and analysis',
+                      subLabelText:
+                          'Latest datasets on healthcare trends and analysis',
                       buttonText: 'Search',
                       onButtonClick: () => widget.onSearch('Healthcare Data'),
                     ),
@@ -83,7 +83,8 @@ class _CategoryHealthState extends State<CategoryHealth> {
                       labelText: 'Explore Pharmaceutical Data',
                       subLabelText: 'Pharmaceutical research and drug data',
                       buttonText: 'Search',
-                      onButtonClick: () => widget.onSearch('Pharmaceutical Data'),
+                      onButtonClick:
+                          () => widget.onSearch('Pharmaceutical Data'),
                     ),
                   ],
                 ),
@@ -96,27 +97,32 @@ class _CategoryHealthState extends State<CategoryHealth> {
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: popularDatasets.length,
-                      itemBuilder: (context, index) {
-                        final dataset = popularDatasets[index];
-                        return Column(
-                          children: [
-                            FileListItem(
-                              icon: Icons.dataset_sharp,
-                              title: dataset.title,
-                              addedTime: dataset.addedTime,
-                              fileType: dataset.fileType,
-                              fileSize: dataset.fileSize,
-                              datasetId: dataset.id,
-                            ),
-                            Divider(height: 1, thickness: 1, color: Colors.grey[200]),
-                          ],
-                        );
-                      },
-                    ),
+              child:
+                  isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                        itemCount: popularDatasets.length,
+                        itemBuilder: (context, index) {
+                          final dataset = popularDatasets[index];
+                          return Column(
+                            children: [
+                              FileListItem(
+                                icon: Icons.dataset_sharp,
+                                title: dataset.title,
+                                addedTime: dataset.addedTime,
+                                fileType: dataset.fileType,
+                                fileSize: dataset.fileSize,
+                                datasetId: dataset.id,
+                              ),
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: Colors.grey[200],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
             ),
           ],
         ),
