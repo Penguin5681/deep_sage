@@ -10,5 +10,12 @@ class UserApi {
   @HiveField(1)
   final String kaggleApiKey;
 
-  UserApi({required this.kaggleApiKey, required this.kaggleUserName});
+  @HiveField(2)
+  final String loginMethod;
+
+  UserApi({
+    required this.kaggleApiKey,
+    required this.kaggleUserName,
+    this.loginMethod = ''
+  });
 }

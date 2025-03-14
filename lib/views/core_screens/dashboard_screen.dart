@@ -32,10 +32,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'assets/fallback/fallback_user_image.png',
   );
 
+  void checkIfGoogleSignIn() {
+    final user = Supabase.instance.client.auth.currentUser;
+    final provider = user?.appMetadata['provider'];
+    final avatarUrl = user?.userMetadata?['avatar_url'];
+
+    setState(() {
+      isGoogleSignIn = provider == 'google';
+      if (isGoogleSignIn && avatarUrl != null) {
+        userAvatarUrl = avatarUrl;
+      }
+    });
+  }
+
+  void getUserMetadata() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      setState(() {
+        // For Google Sign In, get the avatar URL directly from metadata
+        if (user.appMetadata['provider'] == 'google') {
+          userAvatarUrl = user.userMetadata?['avatar_url'] ?? '';
+        }
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     currentScreen = Dashboard(onNavigate: navigateToIndex);
+    getUserMetadata();
+    checkIfGoogleSignIn();
   }
 
   void navigateToIndex(int index) {
@@ -81,84 +108,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool isGoogleSignIn = false;
 
   // Function to check google sign in
-  void checkIfGoogleSignIn() {
-    final user = Supabase.instance.client.auth.currentUser;
-    setState(() {
-      isGoogleSignIn = user?.appMetadata['provider'] == 'google';
-    });
-  }
-
-  // Widget buildProfileImage() {
-  //   return ValueListenableBuilder<String?>(
-  //     valueListenable: UserImageService().profileImageUrl,
-  //     builder: (context, imageUrl, child) {
-  //       if (UserImageService().cachedUrl != null) {
-  //         return ClipOval(
-  //           child: SizedBox(
-  //             width: 48,
-  //             height: 48,
-  //             child: Image.network(UserImageService().cachedUrl!),
-  //           ),
-  //         );
-  //       }
-
-  //       return FutureBuilder<Image>(
-  //         future: loadProfileImageFromHive(),
-  //         builder: (context, snapshot) {
-  //           if (snapshot.connectionState == ConnectionState.waiting) {
-  //             debugPrint('profile loaded');
-  //             return Container(
-  //               width: 48,
-  //               height: 48,
-  //               color: Colors.transparent,
-  //               child: const Center(
-  //                 child: CircularProgressIndicator(strokeWidth: 2),
-  //               ),
-  //             );
-  //           } else if (snapshot.hasData) {
-  //             return ClipOval(
-  //               child: SizedBox(width: 48, height: 48, child: snapshot.data!),
-  //             );
-  //           } else {
-  //             return ClipOval(
-  //               child: SizedBox(
-  //                 width: 48,
-  //                 height: 48,
-  //                 child: fallbackUserAvatar,
-  //               ),
-  //             );
-  //           }
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
+  // Update this function in DashboardScree
 
   // Added the google sign in to fetch the image
+  // This implementation works for both DashboardScreen and SettingsScreen
   Widget buildProfileImage() {
     return ValueListenableBuilder<String?>(
       valueListenable: UserImageService().profileImageUrl,
       builder: (context, imageUrl, child) {
+        // First priority: Google Sign-In with avatar URL
         if (isGoogleSignIn && userAvatarUrl.isNotEmpty) {
           return ClipOval(
             child: SizedBox(
               width: 48,
               height: 48,
-              child: Image.network(userAvatarUrl),
+              child: Image.network(
+                userAvatarUrl,
+                errorBuilder: (context, error, stackTrace) {
+                  // Fallback to cached or default image if Google image fails to load
+                  return _buildFallbackImage();
+                },
+              ),
             ),
           );
         }
 
+        // Second priority: Cached URL from UserImageService
         if (UserImageService().cachedUrl != null) {
           return ClipOval(
             child: SizedBox(
               width: 48,
               height: 48,
-              child: Image.network(UserImageService().cachedUrl!),
+              child: Image.network(
+                UserImageService().cachedUrl!,
+                errorBuilder: (context, error, stackTrace) {
+                  return _buildFallbackImage();
+                },
+              ),
             ),
           );
         }
 
+        // Third priority: Try to load from Hive storage
         return FutureBuilder<Image>(
           future: loadProfileImageFromHive(),
           builder: (context, snapshot) {
@@ -176,17 +167,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: SizedBox(width: 48, height: 48, child: snapshot.data!),
               );
             } else {
-              return ClipOval(
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: fallbackUserAvatar,
-                ),
-              );
+              return _buildFallbackImage();
             }
           },
         );
       },
+    );
+  }
+
+
+
+  // Helper method to show fallback image
+  Widget _buildFallbackImage() {
+    return ClipOval(
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: fallbackUserAvatar,
+      ),
     );
   }
 

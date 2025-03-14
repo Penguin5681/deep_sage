@@ -63,9 +63,9 @@ class LoginScreen extends StatelessWidget {
             password: password,
           );
           if (response.session != null) {
-            await Hive.box(
-              dotenv.env['USER_HIVE_BOX']!,
-            ).put('userSessionToken', response.session!.accessToken);
+            final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+            await userBox.put('userSessionToken', response.session!.accessToken);
+            await userBox.put('loginMethod', 'email');
           }
 
           if (!context.mounted) return;
