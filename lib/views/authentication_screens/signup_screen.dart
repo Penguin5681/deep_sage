@@ -5,6 +5,7 @@ import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -78,19 +79,19 @@ class SignupScreen extends StatelessWidget {
             password: passwordController.text,
             data: {
               'display_name': displayName,
-            }, // Store display name in metadata
+            },
           );
+
           if (!context.mounted) return;
           if (response.user!.identities!.isEmpty) {
-            // showTopSnackBar(
-            //   Overlay.of(context),
-            //   CustomSnackBar.info(message: 'User already exists'),
-            // );
+            // User already exists handling
           } else {
-            // showTopSnackBar(
-            //   Overlay.of(context),
-            //   CustomSnackBar.success(message: 'Sign Up Successful'),
-            // );
+            final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+            if (response.session != null) {
+              await userBox.put('userSessionToken', response.session!.accessToken);
+              await userBox.put('loginMethod', 'email');
+            }
+
             Navigator.of(
               context,
             ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));

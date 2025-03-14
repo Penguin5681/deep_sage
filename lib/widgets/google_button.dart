@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:supabase_flutter/supabase_flutter.dart';
 // import 'package:google_sign_in/google_sign_in.dart';
@@ -203,6 +205,10 @@ class GoogleButton extends StatelessWidget {
   if (user == null) {
     throw Exception('No users found after Google sign-in');
   }
+
+  final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+  await userBox.put('userSessionToken', res.session!.accessToken);
+  await userBox.put('loginMethod', 'google');
 
   // Store user profile information in Supabase profiles table
   await supabase.from('profiles').upsert({
