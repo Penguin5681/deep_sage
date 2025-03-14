@@ -107,20 +107,38 @@ import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 
+/// A StatefulWidget that displays the 'Finances' category search screen.
+///
+/// This screen shows a list of popular datasets related to finances
+/// and allows the user to search within the finance category.
 class CategoryFinances extends StatefulWidget {
   final Function(String) onSearch;
 
+  /// Creates a [CategoryFinances] widget.
+  ///
+  /// [onSearch] is a callback function that is called when a search is initiated.
   const CategoryFinances({super.key, required this.onSearch});
 
   @override
   State<CategoryFinances> createState() => _CategoryFinancesState();
 }
 
+/// The state for [CategoryFinances].
 class _CategoryFinancesState extends State<CategoryFinances> {
   final ScrollController scrollController = ScrollController();
+
+  /// List of popular datasets fetched from the API.
   List<PopularDataset> popularDatasets = [];
+
+  /// Boolean to track whether the datasets are still loading.
   bool isLoading = true;
 
+  /// Initializes the state of the widget.
+  ///
+  /// This method is called when the widget is inserted into the tree.
+  /// It fetches the popular datasets to be displayed on the screen.
+  ///
+  ///
   @override
   void initState() {
     super.initState();

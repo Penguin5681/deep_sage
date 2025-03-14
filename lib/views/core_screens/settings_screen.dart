@@ -73,19 +73,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool isGoogleSignIn = false;
 
   // Function to check google sign in
-// Update this function in SettingsScreen
-void checkIfGoogleSignIn() {
-  final user = Supabase.instance.client.auth.currentUser;
-  final provider = user?.appMetadata['provider'];
-  final avatarUrl = user?.userMetadata?['avatar_url'];
+  // Update this function in SettingsScreen
+  void checkIfGoogleSignIn() {
+    final user = Supabase.instance.client.auth.currentUser;
+    final provider = user?.appMetadata['provider'];
+    final avatarUrl = user?.userMetadata?['avatar_url'];
 
-  setState(() {
-    isGoogleSignIn = provider == 'google';
-    if (isGoogleSignIn && avatarUrl != null) {
-      userAvatarUrl = avatarUrl;
-    }
-  });
-}
+    setState(() {
+      isGoogleSignIn = provider == 'google';
+      if (isGoogleSignIn && avatarUrl != null) {
+        userAvatarUrl = avatarUrl;
+      }
+    });
+  }
 
   Future<void> getUserPreferences() async {
     final value = await userPreferencesBox.get('askForDownloadLocation');
@@ -532,14 +532,9 @@ void checkIfGoogleSignIn() {
   // Helper method to show fallback image
   Widget _buildFallbackImage() {
     return ClipOval(
-      child: SizedBox(
-        width: 48,
-        height: 48,
-        child: fallbackUserAvatar,
-      ),
+      child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar),
     );
   }
-
 
   @override
   void initState() {
@@ -571,14 +566,15 @@ void checkIfGoogleSignIn() {
     if (user != null) {
       setState(() {
         // Get name from various possible sources
-        displayName = user.userMetadata?['full_name'] ??
-                     user.userMetadata?['display_name'] ??
-                     'User';
+        displayName =
+            user.userMetadata?['full_name'] ??
+            user.userMetadata?['display_name'] ??
+            'User';
         userEmail = user.email ?? 'No Email';
         userId = user.id;
 
         // For Google Sign In, get the avatar URL directly from metadata
-        if (user.appMetadata?['provider'] == 'google') {
+        if (user.appMetadata['provider'] == 'google') {
           userAvatarUrl = user.userMetadata?['avatar_url'] ?? '';
         }
       });
@@ -798,18 +794,18 @@ void checkIfGoogleSignIn() {
                               ),
                               const Spacer(),
                               if (!isGoogleSignIn) // Only show the edit icon if the user did noy sign in with Google
-                              IconButton(
-                                icon: Icon(Icons.edit),
-                                color:
-                                    isDarkModeEnabled
-                                        ? Colors.grey[400]
-                                        : Colors.grey[700],
-                                iconSize: 20,
-                                onPressed: () async {
-                                  // alr, watch this.
-                                  await _pickAndUploadImage(context);
-                                },
-                              ),
+                                IconButton(
+                                  icon: Icon(Icons.edit),
+                                  color:
+                                      isDarkModeEnabled
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
+                                  iconSize: 20,
+                                  onPressed: () async {
+                                    // alr, watch this.
+                                    await _pickAndUploadImage(context);
+                                  },
+                                ),
                             ],
                           ),
                           const SizedBox(height: 16),
