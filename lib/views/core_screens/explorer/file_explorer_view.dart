@@ -5,12 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
 class DirectoryTreeNode {
+  /// The name of the directory node
   final String name;
+
+  /// The full path to the directory
   final String path;
+
+  /// List of child nodes (subdirectories)
   List<DirectoryTreeNode> children;
+
+  /// Whether this node is currently expanded in the UI
   bool isExpanded;
+
+  /// Whether this node can be expanded (has subdirectories)
   bool isExpandable;
 
+  /// Creates a directory tree node
+  ///
+  /// [name] The display name of the directory
+  /// [path] The full filesystem path
+  /// [children] Optional list of child nodes
+  /// [isExpanded] Whether the node is initially expanded
+  /// [isExpandable] Whether the node can be expanded
   DirectoryTreeNode({
     required this.name,
     required this.path,
@@ -20,10 +36,18 @@ class DirectoryTreeNode {
   }) : children = List.of(children);
 }
 
+/// Widget that displays a file explorer with directory tree and file listing
 class FileExplorerView extends StatefulWidget {
+  /// The starting directory path for the explorer
   final String initialPath;
+
+  /// Callback function when the explorer is closed
   final VoidCallback onClose;
 
+  /// Creates a file explorer view
+  ///
+  /// [initialPath] The starting directory path
+  /// [onClose] Callback for when the explorer is closed
   const FileExplorerView({
     super.key,
     required this.initialPath,
@@ -35,16 +59,34 @@ class FileExplorerView extends StatefulWidget {
 }
 
 class _FileExplorerViewState extends State<FileExplorerView> {
+  /// Current directory path being displayed
   String currentPath = '';
+
+  /// Path of the currently selected file
   String selectedFilePath = '';
+
+  /// Position of the splitter between directory tree and content view (0.0-1.0)
   double splitPosition = 0.3;
+
+  /// All files and directories in the current directory
   List<FileSystemEntity> folderContents = [];
+
+  /// List of directories only
   List<FileSystemEntity> directoryList = [];
+
+  /// Filtered list of files and directories based on allowed extensions
   List<FileSystemEntity> filteredContents = [];
+
+  /// Root node for the directory tree structure
   DirectoryTreeNode? rootNode;
+
+  /// Flag indicating if the directory tree is being loaded
   bool isLoadingTree = true;
+
+  /// Flag indicating if the main view is being loaded
   bool isLoadingScreen = true;
 
+  /// List of file extensions that should be shown in the explorer
   final List<String> allowedExtensions = ['json', 'csv', 'txt'];
 
   @override
@@ -55,6 +97,13 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     buildDirectoryTreeNode(widget.initialPath);
   }
 
+  /// Loads the contents of a directory at the specified path
+  ///
+  /// This method populates [folderContents] with all files and directories
+  /// at the given [dirPath], updates the current path, and applies content filtering.
+  /// It also updates the directory tree selection to match the current path.
+  ///
+  /// [dirPath] The directory path to load
   Future<void> loadDirectoryContents(String dirPath) async {
     try {
       final dir = Directory(dirPath);
@@ -74,6 +123,10 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     }
   }
 
+  /// Filters the folder contents based on allowed file extensions
+  ///
+  /// This method populates [filteredContents] with all directories and
+  /// only files that have extensions matching [allowedExtensions].
   void filterContents() {
     filteredContents =
         folderContents.where((entity) {
@@ -87,6 +140,17 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         }).toList();
   }
 
+  /// Builds the directory tree structure starting from the specified root path
+  ///
+  /// This method initializes the [rootNode] of the directory tree by:
+  /// 1. Setting the loading state to true
+  /// 2. Creating a root node with the directory name (or 'Root' if empty)
+  /// 3. Loading all child directories recursively using [_loadChildDirectories]
+  /// 4. Setting the loading state back to false when complete
+  ///
+  /// [rootPath] The file system path to use as the root of the directory tree
+  ///
+  /// Throws various IO exceptions that are caught and logged during directory access
   Future<void> buildDirectoryTreeNode(String rootPath) async {
     setState(() => isLoadingTree = true);
 
@@ -108,6 +172,20 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     }
   }
 
+  /// Loads the child directories for a given node in the directory tree
+  ///
+  /// This method:
+  /// 1. Attempts to list all entities in the directory represented by [node]
+  /// 2. Filters for only directories (not files)
+  /// 3. Creates child nodes for each subdirectory
+  /// 4. Checks if each subdirectory has its own children to determine expandability
+  /// 5. Sorts the directories alphabetically by name
+  /// 6. Updates the node's children collection with the found directories
+  ///
+  /// [node] The parent directory node to load children for
+  ///
+  /// The method handles any exceptions that occur during directory access
+  /// and logs them via debugPrint.
   Future<void> _loadChildDirectories(DirectoryTreeNode node) async {
     try {
       final dir = Directory(node.path);
@@ -137,6 +215,16 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     }
   }
 
+  /// Checks if a directory contains any subdirectories
+  ///
+  /// This method efficiently checks if [dir] contains at least one subdirectory
+  /// by streaming the directory contents and returning true as soon as a Directory
+  /// entity is found.
+  ///
+  /// [dir] The directory to check for subdirectories
+  ///
+  /// Returns a [Future<bool>] that resolves to true if at least one subdirectory exists,
+  /// false otherwise
   Future<bool> _directoryHasSubDirectories(Directory dir) async {
     try {
       await for (final entity in dir.list()) {
@@ -148,6 +236,12 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     return false;
   }
 
+  /// Builds a filter bar showing the file types currently visible in the explorer
+  ///
+  /// This widget creates a horizontal container with badges for each supported
+  /// file type (JSON, CSV, and text files).
+  ///
+  /// Returns a [Widget] containing the file type filter UI
   Widget buildFileTypeFilter() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -165,6 +259,16 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     );
   }
 
+  /// Builds a badge widget for displaying a file type filter
+  ///
+  /// Creates a visually distinct badge with the specified [label] and [color].
+  /// The badge has a rounded rectangle shape with a border and background
+  /// color derived from the provided [color] with different alpha values.
+  ///
+  /// [label] The text to display inside the badge (e.g. "JSON", "CSV")
+  /// [color] The base color for the badge styling
+  ///
+  /// Returns a [Widget] representing the styled file type badge
   Widget buildFileTypeBadge(String label, Color color) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -250,6 +354,18 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     );
   }
 
+  /// Builds a breadcrumb navigation bar showing the current directory path
+  ///
+  /// This method creates a horizontally scrollable breadcrumb UI that:
+  /// 1. Splits the current path into segments
+  /// 2. Renders each segment as a clickable button
+  /// 3. Highlights the last segment (current directory)
+  /// 4. Allows navigation to any parent directory by clicking its segment
+  ///
+  /// The breadcrumb shows the full path hierarchy from root to the current directory,
+  /// with forward slashes separating each level.
+  ///
+  /// Returns a [Widget] containing the styled breadcrumb navigation UI
   Widget _buildBreadcrumb() {
     final pathParts = path.split(currentPath);
     return Container(
@@ -300,6 +416,16 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     );
   }
 
+  /// Builds the folder tree view widget, showing a tree structure of directories
+  ///
+  /// This method:
+  /// 1. Displays a loading indicator if [isLoadingTree] is true.
+  /// 2. Shows an error message if [rootNode] is null (directory tree failed to load).
+  /// 3. Otherwise, it builds a scrollable directory tree using [_buildDirectoryTree].
+  ///
+  /// The folder tree view allows users to navigate through the directory hierarchy,
+  /// expand/collapse directories, and select directories to load their contents.
+  ///
   Widget _buildFolderTreeView() {
     if (isLoadingTree) {
       return const Center(child: CircularProgressIndicator());
@@ -317,6 +443,27 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     );
   }
 
+  /// Builds a single node in the directory tree
+  ///
+  /// This method recursively creates a view for a [DirectoryTreeNode] and its
+  /// children. Each node is rendered as an expandable/collapsible item with
+  /// an icon and the directory name.
+  ///
+  /// The node can be tapped to:
+  /// - Expand or collapse the node
+  /// - Load child directories if expanded and not yet loaded
+  /// - Load the contents of the selected directory into the content view
+  ///
+  /// The node's appearance (padding, icon, text) is customized based on:
+  /// - The level of the node in the tree ([level])
+  /// - Whether the node is currently expanded
+  /// - Whether the node is the currently selected path
+  /// - Whether the node has children (isExpandable)
+  ///
+  /// [node] The [DirectoryTreeNode] to render
+  /// [level] The level of the node in the directory tree (0 for root, 1 for direct child, etc.)
+  ///
+  /// Returns a [Widget] representing the node and its sub-tree in the UI
   Widget _buildDirectoryTree(DirectoryTreeNode node, int level) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,6 +531,27 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     );
   }
 
+  /// Updates the directory tree selection to highlight the currently active directory.
+  ///
+  /// This method:
+  /// 1. Splits the [dirPath] into segments to traverse the directory hierarchy.
+  /// 2. Traverses the tree using the `traverseAndExpand` recursive function.
+  /// 3. For each segment, finds the corresponding child node in the tree.
+  /// 4. Expands the child node if found.
+  /// 5. If the child node has no children, loads its child directories before proceeding.
+  ///
+  /// [dirPath] The directory path that should be highlighted in the tree.
+  ///
+  /// The `traverseAndExpand` function:
+  /// - Takes a [node], a list of [segments], and an [index] to traverse the tree.
+  /// - Base cases:
+  ///   - If `rootNode` is null, it does nothing (early exit).
+  ///   - If `index` exceeds the `segments` length, traversal ends.
+  /// - Retrieves the current segment and attempts to find a child node with a matching name.
+  /// - If a matching child is found, it's marked as expanded.
+  /// - If the child node has no children, loads them recursively.
+  /// - Recursively calls itself to process the next segment.
+  ///
   void updateTreeSelection(String dirPath) {
     if (rootNode == null) return;
 
@@ -417,6 +585,27 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     traverseAndExpand(rootNode!, segments, 0);
   }
 
+  /// Builds the main content view showing the files and directories in the current directory.
+  ///
+  /// This method creates a list of [ListTile] widgets representing the files
+  /// and directories within the currently selected folder. Each item in the list
+  /// can be tapped to either:
+  /// - Load the contents of a subdirectory (if it's a directory).
+  /// - Mark a file as selected (if it's a file).
+  ///
+  /// If no files or directories are present (empty `filteredContents`), it displays
+  /// a message indicating that files will appear here.
+  ///
+  /// The view includes:
+  /// - Icons to distinguish between files and directories
+  /// - The file/directory name
+  /// - File size (for files)
+  /// - Visual feedback for the currently selected file
+  /// - Optimized layout with dense list tiles
+  ///
+  /// This content view is the main area where users interact with the file explorer's
+  /// listing of the files and directories in the current location.
+  ///
   Widget _buildContentView() {
     if (filteredContents.isEmpty) {
       return Center(
@@ -472,6 +661,15 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     );
   }
 
+  /// Returns the appropriate icon for a given file based on its extension.
+  ///
+  /// This method examines the [fileName]'s extension and returns an
+  /// [IconData] representing a standard icon associated with that type.
+  /// It supports CSV, JSON, and TXT files, defaulting to a generic
+  /// file icon for all others.
+  ///
+  /// [fileName] The name of the file to determine the icon for.
+  /// Returns the icon data corresponding to the file type.
   IconData getFileIcon(String fileName) {
     final extension = path.extension(fileName).toLowerCase();
     switch (extension) {
@@ -486,6 +684,15 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     }
   }
 
+  /// Returns the appropriate color for a given file based on its extension.
+  ///
+  /// This method examines the [fileName]'s extension and returns a
+  /// [Color] representing a standard color associated with that type.
+  /// It supports CSV, JSON, and TXT files, defaulting to grey for all others.
+  ///
+  /// [fileName] The name of the file to determine the color for.
+  ///
+  /// Returns the color corresponding to the file type.
   Color getFileColor(String fileName) {
     final extension = path.extension(fileName).toLowerCase();
     switch (extension) {
@@ -500,6 +707,18 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     }
   }
 
+  /// Returns a human-readable string representing the file size of a given entity.
+  ///
+  /// This method takes a [FileSystemEntity] and if it's a [File], calculates the
+  /// size in bytes. It then returns the size formatted in a more readable format
+  /// (B, KB, MB, GB). If any error occurs during file size retrieval, or if the
+  /// entity is not a file, it returns 'Unknown' or an empty string respectively.
+  ///
+  /// [entity] The file system entity to get the size for.
+  ///
+  /// Returns a string representing the formatted file size or 'Unknown' if the size
+  /// could not be determined, or an empty string if the entity is not a file.
+  ///
   String getFileSize(FileSystemEntity entity) {
     if (entity is File) {
       try {
@@ -523,12 +742,3 @@ class _FileExplorerViewState extends State<FileExplorerView> {
     return '';
   }
 }
-
-// how do we do this?
-// 1. the root path (initial path) to start listing the files and entities.
-// 2. start building the tree from the root.
-// 3. define the 1:3 ratio for the split view. 30% is good enough for the small and large screens, if not i might add additional conditions based on the screen sizes. (this would be hard coded ofc)
-// 4. build a simple ui for the split view for now and we'll see later what to change based on my friends opinion.
-// 5. also we gotta build some bread crumbs and the folder tree
-// 6. colors what.
-// 7. building the left pane would require to keep a track of root node and the directories under them

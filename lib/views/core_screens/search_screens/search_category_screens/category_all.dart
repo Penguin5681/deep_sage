@@ -21,6 +21,11 @@ class CategoryAll extends StatefulWidget {
   State<CategoryAll> createState() => _CategoryAllState();
 }
 
+/// Represents the state for the CategoryAll widget.
+///
+/// This class manages the UI and logic for displaying all dataset categories,
+/// including fetching, sorting, and displaying datasets, and handling Kaggle
+/// authentication.
 class _CategoryAllState extends State<CategoryAll> {
   final List<String> _sortParams = [
     'hottest',
@@ -29,18 +34,32 @@ class _CategoryAllState extends State<CategoryAll> {
     'active',
     'published',
   ];
+
+  /// Index for the current sorting parameter.
   int _currentSortIndex = 0;
 
+  /// Returns the current sorting parameter based on [_currentSortIndex].
   String get _currentSortParam => _sortParams[_currentSortIndex];
+
+  /// Controller for the scrollable list of datasets.
   final ScrollController scrollController = ScrollController();
+
+  /// Flag to indicate if Kaggle credentials have been loaded.
   late bool isKaggleCredsLoaded = false;
 
+  /// List to store popular datasets fetched from the service.
   List<Map<String, String>> popularDatasets = [];
 
+  /// Focus node for platform-related focus.
   final FocusNode platformFocusNode = FocusNode();
+
+  /// Focus node for filter-related focus.
   final FocusNode filterFocusNode = FocusNode();
+
+  /// Flag to indicate if the download overlay is visible.
   bool isDownloadOverlayVisible = false;
 
+  /// Initializes the state and checks for Kaggle authentication on startup.
   @override
   void initState() {
     super.initState();
@@ -74,6 +93,12 @@ class _CategoryAllState extends State<CategoryAll> {
     }
   }
 
+  /// Checks for Kaggle authentication and prompts the user for credentials if not found.
+  ///
+  /// This method looks for stored Kaggle credentials in Hive. If valid
+  /// credentials are found, it fetches popular datasets. If not, it displays a
+  /// prompt to the user to enter their Kaggle username and API key. Errors
+  /// during the process are also handled.
   Future checkKaggleAuthentication() async {
     try {
       final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
@@ -141,6 +166,11 @@ class _CategoryAllState extends State<CategoryAll> {
     }
   }
 
+  /// Refreshes the datasets by changing the sort parameter and refetching.
+  ///
+  /// This method cycles through the available sort parameters and triggers a
+  /// new fetch of datasets. It's used to update the displayed datasets with a
+  /// different sorting order.
   Future<void> refreshDatasets() async {
     setState(() {
       _currentSortIndex = (_currentSortIndex + 1) % _sortParams.length;
@@ -149,6 +179,7 @@ class _CategoryAllState extends State<CategoryAll> {
     debugPrint('Fetching datasets sorted by: $_currentSortParam');
   }
 
+  /// Disposes of the focus nodes when the widget is removed from the widget tree.
   @override
   void dispose() {
     platformFocusNode.dispose();
@@ -156,6 +187,7 @@ class _CategoryAllState extends State<CategoryAll> {
     super.dispose();
   }
 
+  /// Builds the UI for the CategoryAll screen.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,6 +320,18 @@ class _CategoryAllState extends State<CategoryAll> {
   }
 }
 
+/// A widget for displaying a single file list item in the dataset list.
+///
+/// This widget shows the file's icon, title, added time, file type, file size,
+/// and a button to download the dataset.
+///
+/// Parameters:
+///   - icon: The icon to represent the file type.
+///   - title: The title of the dataset.
+///   - addedTime: The time when the dataset was added.
+///   - fileType: The type of the file (e.g., CSV, TXT).
+///   - fileSize: The size of the file.
+///   - datasetId: The unique identifier for the dataset.
 class FileListItem extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -306,6 +350,7 @@ class FileListItem extends StatelessWidget {
     required this.datasetId,
   });
 
+  /// Builds the UI for a single file list item.
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
