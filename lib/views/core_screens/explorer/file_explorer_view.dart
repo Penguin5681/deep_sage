@@ -45,7 +45,7 @@ class _FileExplorerViewState extends State<FileExplorerView> {
   bool isLoadingTree = true;
   bool isLoadingScreen = true;
 
-  final List<String> allowedExtensions = ['json', 'csv', 'xlsx', 'xls'];
+  final List<String> allowedExtensions = ['json', 'csv', 'txt'];
 
   @override
   void initState() {
@@ -154,12 +154,12 @@ class _FileExplorerViewState extends State<FileExplorerView> {
       color: Theme.of(context).cardColor.withValues(alpha: 0.4),
       child: Row(
         children: [
-          Text("Showing: ", style: TextStyle(fontSize: 12)),
+          Text("Showing:     ", style: TextStyle(fontSize: 12)),
           buildFileTypeBadge("JSON", Colors.orange),
           const SizedBox(width: 6),
           buildFileTypeBadge("CSV", Colors.green),
           const SizedBox(width: 6),
-          buildFileTypeBadge("Excel", Colors.blue),
+          buildFileTypeBadge("Text", Colors.blue),
         ],
       ),
     );
@@ -167,7 +167,7 @@ class _FileExplorerViewState extends State<FileExplorerView> {
 
   Widget buildFileTypeBadge(String label, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4.0),
@@ -176,7 +176,7 @@ class _FileExplorerViewState extends State<FileExplorerView> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 18,
+          fontSize: 16,
           color: color,
           fontWeight: FontWeight.bold,
         ),
@@ -479,9 +479,8 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         return Icons.table_chart;
       case '.json':
         return Icons.data_object;
-      case '.xlsx':
-      case '.xls':
-        return Icons.grid_on;
+      case '.txt':
+        return Icons.text_snippet;
       default:
         return Icons.insert_drive_file;
     }
@@ -494,8 +493,7 @@ class _FileExplorerViewState extends State<FileExplorerView> {
         return Colors.green;
       case '.json':
         return Colors.orange;
-      case '.xlsx':
-      case '.xls':
+      case '.txt':
         return Colors.blue;
       default:
         return Colors.grey;
