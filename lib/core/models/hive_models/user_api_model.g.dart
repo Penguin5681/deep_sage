@@ -19,17 +19,20 @@ class UserApiAdapter extends TypeAdapter<UserApi> {
     return UserApi(
       kaggleApiKey: fields[1] as String,
       kaggleUserName: fields[0] as String,
+      loginMethod: fields[2] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserApi obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.kaggleUserName)
       ..writeByte(1)
-      ..write(obj.kaggleApiKey);
+      ..write(obj.kaggleApiKey)
+      ..writeByte(2)
+      ..write(obj.loginMethod);
   }
 
   @override
