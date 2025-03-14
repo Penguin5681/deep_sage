@@ -19,6 +19,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../core/services/download_service.dart';
 
+/// {@template search_screen}
+/// This widget represents the main search screen of the application, allowing
+/// users to search for datasets and navigate through different categories.
+/// {@endtemplate}
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -28,29 +32,59 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen>
     with SingleTickerProviderStateMixin {
+  /// Controls the tab view.
   late TabController tabController;
+
+  /// Controller for the search text field.
   final TextEditingController controller = TextEditingController();
+
+  /// Focus node for the search text field.
   final FocusNode searchFocusNode = FocusNode();
+
+  /// Debouncer to limit the frequency of search requests.
   final Debouncer _debouncer = Debouncer(
     delayBetweenRequests: const Duration(milliseconds: 200),
   );
+
+  /// Layer link to position the suggestion overlay.
   final LayerLink _layerLink = LayerLink();
+
+  /// Global key for the search text field.
   final GlobalKey _textFieldKey = GlobalKey();
+
+  /// Global key for the download icon.
   final GlobalKey _downloadIconKey = GlobalKey();
+
+  /// Base URL based on the current environment.
   final String baseUrl =
       dotenv.env['FLUTTER_ENV'] == 'production'
           ? dotenv.env['PROD_BASE_URL']!
           : dotenv.env['DEV_BASE_URL']!;
+
+  /// Hive box for storing API data.
   final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
 
+  /// Overlay entry for the search suggestions.
   OverlayEntry? _overlayEntry;
+
+  /// Overlay entry for the download progress display.
   OverlayEntry? _downloadOverlayEntry;
+
+  /// Timer for simulating download progress.
   Timer? _downloadSimulationTimer;
 
+  /// Currently selected data source.
   String selectedSource = 'Hugging Face';
+
+  /// List of dataset suggestions.
   List<DatasetSuggestion> _suggestions = [];
+
+  /// List of recent download items.
   List<DownloadItem> recentDownloads = [];
+
   List<OverlayEntry>? _downloadEntries;
+
+  /// Loading states
   bool _isLoading = false;
   bool _isDatasetCardLoading = false;
   bool isDownloadOverlayVisible = false;
@@ -62,30 +96,54 @@ class _SearchScreenState extends State<SearchScreen>
   @override
   void initState() {
     super.initState();
+    // Get download service from provider without subscribing to changes
     _downloadService = Provider.of<DownloadService>(context, listen: false);
-    // Deleted 2 tabs named goverment and manufacture
+
+    // Get overlay service for managing download overlays
     final overlayService = Provider.of<DownloadOverlayService>(
       context,
       listen: false,
     );
+
+    // Register callback function that will be called when overlay should be shown
     overlayService.registerOverlayCallback(_showDownloadOverlay);
+
+    // Initialize tab controller with 4 tabs for the category views
     tabController = TabController(length: 4, vsync: this);
+
+    // Initialize suggestion service for search autocomplete functionality
     _suggestionService = SuggestionService();
+
+    // Add listeners to track search input and focus changes
     controller.addListener(_onSearchChanged);
     searchFocusNode.addListener(_onFocusChanged);
   }
 
   @override
   void dispose() {
+    // Clean up all controllers and listeners to prevent memory leaks
     controller.dispose();
     tabController.dispose();
     searchFocusNode.dispose();
     _debouncer.dispose();
+
+    // Remove any active overlays
     _removeOverlay();
+
+    // Cancel any active download simulation timer
     _downloadSimulationTimer?.cancel();
+
     super.dispose();
   }
 
+  /// Initiates the download of a dataset with the specified ID and source.
+  ///
+  /// This method delegates to the [_downloadService] to handle the actual download
+  /// process and shows error feedback if the download fails.
+  ///
+  /// Parameters:
+  /// - [datasetId]: The unique identifier of the dataset to download.
+  /// - [source]: The source platform of the dataset (e.g., 'kaggle').
   Future<void> _startDownload(String datasetId, String source) async {
     try {
       await _downloadService.downloadDataset(
@@ -101,6 +159,11 @@ class _SearchScreenState extends State<SearchScreen>
     }
   }
 
+  /// Handles search text changes and triggers suggestion retrieval.
+  ///
+  /// Clears suggestions if the query is too short, otherwise sets loading state
+  /// and uses a debouncer to fetch suggestions after a short delay to prevent
+  /// excessive API calls during typing.
   void _onSearchChanged() {
     final query = controller.text;
     if (query.length < 2) {
@@ -119,6 +182,10 @@ class _SearchScreenState extends State<SearchScreen>
     });
   }
 
+  /// Responds to search field focus changes.
+  ///
+  /// When focus is lost, clears suggestions and removes the overlay.
+  /// When focus is gained and sufficient text is entered, fetches suggestions.
   void _onFocusChanged() {
     if (!searchFocusNode.hasFocus) {
       setState(() {
@@ -130,6 +197,14 @@ class _SearchScreenState extends State<SearchScreen>
     }
   }
 
+  /// Fetches dataset suggestions based on the provided query.
+  ///
+  /// Makes an API request to retrieve dataset suggestions matching the query
+  /// and updates the UI accordingly. Shows or removes the suggestion overlay
+  /// depending on the results.
+  ///
+  /// Parameters:
+  /// - [query]: The search text to find matching datasets.
   Future<void> _fetchSuggestions(String query) async {
     try {
       final results = await _suggestionService.getSuggestions(
@@ -160,6 +235,10 @@ class _SearchScreenState extends State<SearchScreen>
     }
   }
 
+  /// Displays the suggestion overlay.
+  ///
+  /// If an overlay is already visible, it updates the existing one.
+  /// Otherwise, it creates and displays a new overlay with suggestions.
   void _showOverlay() {
     if (_overlayEntry != null) {
       _overlayEntry!.markNeedsBuild();
@@ -169,6 +248,12 @@ class _SearchScreenState extends State<SearchScreen>
     Overlay.of(context).insert(_overlayEntry!);
   }
 
+  /// Toggles the download history overlay display.
+  ///
+  /// If the overlay is already visible, it removes it. Otherwise, it creates
+  /// and displays a new overlay with download history information.
+  /// The overlay includes a transparent barrier that dismisses the overlay
+  /// when tapped.
   void _showDownloadOverlay() {
     if (isDownloadOverlayVisible) {
       _removeDownloadOverlay();
@@ -195,6 +280,10 @@ class _SearchScreenState extends State<SearchScreen>
     isDownloadOverlayVisible = true;
   }
 
+  /// Removes the download history overlay from the screen.
+  ///
+  /// If there are any overlay entries for the download history, they are removed
+  /// and the related variables are reset to their default states.
   void _removeDownloadOverlay() {
     if (_downloadEntries != null) {
       for (final entry in _downloadEntries!) {
@@ -206,11 +295,31 @@ class _SearchScreenState extends State<SearchScreen>
     isDownloadOverlayVisible = false;
   }
 
+  /// Removes the search suggestion overlay from the screen.
+  ///
+  /// If there is an active overlay entry for search suggestions, it is removed
+  /// and the related variables are reset to their default states.
   void _removeOverlay() {
     _overlayEntry?.remove();
     _overlayEntry = null;
   }
 
+  /// Opens a dialog displaying detailed information about a dataset.
+  ///
+  /// This method fetches metadata for the specified dataset from its source,
+  /// displays a loading indicator while fetching, and then presents the data
+  /// in a formatted dialog with options to download or import the dataset.
+  ///
+  /// Parameters:
+  /// - [datasetId]: The unique identifier of the dataset to display.
+  /// - [source]: The platform source of the dataset (e.g., 'kaggle').
+  ///
+  /// The dialog includes:
+  /// - Dataset title and basic information
+  /// - Full description
+  /// - Metadata like owner, size, votes, download count
+  /// - Links to the original source
+  /// - Actions to download or import the dataset
   Future<void> openDatasetCard(String datasetId, String source) async {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     KaggleDataset? kaggleMetadata;
@@ -534,6 +643,28 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  /// Builds a single item for displaying information in a grid.
+  ///
+  /// This widget creates a container that shows a label and its value, optionally
+  /// with a clickable link. The appearance is adapted based on whether the app
+  /// is in dark mode or light mode.
+  ///
+  /// Parameters:
+  /// - [isDarkMode]: Determines if the dark mode is active.
+  /// - [icon]: The icon to display next to the label.
+  /// - [label]: The text label describing the value.
+  /// - [value]: The text value associated with the label.
+  /// - [isLink]: If true, the value will be displayed as a link.
+  /// - [linkUrl]: The URL to open if the value is a link.
+  ///
+  /// The item includes:
+  /// - A container with a background color based on the mode (dark/light).
+  /// - An icon with colors based on the mode.
+  /// - A label text with appropriate styling.
+  /// - If `isLink` is true, the value is displayed as a clickable link that,
+  ///   when tapped, attempts to open the specified `linkUrl`.
+  /// - If `isLink` is false, the value is displayed as regular text.
+  ///
   Widget _buildInfoItem(
     bool isDarkMode,
     IconData icon,
@@ -621,6 +752,12 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  /// Displays a loading indicator dialog.
+  ///
+  /// This function creates and returns a dialog containing a circular
+  /// progress indicator and a 'Loading...' text, styled according to the
+  /// current theme (dark or light).
+  ///
   Widget showLoadingIndicator(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -654,6 +791,13 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  /// Creates and configures an overlay entry for displaying search suggestions.
+  ///
+  /// This function constructs an overlay entry that appears below the search
+  /// text field, displaying a list of dataset suggestions. The overlay is
+  /// positioned dynamically relative to the text field using a LayerLink.
+  /// The suggestions are interactive and allow direct selection.
+  ///
   OverlayEntry _createOverlayEntry() {
     RenderBox renderBox =
         _textFieldKey.currentContext!.findRenderObject() as RenderBox;
@@ -733,6 +877,13 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  /// Creates an overlay entry for displaying the download history.
+  ///
+  /// This function builds an overlay entry that appears near the download icon,
+  /// showing a list of current and recent downloads. It includes options to
+  /// view download details, clear completed downloads, and navigate to a full
+  /// download history view. The styling adapts to the current theme.
+  ///
   OverlayEntry _createDownloadOverlayEntry() {
     RenderBox renderBox =
         _downloadIconKey.currentContext!.findRenderObject() as RenderBox;
@@ -870,6 +1021,19 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  /// Determines the appropriate icon based on the file name's extension.
+  ///
+  /// This function examines the file name's extension and returns the
+  /// corresponding [IconData] object to represent the file type visually.
+  ///
+  /// - If the file ends with '.csv', it returns [Icons.table_chart] to indicate a
+  ///   spreadsheet or tabular data file.
+  /// - If the file ends with '.json', it returns [Icons.data_object] to represent
+  ///   a JSON data file.
+  /// - If the file ends with '.zip', it returns [Icons.folder_zip] to represent
+  ///   a compressed file archive.
+  /// - For any other file extension, it defaults to [Icons.insert_drive_file] to
+  ///   represent a generic file.
   IconData _getFileIcon(String fileName) {
     if (fileName.endsWith('.csv')) {
       return Icons.table_chart;
@@ -882,6 +1046,34 @@ class _SearchScreenState extends State<SearchScreen>
     }
   }
 
+  /// Builds a widget that represents a single download item in the download list.
+  ///
+  /// This function creates a [Padding] widget that contains a [Row] to display
+  /// information about a downloaded or in-progress download item. The layout
+  /// includes:
+  /// - An icon representing the file type, determined by [_getFileIcon].
+  /// - The name of the file.
+  /// - The status of the download (complete, queued, or in progress).
+  /// - A progress bar if the download is in progress.
+  /// - Size and download speed information.
+  /// - An [IconButton] to allow actions like canceling or viewing details,
+  ///   depending on the download status.
+  ///
+  /// Parameters:
+  /// - [download]: The [DownloadItem] model containing the download's data.
+  /// - [isDarkMode]: A boolean indicating whether the app is in dark mode.
+  ///
+  /// The download status is displayed as:
+  /// - 'Complete' with the file size if [download.isComplete] is true.
+  /// - 'Queued for download' if [download.size] is 'Queued'.
+  /// - A progress bar with percentage, size, and download speed if the
+  ///   download is in progress.
+  ///
+  /// The [IconButton] displays either:
+  /// - [Icons.more_vert] for completed downloads, which, when pressed,
+  ///   calls [_showDownloadOptions].
+  /// - [Icons.close] for ongoing downloads, allowing cancellation via
+  ///   [_downloadService.cancelDownload].
   Widget _buildDownloadItem(DownloadItem download, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -1007,35 +1199,12 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
-  void _showDownloadOptions(DownloadItem download) {
-    // showDialog(
-    //   context: context,
-    //   builder:
-    //       (context) => SimpleDialog(
-    //         title: Text('Download Options'),
-    //         children: [
-    //           if (!download.isComplete)
-    //             SimpleDialogOption(
-    //               onPressed: () {
-    //                 Navigator.pop(context);
-    //                 _downloadService.cancelDownload();
-    //               },
-    //               child: const Text('Cancel Download'),
-    //             ),
-    //           if (download.isComplete)
-    //             SimpleDialogOption(
-    //               onPressed: () {
-    //                 Navigator.pop(context);
-    //                 _downloadService.retryDownload(download.name);
-    //               },
-    //               child: const Text('Retry Download'),
-    //             ),
-    //         ],
-    //       ),
-    // );
-  }
+  void _showDownloadOptions(DownloadItem download) {}
 
-  // Created a function to handle the search using controller text for the query
+  /// Handles search initiation and updates the search text field.
+  ///
+  /// This method is called when a search is initiated, setting the text of
+  /// the search field to the given query and requesting focus for it.
   void handleSearch(String query) {
     setState(() {
       controller.text = query;

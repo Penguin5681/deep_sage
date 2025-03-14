@@ -8,10 +8,25 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:progressive_button_flutter/progressive_button_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:top_snackbar_flutter/custom_snack_bar.dart';
+import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
+/// A screen widget that allows users to sign up for a new account.
+///
+/// This widget provides fields for email, password, and name registration,
+/// with validation to ensure proper input format. It also provides
+/// alternative sign-in options such as Google authentication.
 class SignupScreen extends StatelessWidget {
+  /// Creates a [SignupScreen] widget.
   const SignupScreen({super.key});
 
+  /// Creates a custom page route with slide transition animation.
+  ///
+  /// [screen] The target screen widget to navigate to.
+  /// [deltaX] The horizontal offset for the slide animation.
+  /// [deltaY] The vertical offset for the slide animation.
+  ///
+  /// Returns a [PageRouteBuilder] with the specified transition animation.
   Route createScreenRoute(Widget screen, double deltaX, double deltaY) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => screen,
@@ -29,10 +44,6 @@ class SignupScreen extends StatelessWidget {
     );
   }
 
-  // TODO: Implement the sign up logic for display name (Optional)
-  // Add field for display name in the sign up screen
-  // Add display name to the sign up function
-
   @override
   Widget build(BuildContext context) {
     final _ = dotenv.env['FLUTTER_ENV'];
@@ -42,7 +53,6 @@ class SignupScreen extends StatelessWidget {
     final TextEditingController confirmPasswordController =
         TextEditingController();
 
-    // Controller for name
     final TextEditingController nameController = TextEditingController();
 
     final backgroundColor =
@@ -53,21 +63,34 @@ class SignupScreen extends StatelessWidget {
 
     final supabaseAuthInstance = Supabase.instance.client;
 
+    /// Handles the sign-up process with validation and error handling.
+    ///
+    /// [email] The user's email address.
+    /// [password] The user's chosen password.
+    /// [confirmPassword] Password confirmation for validation.
+    /// [displayName] The user's display name.
+    ///
+    /// Performs validation checks on inputs and attempts to register
+    /// the user with Supabase authentication.
     Future<void> signUp(
       String email,
       String password,
       String confirmPassword,
-      String displayName, // Add the display name
+      String displayName,
     ) async {
       final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+
+      /// Validates if the provided email matches a standard email format.
       bool isEmail() {
         return emailRegex.hasMatch(email);
       }
 
+      /// Checks if password and confirmPassword fields match.
       bool doesPasswordMatch() {
         return password == confirmPassword;
       }
 
+      /// Validates that the password meets minimum length requirements.
       bool isThePasswordLengthOk() {
         return password.length >= 6;
       }
@@ -77,51 +100,52 @@ class SignupScreen extends StatelessWidget {
           var response = await supabaseAuthInstance.auth.signUp(
             email: emailController.text,
             password: passwordController.text,
-            data: {
-              'display_name': displayName,
-            },
+            data: {'display_name': displayName},
           );
 
           if (!context.mounted) return;
           if (response.user!.identities!.isEmpty) {
-            // User already exists handling
           } else {
             final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
             if (response.session != null) {
-              await userBox.put('userSessionToken', response.session!.accessToken);
+              await userBox.put(
+                'userSessionToken',
+                response.session!.accessToken,
+              );
               await userBox.put('loginMethod', 'email');
             }
 
+            if (!context.mounted) return;
             Navigator.of(
               context,
             ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
           }
         } catch (e) {
-          // showTopSnackBar(
-          //   Overlay.of(context),
-          //   CustomSnackBar.error(message: 'Sign Up Error: $e'),
-          // );
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.error(message: 'Sign Up Error: $e'),
+          );
         }
       } else if (!isEmail()) {
-        // showTopSnackBar(
-        //   Overlay.of(context),
-        //   CustomSnackBar.error(message: 'Invalid Email'),
-        // );
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Invalid Email'),
+        );
       } else if (doesPasswordMatch()) {
-        // showTopSnackBar(
-        //   Overlay.of(context),
-        //   CustomSnackBar.error(message: 'Passwords do not match'),
-        // );
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Passwords do not match'),
+        );
       } else if (!isThePasswordLengthOk()) {
-        // showTopSnackBar(
-        //   Overlay.of(context),
-        //   CustomSnackBar.error(message: 'Minimum password length is 6'),
-        // );
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Minimum password length is 6'),
+        );
       } else {
-        // showTopSnackBar(
-        //   Overlay.of(context),
-        //   CustomSnackBar.error(message: 'Internal server error occurred!'),
-        // );
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Internal server error occurred!'),
+        );
       }
     }
 
@@ -148,7 +172,6 @@ class SignupScreen extends StatelessWidget {
               width: 300,
               child: Column(
                 children: [
-                  // Added name field to display name in the settings screen from supabase
                   PrimaryEditText(
                     placeholderText: 'Name',
                     controller: nameController,
@@ -195,7 +218,7 @@ class SignupScreen extends StatelessWidget {
                           emailController.text,
                           passwordController.text,
                           confirmPasswordController.text,
-                          nameController.text, // Pass the display name
+                          nameController.text,
                         );
                       },
                       estimatedTime: const Duration(seconds: 5),
@@ -227,7 +250,6 @@ class SignupScreen extends StatelessWidget {
                   SizedBox(height: 20),
                   GoogleButton(
                     onSignInSuccess: () {
-                      // Navigate to DashboardScreen after successful Google Sign-In
                       Navigator.of(context).pushReplacement(
                         createScreenRoute(DashboardScreen(), -1.0, 0.0),
                       );
