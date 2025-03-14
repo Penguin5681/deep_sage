@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:deep_sage/core/models/hive_models/recent_imports_model.dart';
+import 'package:deep_sage/core/services/core_services/data_preview_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -19,7 +20,12 @@ class _RawDataTabState extends State<RawDataTab> {
   late bool isDatasetImported = false;
   late String importedDatasetPath = '';
   late String importedDatasetType = '';
+
   final Box importedDatasets = Hive.box(dotenv.env['RECENT_IMPORTS_HISTORY']!);
+  final DataPreviewService _previewService = DataPreviewService();
+
+  Map<String, dynamic>? previewData;
+  bool isLoading = false;
 
   void retrieveRecentDataset() {
     final dynamic recentImportsData = importedDatasets.get('recentImports');
@@ -65,29 +71,78 @@ class _RawDataTabState extends State<RawDataTab> {
   }
 
   void _handleDatasetChange() {
-    if (widget.selectedDatasetNotifier.value == null) {
+    final storedDatasetPath = importedDatasets.get('currentDatasetPath');
+    final storedDatasetType = importedDatasets.get('currentDatasetType');
+
+    debugPrint('Dataset changed: ${widget.selectedDatasetNotifier.value}');
+    debugPrint('Path: $storedDatasetPath, Type: $storedDatasetType');
+
+    if (storedDatasetPath == null || !File(storedDatasetPath).existsSync()) {
       setState(() {
         isDatasetImported = false;
         importedDatasetPath = '';
         importedDatasetType = '';
+        previewData = null;
       });
-    } else {
-      final storedDatasetPath = importedDatasets.get('currentDatasetPath');
-      final storedDatasetType = importedDatasets.get('currentDatasetType');
+      return;
+    }
 
-      if (storedDatasetPath != null && File(storedDatasetPath).existsSync()) {
+    bool isNewDataset = importedDatasetPath != storedDatasetPath;
+
+    setState(() {
+      isDatasetImported = true;
+      importedDatasetPath = storedDatasetPath;
+      importedDatasetType = storedDatasetType ?? '';
+      if (isNewDataset) {
+        previewData = null;
+      }
+    });
+
+    _loadPreviewData();
+  }
+
+
+  Future<void> _loadPreviewData() async {
+    if (!isDatasetImported || importedDatasetPath.isEmpty) {
+      setState(() {
+        previewData = null;
+      });
+      return;
+    }
+
+    final pathToLoad = importedDatasetPath;
+    final typeToLoad = importedDatasetType;
+
+    debugPrint('Loading preview: $pathToLoad ($typeToLoad)');
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      final result = await _previewService.loadDatasetPreview(
+        pathToLoad,
+        typeToLoad,
+        10,
+      );
+
+      debugPrint('typeToLoad $typeToLoad');
+
+      if (mounted) {
         setState(() {
-          isDatasetImported = true;
-          importedDatasetPath = storedDatasetPath;
-          importedDatasetType = storedDatasetType ?? '';
+          previewData = result;
+          isLoading = false;
         });
-      } else {
+        debugPrint('Preview loaded: ${result != null ? 'success' : 'failed'}');
+      }
+    } catch (ex) {
+      if (mounted) {
         setState(() {
-          isDatasetImported = false;
-          importedDatasetPath = '';
-          importedDatasetType = '';
+          previewData = null;
+          isLoading = false;
         });
       }
+      debugPrint('Preview error: $ex');
     }
   }
 
@@ -96,6 +151,10 @@ class _RawDataTabState extends State<RawDataTab> {
     super.initState();
     _loadSelectedDataset();
     widget.selectedDatasetNotifier.addListener(_handleDatasetChange);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPreviewData();
+    });
   }
 
   @override
@@ -109,9 +168,10 @@ class _RawDataTabState extends State<RawDataTab> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: isDatasetImported && importedDatasetPath.isNotEmpty
-            ? _buildDatasetView()
-            : _buildNoDatasetView(),
+        child:
+            isDatasetImported && importedDatasetPath.isNotEmpty
+                ? _buildDatasetView()
+                : _buildNoDatasetView(),
       ),
     );
   }
@@ -164,7 +224,6 @@ class _RawDataTabState extends State<RawDataTab> {
               ),
             ],
           ),
-          // Add your dataset viewing widgets here
         ],
       ),
     );
@@ -177,30 +236,89 @@ class _RawDataTabState extends State<RawDataTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Current Dataset: $fileName',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26.0),
+          'Dataset: $fileName',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
         ),
-        SizedBox(height: 10),
-        Text(
-          'Type: ${importedDatasetType.toUpperCase()} • Path: $importedDatasetPath',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-        ),
-        SizedBox(height: 20),
-
-        // Add dataset preview here
+        const SizedBox(height: 16.0),
+        _buildMetadataInfo(),
+        const SizedBox(height: 8.0),
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: EdgeInsets.all(16),
-            child: Center(
-              child: Text('Dataset preview will be shown here'),
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : previewData == null
+              ? const Center(child: Text('No data available'))
+              : SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: _buildDataTable(),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMetadataInfo() {
+    if (previewData == null || !previewData!.containsKey('metadata')) {
+      return Text(
+        'Preview (showing up to 10 rows):',
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0),
+      );
+    }
+
+    final metadata = previewData!['metadata'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Total rows: ${metadata['total_rows']} · Size: ${metadata['file_size_formatted']}',
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Preview (showing up to ${metadata['preview_rows']} rows):',
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14.0),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDataTable() {
+    if (previewData == null || !previewData!.containsKey('preview') || !previewData!.containsKey('columns')) {
+      return const Center(child: Text('Invalid data format'));
+    }
+
+    final columns = previewData!['columns'] as List<dynamic>;
+    final preview = previewData!['preview'] as List<dynamic>;
+
+    return DataTable(
+      headingRowHeight: 40,
+      dataRowMinHeight: 32,
+      dataRowMaxHeight: 40,
+      columns: List<DataColumn>.generate(
+        columns.length,
+            (index) => DataColumn(
+          label: Text(
+            columns[index].toString(),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+      rows: List<DataRow>.generate(
+        preview.length,
+            (rowIndex) {
+          final row = preview[rowIndex] as Map<String, dynamic>;
+          return DataRow(
+            cells: List<DataCell>.generate(
+              columns.length,
+                  (cellIndex) => DataCell(
+                Text(row[columns[cellIndex]]?.toString() ?? ''),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
