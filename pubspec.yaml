@@ -34,6 +34,8 @@ dependencies:
   image: 4.3.0
   csv: ^6.0.0
   excel:
+  google_sign_in: ^6.3.0
+  oauth2: ^2.0.3
   
 
 dev_dependencies:
@@ -93,6 +95,7 @@ flutter:
     - assets/larry/larry.png
     - .env
     - assets/deepsage-452909-06ec904ead63.json
+    - assets/client_secret.json
     - assets/fallback/fallback_user_image.png
   fonts:
     - family: AfacadFlux
