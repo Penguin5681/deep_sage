@@ -193,7 +193,14 @@ class LoginScreen extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: 20),
-                  GoogleButton(),
+                  GoogleButton(
+                    onSignInSuccess: () {
+                      // Navigate to DashboardScreen after successful Google Sign-In
+                      Navigator.of(context).pushReplacement(
+                        createScreenRoute(DashboardScreen(), -1.0, 0.0),
+                      );
+                    },
+                  ),
                   SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

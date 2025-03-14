@@ -76,10 +76,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return fallbackUserAvatar;
   }
 
+  // Variable to check google sign in
+  late String userAvatarUrl = '';
+  bool isGoogleSignIn = false;
+
+  // Function to check google sign in
+  void checkIfGoogleSignIn() {
+    final user = Supabase.instance.client.auth.currentUser;
+    setState(() {
+      isGoogleSignIn = user?.appMetadata['provider'] == 'google';
+    });
+  }
+
+  // Widget buildProfileImage() {
+  //   return ValueListenableBuilder<String?>(
+  //     valueListenable: UserImageService().profileImageUrl,
+  //     builder: (context, imageUrl, child) {
+  //       if (UserImageService().cachedUrl != null) {
+  //         return ClipOval(
+  //           child: SizedBox(
+  //             width: 48,
+  //             height: 48,
+  //             child: Image.network(UserImageService().cachedUrl!),
+  //           ),
+  //         );
+  //       }
+
+  //       return FutureBuilder<Image>(
+  //         future: loadProfileImageFromHive(),
+  //         builder: (context, snapshot) {
+  //           if (snapshot.connectionState == ConnectionState.waiting) {
+  //             debugPrint('profile loaded');
+  //             return Container(
+  //               width: 48,
+  //               height: 48,
+  //               color: Colors.transparent,
+  //               child: const Center(
+  //                 child: CircularProgressIndicator(strokeWidth: 2),
+  //               ),
+  //             );
+  //           } else if (snapshot.hasData) {
+  //             return ClipOval(
+  //               child: SizedBox(width: 48, height: 48, child: snapshot.data!),
+  //             );
+  //           } else {
+  //             return ClipOval(
+  //               child: SizedBox(
+  //                 width: 48,
+  //                 height: 48,
+  //                 child: fallbackUserAvatar,
+  //               ),
+  //             );
+  //           }
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+  // Added the google sign in to fetch the image
   Widget buildProfileImage() {
     return ValueListenableBuilder<String?>(
       valueListenable: UserImageService().profileImageUrl,
       builder: (context, imageUrl, child) {
+        if (isGoogleSignIn && userAvatarUrl.isNotEmpty) {
+          return ClipOval(
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Image.network(userAvatarUrl),
+            ),
+          );
+        }
+
         if (UserImageService().cachedUrl != null) {
           return ClipOval(
             child: SizedBox(
@@ -94,11 +163,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           future: loadProfileImageFromHive(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              debugPrint('profile loaded');
               return Container(
                 width: 48,
                 height: 48,
-                color: Colors.transparent,
+                color: Colors.grey[300],
                 child: const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),

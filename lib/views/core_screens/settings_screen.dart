@@ -69,6 +69,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String projectId;
   late String credentialsPath;
 
+  // Variable to check google sign in
+  bool isGoogleSignIn = false;
+
+  // Function to check google sign in
+  void checkIfGoogleSignIn() {
+    final user = Supabase.instance.client.auth.currentUser;
+    setState(() {
+      isGoogleSignIn = user?.appMetadata['provider'] == 'google';
+    });
+  }
+
   Future<void> getUserPreferences() async {
     final value = await userPreferencesBox.get('askForDownloadLocation');
     setState(() {
@@ -229,149 +240,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return client;
   }
-
-  // Future<void> _pickAndUploadImage(BuildContext context) async {
-  //   // we go step by step
-  //   // pick pfp first
-  //   try {
-  //     FilePickerResult? result = await FilePicker.platform.pickFiles(
-  //       dialogTitle: 'Select a profile photo',
-  //       lockParentWindow: true,
-  //       allowMultiple: false,
-  //       allowedExtensions: ["jpg", "png", "jpeg"],
-  //       type: FileType.custom,
-  //     );
-
-  //     if (result != null && result.files.single.path != null) {
-  //       File file = File(result.files.single.path!);
-  //       setState(() {
-  //         uploadImagePath = file.path;
-  //       });
-  //       debugPrint("Selected file: ${file.path}");
-
-  //       // get an authenticated client
-  //       AuthClient gcpClient = await obtainAuthenticatedClient();
-  //       debugPrint('Authentication successful');
-
-  //       var storageClient = StorageApi(gcpClient);
-  //       var media = Media(file.openRead(), await file.length());
-
-  //       // file name is now jus curr time. will change it to supabase id
-  //       String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
-  //       debugPrint('Attempting to upload file as: $uniqueFileName');
-
-  //       try {
-  //         var object = await storageClient.objects.insert(
-  //           Object()..name = uniqueFileName,
-  //           'user_image_data',
-  //           uploadMedia: media,
-  //         );
-  //         debugPrint('Object uploaded successfully: ${object.name}');
-
-  //         try {
-  //           // the role should be READER for us general public, when needed change it to WRITER or OWNER.
-  //           await storageClient.objectAccessControls.insert(
-  //             ObjectAccessControl()
-  //               ..entity = 'allUsers'
-  //               ..role = 'READER',
-  //             'user_image_data',
-  //             object.name!,
-  //           );
-  //           debugPrint('Public access set successfully');
-
-  //           // bucket name is now fixed
-  //           var uploadImageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
-  //           debugPrint('File available at: $uploadImageUrl');
-  //         } catch (aclError) {
-  //           debugPrint('Error setting public access: $aclError');
-  //         }
-  //       } catch (uploadError) {
-  //         debugPrint('Error uploading object: $uploadError');
-  //         if (uploadError is DetailedApiRequestError) {
-  //           debugPrint('Error status: ${uploadError.status}');
-  //           debugPrint('Error message: ${uploadError.message}');
-  //         }
-  //       }
-  //     } else {
-  //       debugPrint('No file selected');
-  //     }
-  //   } catch (ex) {
-  //     debugPrint('General error: $ex');
-  //   }
-  // }
-
-  //   Future<void> _pickAndUploadImage(BuildContext context) async {
-  //   try {
-  //     FilePickerResult? result = await FilePicker.platform.pickFiles(
-  //       dialogTitle: 'Select a profile photo',
-  //       lockParentWindow: true,
-  //       allowMultiple: false,
-  //       allowedExtensions: ["jpg", "png", "jpeg"],
-  //       type: FileType.custom,
-  //     );
-
-  //     if (result != null && result.files.single.path != null) {
-  //       File file = File(result.files.single.path!);
-  //       setState(() {
-  //         uploadImagePath = file.path;
-  //       });
-  //       debugPrint("Selected file: ${file.path}");
-
-  //       // get an authenticated client
-  //       AuthClient gcpClient = await obtainAuthenticatedClient();
-  //       debugPrint('Authentication successful');
-
-  //       var storageClient = StorageApi(gcpClient);
-  //       var media = Media(file.openRead(), await file.length());
-
-  //       // file name is now jus curr time. will change it to supabase id
-  //       String uniqueFileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
-  //       debugPrint('Attempting to upload file as: $uniqueFileName');
-
-  //       try {
-  //         var object = await storageClient.objects.insert(
-  //           Object()..name = uniqueFileName,
-  //           'user_image_data',
-  //           uploadMedia: media,
-  //         );
-  //         debugPrint('Object uploaded successfully: ${object.name}');
-
-  //         try {
-  //           // the role should be READER for us general public, when needed change it to WRITER or OWNER.
-  //           await storageClient.objectAccessControls.insert(
-  //             ObjectAccessControl()
-  //               ..entity = 'allUsers'
-  //               ..role = 'READER',
-  //             'user_image_data',
-  //             object.name!,
-  //           );
-  //           debugPrint('Public access set successfully');
-
-  //           // bucket name is now fixed
-  //           var imageUrl = 'https://storage.googleapis.com/$bucketName/${object.name}';
-  //           debugPrint('File available at: $imageUrl');
-
-  //           // Update the state with the new image URL
-  //           setState(() {
-  //             uploadImageUrl = imageUrl;
-  //           });
-  //         } catch (aclError) {
-  //           debugPrint('Error setting public access: $aclError');
-  //         }
-  //       } catch (uploadError) {
-  //         debugPrint('Error uploading object: $uploadError');
-  //         if (uploadError is DetailedApiRequestError) {
-  //           debugPrint('Error status: ${uploadError.status}');
-  //           debugPrint('Error message: ${uploadError.message}');
-  //         }
-  //       }
-  //     } else {
-  //       debugPrint('No file selected');
-  //     }
-  //   } catch (ex) {
-  //     debugPrint('General error: $ex');
-  //   }
-  // }
 
   Future<void> _pickAndUploadImage(BuildContext context) async {
     try {
@@ -544,55 +412,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return fallbackUserAvatar;
   }
 
+  // Widget buildProfileImage() {
+  //   return ValueListenableBuilder<String?>(
+  //     valueListenable: UserImageService().profileImageUrl,
+  //     builder: (context, imageUrl, child) {
+  //       if (UserImageService().cachedUrl != null) {
+  //         return ClipOval(
+  //           child: SizedBox(
+  //             width: 48,
+  //             height: 48,
+  //             child: Image.network(UserImageService().cachedUrl!),
+  //           ),
+  //         );
+  //       }
+
+  //       return FutureBuilder<Image>(
+  //         future: loadProfileImageFromHive(),
+  //         builder: (context, snapshot) {
+  //           if (snapshot.connectionState == ConnectionState.waiting) {
+  //             return Container(
+  //               width: 48,
+  //               height: 48,
+  //               color: Colors.grey[300],
+  //               child: const Center(
+  //                 child: CircularProgressIndicator(strokeWidth: 2),
+  //               ),
+  //             );
+  //           } else if (snapshot.hasData) {
+  //             return ClipOval(
+  //               child: SizedBox(width: 48, height: 48, child: snapshot.data!),
+  //             );
+  //           } else {
+  //             return ClipOval(
+  //               child: SizedBox(
+  //                 width: 48,
+  //                 height: 48,
+  //                 child: fallbackUserAvatar,
+  //               ),
+  //             );
+  //           }
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+  // Added the google sign in to fetch the image
   Widget buildProfileImage() {
-    return ValueListenableBuilder<String?>(
-      valueListenable: UserImageService().profileImageUrl,
-      builder: (context, imageUrl, child) {
-        if (UserImageService().cachedUrl != null) {
-          return ClipOval(
-            child: SizedBox(
+  return ValueListenableBuilder<String?>(
+    valueListenable: UserImageService().profileImageUrl,
+    builder: (context, imageUrl, child) {
+      if (isGoogleSignIn && userAvatarUrl.isNotEmpty) {
+        return ClipOval(
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Image.network(userAvatarUrl),
+          ),
+        );
+      }
+
+      if (UserImageService().cachedUrl != null) {
+        return ClipOval(
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Image.network(UserImageService().cachedUrl!),
+          ),
+        );
+      }
+
+      return FutureBuilder<Image>(
+        future: loadProfileImageFromHive(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Container(
               width: 48,
               height: 48,
-              child: Image.network(UserImageService().cachedUrl!),
-            ),
-          );
-        }
-
-        return FutureBuilder<Image>(
-          future: loadProfileImageFromHive(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
+              color: Colors.grey[300],
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          } else if (snapshot.hasData) {
+            return ClipOval(
+              child: SizedBox(width: 48, height: 48, child: snapshot.data!),
+            );
+          } else {
+            return ClipOval(
+              child: SizedBox(
                 width: 48,
                 height: 48,
-                color: Colors.grey[300],
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              );
-            } else if (snapshot.hasData) {
-              return ClipOval(
-                child: SizedBox(width: 48, height: 48, child: snapshot.data!),
-              );
-            } else {
-              return ClipOval(
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: fallbackUserAvatar,
-                ),
-              );
-            }
-          },
-        );
-      },
-    );
-  }
+                child: fallbackUserAvatar,
+              ),
+            );
+          }
+        },
+      );
+    },
+  );
+}
+
 
   @override
   void initState() {
     super.initState();
-    getUserMetadata();
+    getUserMetadata(); // Fetch user metadata
+    checkIfGoogleSignIn(); // Check if the user signed in with Google
     getDownloadsDirectory();
     _loadRootDirectoryPath();
     kaggleApiInputFocus = FocusNode();
@@ -616,9 +542,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void getUserMetadata() {
     final user = Supabase.instance.client.auth.currentUser;
     setState(() {
-      displayName = user?.userMetadata?['display_name'];
-      userEmail = user!.email!;
-      userId = user.id;
+      // displayName = user?.userMetadata?['display_name'];
+      // userEmail = user!.email!;
+      // userId = user.id;
+      displayName =
+          user?.userMetadata?['full_name'] ??
+          user?.userMetadata?['display_name'] ??
+          'No Name';
+      userEmail = user?.email ?? 'No Email';
+      userId = user?.id ?? '';
+      userAvatarUrl = user?.userMetadata?['avatar_url'] ?? '';
     });
   }
 
@@ -805,19 +738,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           // Profile picture
                           Row(
                             children: [
-                              // TODO: Change the circle avatar into clip oval and use image cropper
                               buildProfileImage(),
-                              // CircleAvatar(
-                              //   radius: 24,
-                              //   backgroundImage:
-                              //       uploadImageUrl != null
-                              //           ? NetworkImage(uploadImageUrl!)
-                              //           : const AssetImage('assets/larry/larry.png')
-                              //               as ImageProvider,
-                              //   // backgroundImage: const AssetImage(
-                              //   //   'assets/larry/larry.png',
-                              //   // ),
-                              // ),
                               const SizedBox(width: 16),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -846,7 +767,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ],
                               ),
                               const Spacer(),
-                              // TODO: Change the profile picture by clicking on the icon
+                              if (!isGoogleSignIn) // Only show the edit icon if the user did noy sign in with Google
                               IconButton(
                                 icon: Icon(Icons.edit),
                                 color:
@@ -931,8 +852,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    // Keep it static for now
-                                    // imma change this blud
+                                    // Show the email on the text widget from supabase
                                     userEmail,
                                     style: TextStyle(
                                       color:
