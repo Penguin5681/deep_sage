@@ -371,8 +371,7 @@ class _FolderAllState extends State<FolderAll> {
                                           allowedExtensions: [
                                             "json",
                                             "csv",
-                                            "xlsx",
-                                            "xls",
+                                            "txt"
                                           ],
                                           lockParentWindow: true,
                                         );
@@ -1669,7 +1668,7 @@ class _FolderAllState extends State<FolderAll> {
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ["json", "csv", "xlsx", "xls"],
+        allowedExtensions: ["json", "csv", "txt"],
         dialogTitle: 'Select datasets to upload',
       );
 

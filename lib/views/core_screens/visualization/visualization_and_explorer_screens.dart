@@ -73,15 +73,21 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   }
 
   void selectDataset(RecentImportsModel import) {
-    currentDataset = import.fileName;
-    currentDatasetPath = import.filePath;
-    currentDatasetType = import.fileType;
+    debugPrint('Selecting dataset: ${import.fileName} (${import.fileType})');
 
-    selectedDatasetNotifier.value = import.fileName;
+    recentImportsBox.put('currentDatasetName', import.fileName);
+    recentImportsBox.put('currentDatasetPath', import.filePath);
+    recentImportsBox.put('currentDatasetType', import.fileType);
 
-    recentImportsBox.put('currentDatasetName', currentDataset);
-    recentImportsBox.put('currentDatasetPath', currentDatasetPath);
-    recentImportsBox.put('currentDatasetType', currentDatasetType);
+    setState(() {
+      currentDataset = import.fileName;
+      currentDatasetPath = import.filePath;
+      currentDatasetType = import.fileType;
+    });
+
+    selectedDatasetNotifier.value = null;
+
+    Future.microtask(() => selectedDatasetNotifier.value = import.fileName);
   }
 
   void setupImportWatchers() {
