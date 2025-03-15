@@ -8,6 +8,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+/// A service that manages dataset downloads from various sources.
+///
+/// This class handles downloading datasets, maintaining a download queue,
+/// tracking download progress, and providing status updates through notifications.
 class DownloadService extends ChangeNotifier {
   final Map<String, DownloadItem> _downloads = {};
   final Queue<Map<String, dynamic>> _downloadQueue =
@@ -15,8 +19,13 @@ class DownloadService extends ChangeNotifier {
   bool _isProcessingQueue = false;
   final StreamController<void> _downloadStreamController =
       StreamController<void>.broadcast();
+
+  /// Stream that emits events when download status changes.
   Stream<void> get stream => _downloadStreamController.stream;
 
+  /// Retries a previously failed or canceled download.
+  ///
+  /// @param datasetId The ID of the dataset to retry downloading.
   Future<void> retryDownload(String datasetId) async {
     if (_downloads.containsKey(datasetId)) {
       final download = _downloads[datasetId]!;
@@ -24,11 +33,15 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  /// Removes all completed downloads from the downloads list.
   void clearCompletedDownloads() {
     _downloads.removeWhere((_, item) => item.isComplete);
     notifyListeners();
   }
 
+  /// Cancels an in-progress download.
+  ///
+  /// @param datasetId Optional ID of the dataset to cancel. If null, cancels the current download.
   Future<void> cancelDownload([String? datasetId]) async {
     if (datasetId == null) {
       if (_currentDownloadDatasetId != null) {
@@ -44,6 +57,9 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  /// Sends a cancellation request to the server.
+  ///
+  /// @param datasetId ID of the dataset to cancel.
   Future<void> _cancelDownloadRequest(String datasetId) async {
     try {
       final uri = Uri.parse('$_baseUrl/api/datasets/cancel');
@@ -70,6 +86,7 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  /// Gets a list of all current downloads.
   List<DownloadItem> get downloads => _downloads.values.toList();
 
   final String _baseUrl = dotenv.env['DEV_BASE_URL'] ?? 'http://localhost:5000';
@@ -78,8 +95,12 @@ class DownloadService extends ChangeNotifier {
 
   String? _currentDownloadDatasetId;
 
+  /// Whether a download is currently in progress.
   bool get isDownloading => _currentDownloadDatasetId != null;
 
+  /// Processes the download queue in a sequential manner.
+  ///
+  /// This method handles the queue of download requests and processes them one by one.
   Future<void> _processQueue() async {
     if (_downloadQueue.isEmpty || _isProcessingQueue) return;
 
@@ -148,6 +169,9 @@ class DownloadService extends ChangeNotifier {
     _isProcessingQueue = false;
   }
 
+  /// Waits for the current download to complete or fail.
+  ///
+  /// @returns A Future that completes when the download is finished.
   Future<void> _waitForDownloadCompletion() {
     final completer = Completer<void>();
 
@@ -172,6 +196,11 @@ class DownloadService extends ChangeNotifier {
     return completer.future;
   }
 
+  /// Initiates a dataset download.
+  ///
+  /// @param source The source platform for the dataset.
+  /// @param datasetId The ID of the dataset to download.
+  /// @param unzip Whether to automatically unzip the downloaded dataset.
   Future<void> downloadDataset({
     required String source,
     required String datasetId,
@@ -250,6 +279,14 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  /// Starts the actual download process by making an API request.
+  ///
+  /// @param datasetId The ID of the dataset to download.
+  /// @param source The source platform for the dataset.
+  /// @param path The local path to save the downloaded dataset.
+  /// @param unzip Whether to automatically unzip the downloaded dataset.
+  /// @param kaggleUsername Kaggle username for authentication.
+  /// @param kaggleKey Kaggle API key for authentication.
   Future<void> _startDownload({
     required String datasetId,
     required String source,
@@ -315,6 +352,9 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  /// Processes Server-Sent Events (SSE) updates for download progress.
+  ///
+  /// @param jsonData The JSON data received from the server.
   void _processDownloadUpdate(String jsonData) {
     try {
       final data = jsonDecode(jsonData);
@@ -370,6 +410,10 @@ class DownloadService extends ChangeNotifier {
     }
   }
 
+  /// Updates a download with error information.
+  ///
+  /// @param datasetId The ID of the dataset that encountered an error.
+  /// @param errorMessage The error message to display.
   void _updateDownloadWithError(String datasetId, String errorMessage) {
     final download = _downloads[datasetId];
     if (download != null) {
@@ -383,6 +427,7 @@ class DownloadService extends ChangeNotifier {
     debugPrint('Download error: $errorMessage');
   }
 
+  /// Cleans up resources after a download completes or fails.
   void _cleanupDownload() {
     _currentDownloadDatasetId = null;
     _sseSubscription?.cancel();
@@ -391,6 +436,7 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cleans up resources when the service is disposed.
   @override
   void dispose() {
     _sseSubscription?.cancel();
