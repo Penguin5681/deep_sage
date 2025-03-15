@@ -58,6 +58,9 @@ class _RawDataTabState extends State<RawDataTab> {
   /// Indicates if the edited data is currently being saved.
   bool isSaving = false;
 
+  /// Indicates if the additional 50 rows being loaded
+  bool isEditModeLoading = false;
+
   /// A timer used for debouncing text changes in the table.
   ///
   /// It is used to delay actions until the user has stopped typing for a certain duration.
@@ -164,7 +167,7 @@ class _RawDataTabState extends State<RawDataTab> {
   /// - If successful, updates the state with the preview data, and initializes edit data if it's a CSV.
   /// - If an error occurs, it clears the preview data and logs the error.
   ///
-  Future<void> _loadPreviewData() async {
+  Future<void> _loadPreviewData({bool shouldToggleEditing = false}) async {
     if (!isDatasetImported || importedDatasetPath.isEmpty) {
       setState(() {
         previewData = null;
@@ -178,8 +181,7 @@ class _RawDataTabState extends State<RawDataTab> {
     final pathToLoad = importedDatasetPath;
     final typeToLoad = importedDatasetType;
 
-    // Initially load only 10 rows for preview
-    final rowsToLoad = isEditing ? 50 : 10;
+    final rowsToLoad = isEditing || shouldToggleEditing ? 50 : 10;
 
     debugPrint('Loading preview: $pathToLoad ($typeToLoad) - $rowsToLoad rows');
 
@@ -188,16 +190,16 @@ class _RawDataTabState extends State<RawDataTab> {
     });
 
     try {
-      final result = await _previewService.loadDatasetPreview(
-        pathToLoad,
-        typeToLoad,
-        rowsToLoad,
-      );
+      final result = await _previewService.loadDatasetPreview(pathToLoad, typeToLoad, rowsToLoad);
 
       if (mounted) {
         setState(() {
           previewData = result;
           isLoading = false;
+
+          if (shouldToggleEditing) {
+            isEditing = !isEditing;
+          }
 
           if (result != null && typeToLoad.toLowerCase() == 'csv') {
             _initializeEditData();
@@ -209,6 +211,9 @@ class _RawDataTabState extends State<RawDataTab> {
         setState(() {
           previewData = null;
           isLoading = false;
+          if (shouldToggleEditing) {
+            isEditing = false;
+          }
         });
       }
       debugPrint('Preview error: $ex');
@@ -272,11 +277,7 @@ class _RawDataTabState extends State<RawDataTab> {
       fullData = [headerChunk[0]];
 
       // Now load only the rows we need for editing (those visible in the preview)
-      final visibleRowsChunk = await loadCsvChunk(
-        importedDatasetPath,
-        1,
-        rows.length,
-      );
+      final visibleRowsChunk = await loadCsvChunk(importedDatasetPath, 1, rows.length);
       if (visibleRowsChunk != null && visibleRowsChunk.isNotEmpty) {
         fullData.addAll(visibleRowsChunk);
       }
@@ -298,16 +299,25 @@ class _RawDataTabState extends State<RawDataTab> {
   /// displaying the appropriate table format based on the new `isEditing` state.
   void _toggleEditing() {
     if (importedDatasetType.toLowerCase() != 'csv') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Only CSV files can be edited in-place')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Only CSV files can be edited in-place')));
       return;
     }
 
     setState(() {
-      isEditing = !isEditing;
+      isEditModeLoading = true; // Show loading indicator first
+    });
 
-      _loadPreviewData();
+    Future.delayed(Duration.zero, () async {
+      // Load data asynchronously
+      await _loadPreviewData(shouldToggleEditing: true);
+
+      if (mounted) {
+        setState(() {
+          isEditModeLoading = false;
+        });
+      }
     });
   }
 
@@ -486,9 +496,7 @@ class _RawDataTabState extends State<RawDataTab> {
             'No Dataset imported yet',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26.0),
           ),
-          const Text(
-            'Import a dataset to begin exploring and analyzing your data',
-          ),
+          const Text('Import a dataset to begin exploring and analyzing your data'),
           const SizedBox(height: 18.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -503,13 +511,8 @@ class _RawDataTabState extends State<RawDataTab> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade600,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
                 child: Text(
                   'Import Locally',
@@ -521,14 +524,9 @@ class _RawDataTabState extends State<RawDataTab> {
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: Colors.blue.shade600, width: 2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   foregroundColor: Colors.blue.shade600,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
                 child: const Text(
                   "Browse Kaggle",
@@ -571,20 +569,22 @@ class _RawDataTabState extends State<RawDataTab> {
             Expanded(
               child: Text(
                 'Dataset: $fileName',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18.0,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
               ),
             ),
             if (isCSV)
               ElevatedButton.icon(
-                icon: Icon(isEditing ? Icons.visibility : Icons.edit),
-                label: Text(isEditing ? 'View Only' : 'Edit Data'),
-                onPressed: _toggleEditing,
+                icon: Icon(
+                  isEditModeLoading
+                      ? Icons.hourglass_empty
+                      : (isEditing ? Icons.visibility : Icons.edit),
+                ),
+                label: Text(
+                  isEditModeLoading ? 'Loading...' : (isEditing ? 'View Only' : 'Edit Data'),
+                ),
+                onPressed: isEditModeLoading ? null : _toggleEditing,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      isEditing ? Colors.grey : Colors.blue.shade600,
+                  backgroundColor: isEditing ? Colors.grey : Colors.blue.shade600,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -598,11 +598,7 @@ class _RawDataTabState extends State<RawDataTab> {
             padding: const EdgeInsets.only(bottom: 8.0),
             child: Row(
               children: [
-                SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                 SizedBox(width: 8),
                 Text(
                   'Saving changes...',
@@ -615,21 +611,21 @@ class _RawDataTabState extends State<RawDataTab> {
             ),
           ),
         Expanded(
-          child:
-              isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : previewData == null
-                  ? const Center(child: Text('No data available'))
-                  : SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child:
-                          isEditing && isCSV
-                              ? _buildEditableDataTable()
-                              : _buildDataTable(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : previewData == null
+                    ? const Center(child: Text('No data available'))
+                    : SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: isEditing && isCSV ? _buildEditableDataTable() : _buildDataTable(),
+                      ),
                     ),
-                  ),
+          ),
         ),
       ],
     );
@@ -653,17 +649,12 @@ class _RawDataTabState extends State<RawDataTab> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Table(
-      border: TableBorder.all(
-        color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-        width: 1,
-      ),
+      border: TableBorder.all(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!, width: 1),
       defaultColumnWidth: const IntrinsicColumnWidth(),
       children: [
         // Header row
         TableRow(
-          decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-          ),
+          decoration: BoxDecoration(color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
           children:
               columns
                   .map(
@@ -698,13 +689,9 @@ class _RawDataTabState extends State<RawDataTab> {
                       controller: controller,
                       decoration: InputDecoration(
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 8,
-                        ),
+                        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                       ),
-                      onChanged:
-                          (value) => _saveChanges(rowIndex, colIndex, value),
+                      onChanged: (value) => _saveChanges(rowIndex, colIndex, value),
                     ),
                   );
                 }).toList(),
@@ -730,19 +717,12 @@ class _RawDataTabState extends State<RawDataTab> {
   ///
   /// The method skips header rows and starts reading from the specified `startRow`.
   /// It stops reading when it reaches `startRow + chunkSize` or the end of the file.
-  Future<List<List<dynamic>>?> loadCsvChunk(
-    String filePath,
-    int startRow,
-    int chunkSize,
-  ) async {
+  Future<List<List<dynamic>>?> loadCsvChunk(String filePath, int startRow, int chunkSize) async {
     try {
       final file = File(filePath);
       if (!await file.exists()) return null;
 
-      final lineStream = file
-          .openRead()
-          .transform(utf8.decoder)
-          .transform(const LineSplitter());
+      final lineStream = file.openRead().transform(utf8.decoder).transform(const LineSplitter());
 
       List<List<dynamic>> chunk = [];
       int currentLine = 0;
@@ -834,8 +814,7 @@ class _RawDataTabState extends State<RawDataTab> {
         return DataRow(
           cells: List<DataCell>.generate(
             columns.length,
-            (cellIndex) =>
-                DataCell(Text(row[columns[cellIndex]]?.toString() ?? '')),
+            (cellIndex) => DataCell(Text(row[columns[cellIndex]]?.toString() ?? '')),
           ),
         );
       }),
