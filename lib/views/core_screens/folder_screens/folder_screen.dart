@@ -6,21 +6,34 @@ import 'package:hive_flutter/adapters.dart';
 
 import 'package:path/path.dart' as path;
 
+/// StatefulWidget that represents the folder screen.
+///
+/// This screen displays various dataset folders, categorized into tabs.
 class FolderScreen extends StatefulWidget {
+  /// Callback function for navigation events.
   final Function(int)? onNavigate;
+
+  /// Constructor for the FolderScreen widget.
   const FolderScreen({super.key, this.onNavigate});
 
+  /// Creates the mutable state for this widget.
   @override
   State<FolderScreen> createState() => _FolderScreenState();
 }
 
+/// State class for the FolderScreen widget.
 class _FolderScreenState extends State<FolderScreen>
     with SingleTickerProviderStateMixin {
+  /// TabController to manage the tabs.
   late TabController tabController;
+
+  /// Name of the root directory.
   late String rootDirectoryName = '';
 
+  /// Initializes the state of the widget.
   @override
   void initState() {
+    // Load the root directory information and initialize the tab controller.
     super.initState();
     _loadRootDirectory();
     tabController = TabController(length: 4, vsync: this);
@@ -28,12 +41,16 @@ class _FolderScreenState extends State<FolderScreen>
 
   @override
   void dispose() {
+    // Dispose of the tab controller when the widget is disposed.
     tabController.dispose();
     super.dispose();
   }
 
+  /// Loads the root directory information from Hive storage.
   Future<void> _loadRootDirectory() async {
+    // Retrieve the Hive box name from the environment variables.
     final boxName = dotenv.env['API_HIVE_BOX_NAME']!;
+    // Open the Hive box.
     final hiveBox = await Hive.openBox(boxName);
 
     final root = hiveBox.get('selectedRootDirectoryPath');
@@ -46,6 +63,7 @@ class _FolderScreenState extends State<FolderScreen>
     }
   }
 
+  /// Builds the UI for the FolderScreen.
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
