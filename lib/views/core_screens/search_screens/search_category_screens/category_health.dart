@@ -4,16 +4,25 @@ import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 
+/// A StatefulWidget representing the health category screen.
+///
+/// This screen displays a list of popular healthcare datasets and allows
+/// the user to search for specific healthcare-related data.
 class CategoryHealth extends StatefulWidget {
   final Function(String) onSearch;
 
+  /// Creates a [CategoryHealth] widget.
+  ///
+  /// [onSearch] is a callback that is triggered when a search action is performed.
   const CategoryHealth({super.key, required this.onSearch});
 
   @override
   State<CategoryHealth> createState() => _CategoryHealthState();
 }
 
+/// The state class for the [CategoryHealth] widget.
 class _CategoryHealthState extends State<CategoryHealth> {
+  /// Controller for the scrollable list of popular datasets.
   final ScrollController scrollController = ScrollController();
   List<PopularDataset> popularDatasets = [];
   bool isLoading = true;
@@ -23,6 +32,10 @@ class _CategoryHealthState extends State<CategoryHealth> {
     super.initState();
     _fetchPopularDatasets();
   }
+
+  /// Fetches popular healthcare datasets from the server.
+  ///
+  /// Updates the state with the fetched datasets or handles errors.
 
   Future<void> _fetchPopularDatasets() async {
     try {
@@ -41,6 +54,10 @@ class _CategoryHealthState extends State<CategoryHealth> {
     }
   }
 
+  /// Builds the UI for the health category screen.
+  ///
+  /// Displays a horizontal list of dataset cards for quick search
+  /// and a vertical list of popular datasets.
   @override
   Widget build(BuildContext context) {
     return Scaffold(

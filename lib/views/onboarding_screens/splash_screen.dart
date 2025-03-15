@@ -6,13 +6,23 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:word_carousel/word_carousel.dart';
 
+/// `SplashScreen` is a stateful widget that displays a splash screen
+/// with a word carousel and a loading indicator.
 class SplashScreen extends StatefulWidget {
+  /// Constructor for the `SplashScreen` widget.
   const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+/// `_SplashScreenState` is the state class for the `SplashScreen` widget.
+/// It manages the word carousel controller, session validation, and UI elements.
+///
+/// This class is responsible for:
+/// - Initializing the word carousel controller.
+/// - Validating user sessions.
+/// - Building the UI for the splash screen.
 class _SplashScreenState extends State<SplashScreen> {
   final WordCarouselController controller = WordCarouselController();
   late bool isThereAnyValidSession = false;
@@ -33,11 +43,13 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
   }
 
+  /// Builds the UI for the splash screen.
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final env = dotenv.env['FLUTTER_ENV'];
 
+    /// Creates a route for the dashboard screen.
     Route createDashboardRoute() {
       return PageRouteBuilder(
         pageBuilder:
@@ -59,6 +71,7 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     }
 
+    /// Creates a route for the login screen.
     Route createLoginRoute() {
       return PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => LoginScreen(),
