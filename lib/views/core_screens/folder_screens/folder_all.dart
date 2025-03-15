@@ -97,7 +97,7 @@ class _FolderAllState extends State<FolderAll> {
       await for (var entity in dir.list()) {
         if (entity is File) {
           final extension = path.extension(entity.path).toLowerCase();
-          if (['.json', '.csv', '.xlsx', '.xls'].contains(extension)) {
+          if (['.json', '.csv', '.txt',].contains(extension)) {
             final fileStats = await entity.stat();
             final fileSize = await _getFileSize(entity.path, fileStats.size);
             final isStarred = await _loadStarredStatus(entity.path);
@@ -169,7 +169,7 @@ class _FolderAllState extends State<FolderAll> {
             final filePath = event.path;
             final extension = path.extension(filePath).toLowerCase();
 
-            if ([".json", ".csv", ".xlsx", ".xls"].contains(extension)) {
+            if (['.json', '.csv', '.txt'].contains(extension)) {
               scanForDatasetFiles(selectedRootDirectoryPath);
               debugPrint(
                 'Something happened to your file niga: ${event.path} - ${event.type}',
@@ -1223,8 +1223,8 @@ class _FolderAllState extends State<FolderAll> {
         return Icons.table_chart;
       case 'json':
         return Icons.data_object;
-      case 'xlsx':
-        return Icons.grid_on;
+      case 'txt':
+        return Icons.text_snippet;
       default:
         return Icons.insert_drive_file;
     }
@@ -1236,7 +1236,7 @@ class _FolderAllState extends State<FolderAll> {
         return Colors.green;
       case 'json':
         return Colors.orange;
-      case 'xlsx':
+      case 'txt':
         return Colors.blue;
       default:
         return Colors.grey;
