@@ -159,7 +159,7 @@ class _FolderAllState extends State<FolderAll> {
       await for (var entity in dir.list()) {
         if (entity is File) {
           final extension = path.extension(entity.path).toLowerCase();
-          if (['.json', '.csv', '.txt',].contains(extension)) {
+          if (['.json', '.csv', '.txt'].contains(extension)) {
             final fileStats = await entity.stat();
             final fileSize = await _getFileSize(entity.path, fileStats.size);
             final isStarred = await _loadStarredStatus(entity.path);

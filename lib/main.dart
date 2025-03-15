@@ -20,7 +20,8 @@ import 'core/services/download_service.dart';
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
+  final appSupportDirectory =
+      await path_provider.getApplicationSupportDirectory();
 
   debugPrint("app data: ${appSupportDirectory.path}");
 
@@ -72,7 +73,10 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
       home: hasValidSession ? DashboardScreen() : SplashScreen(),
-      routes: {'/login': (context) => LoginScreen(), '/dashboard': (context) => DashboardScreen()},
+      routes: {
+        '/login': (context) => LoginScreen(),
+        '/dashboard': (context) => DashboardScreen(),
+      },
     );
   }
 }
