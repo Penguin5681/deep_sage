@@ -3,7 +3,7 @@ import 'package:deep_sage/core/models/hive_models/recent_imports_model.dart';
 import 'package:deep_sage/core/models/hive_models/user_api_model.dart';
 import 'package:deep_sage/core/services/user_session_service.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/core_screens/navigation_rail/dashboard_screen.dart';
 import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
