@@ -40,11 +40,15 @@ class _DashboardState extends State<Dashboard> {
 
   /// The Hive box for managing starred dataset files.
   late final Box starredBox;
+
   /// The Hive box for managing recently imported dataset files.
   late final Box recentImportsBox;
 
   /// Controller for the search text field.
   late TextEditingController searchController;
+
+  late int hoveredIndex = -1;
+
   /// Controller for the scrollable list view.
   final ScrollController scrollController = ScrollController();
 
@@ -281,7 +285,7 @@ class _DashboardState extends State<Dashboard> {
                     itemCount: imports.length,
                     itemBuilder: (context, index) {
                       final import = imports[index];
-                      return _buildRecentImportCard(import, isDarkMode);
+                      return _buildRecentImportCard(import, isDarkMode, index);
                     },
                   ),
                 );
@@ -387,72 +391,78 @@ class _DashboardState extends State<Dashboard> {
   ///   - File name, with an ellipsis overflow for longer names.
   ///   - File size and the date/time of import, formatted for readability.
   ///
-  Widget _buildRecentImportCard(RecentImportsModel import, bool isDarkMode) {
-    return Container(
-      width: 220,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // Use min size to prevent overflow
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getFileColor(import.fileType).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      _getFileIcon(import.fileType),
-                      color: _getFileColor(import.fileType),
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      import.fileType.toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
+  Widget _buildRecentImportCard(RecentImportsModel import, bool isDarkMode, int index) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => hoveredIndex = index),
+      onExit: (_) => setState(() => hoveredIndex = -1),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: hoveredIndex == index ? Matrix4.translationValues(0, -5, 0) : Matrix4.identity(),
+        width: 220,
+        margin: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Use min size to prevent overflow
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _getFileColor(import.fileType).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        _getFileIcon(import.fileType),
                         color: _getFileColor(import.fileType),
+                        size: 18,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        import.fileType.toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _getFileColor(import.fileType),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10), // Reduced spacing
+                Text(
+                  import.fileName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
-                ],
-              ),
-              const SizedBox(height: 10), // Reduced spacing
-              Text(
-                import.fileName,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: isDarkMode ? Colors.white : Colors.black87,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 3), // Reduced spacing
-              Text(
-                '${import.fileSize} · ${_formatDate(import.importTime)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                const SizedBox(height: 3), // Reduced spacing
+                Text(
+                  '${import.fileSize} · ${_formatDate(import.importTime)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -724,7 +734,6 @@ class _DashboardState extends State<Dashboard> {
                               });
 
                               setState(() {
-                                // Update the file in the list
                                 datasetFiles[index] = file;
                               });
                             },
