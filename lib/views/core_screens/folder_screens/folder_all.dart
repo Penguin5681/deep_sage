@@ -121,6 +121,7 @@ class _FolderAllState extends State<FolderAll> {
   /// the `datasetFiles` list and the `anyFilesPresent` flag based on the scan
   /// results. If an error occurs during the scanning process, it prints an
   /// error message to the debug console.
+  /// This function also updates the [DatasetManagerService] class used in dashboard
   Future<void> scanForDatasetFiles(String rootPath) async {
     if (rootPath.isEmpty) return;
     List<DatasetFile> files = [];

@@ -151,4 +151,13 @@ class AppIcons {
 
   /// Larry character asset
   static const String larry = 'assets/larry/larry.png';
+
+  /// Csv Icon
+  static const String csvIcon = 'assets/icons/colorful/csv-file.png';
+
+  /// Json Icon
+  static const String jsonIcon = 'assets/icons/colorful/json-file.png';
+
+  /// Text Icon
+  static const String textIcon = 'assets/icons/colorful/text-format.png';
 }
