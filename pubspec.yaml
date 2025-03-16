@@ -36,6 +36,8 @@ dependencies:
   excel:
   google_sign_in: ^6.3.0
   oauth2: ^2.0.3
+  flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
   
 
 dev_dependencies:
