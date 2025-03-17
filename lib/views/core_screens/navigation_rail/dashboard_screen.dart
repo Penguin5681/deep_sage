@@ -306,6 +306,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Row(
         children: [
           NavigationRail(
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Color(0xFF2A2D37)
+                : Colors.grey[100],
+            selectedIconTheme: IconThemeData(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            unselectedIconTheme: IconThemeData(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[400]
+                  : Colors.grey[700],
+            ),
+            selectedLabelTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelTextStyle: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[400]
+                  : Colors.grey[700],
+            ),
+            useIndicator: true,
+            indicatorColor: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            elevation: 1,
             trailing: Expanded(
               child: Align(
                 alignment: Alignment.bottomCenter,
