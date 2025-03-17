@@ -5,6 +5,10 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 
+/// [FolderStarred] is a StatefulWidget that displays a list of files that have been marked as starred by the user.
+///
+/// It retrieves starred files from the Hive database, displays them in a list,
+/// and allows users to remove files from their starred list.
 class FolderStarred extends StatefulWidget {
   const FolderStarred({super.key});
 
@@ -17,12 +21,22 @@ class _FolderStarredState extends State<FolderStarred> {
   List<DatasetFile> starredDatasetFiles = [];
   bool isLoading = true;
 
+  /// Initializes the state of the widget.
+  ///
+  /// Calls [_loadStarredDatasets] to load the initial list of starred datasets.
   @override
   void initState() {
     super.initState();
     _loadStarredDatasets();
   }
 
+  /// Loads the starred dataset files from the Hive database.
+  ///
+  /// This function opens the 'starred_datasets' box in Hive, iterates over its keys,
+  /// and checks if the corresponding value is true (indicating the file is starred).
+  /// If a file is starred and exists, it fetches its metadata (size, type, modified date)
+  /// and adds it to the [starredDatasetFiles] list.
+  /// Finally, it updates the UI by setting the [starredDatasetFiles] and [isLoading] states.
   Future<void> _loadStarredDatasets() async {
     setState(() {
       isLoading = true;
@@ -68,6 +82,13 @@ class _FolderStarredState extends State<FolderStarred> {
     }
   }
 
+  /// Converts a file's size in bytes to a human-readable format.
+  ///
+  /// This function takes the file path and the size in bytes, and returns a string
+  /// representing the file size in B, KB, MB, or GB, based on the magnitude of the size.
+  ///
+  /// [filepath] The path of the file.
+  /// [bytes] The size of the file in bytes.
   Future<String> _getFileSize(String filepath, int bytes) async {
     if (bytes < 1024) {
       return '$bytes B';
@@ -80,12 +101,29 @@ class _FolderStarredState extends State<FolderStarred> {
     }
   }
 
+  /// Removes a file from the starred list.
+  ///
+  /// This function updates the 'starred_datasets' box in Hive by setting the value
+  /// associated with the given [filePath] to false.
+  /// After removing the file, it reloads the list of starred datasets using [_loadStarredDatasets].
+  /// [filePath] The path of the file to remove from the starred list.
   Future<void> _removeFromStarred(String filePath) async {
     final starredBox = await Hive.openBox('starred_datasets');
     await starredBox.put(filePath, false);
     await _loadStarredDatasets();
   }
 
+  /// Builds the main UI for the starred folder screen.
+  ///
+  /// This method returns a [Scaffold] widget that contains the layout for the
+  /// starred folder screen. It includes:
+  /// - A [ScrollConfiguration] to remove the scrollbar.
+  /// - A [SingleChildScrollView] to enable scrolling of the content.
+  /// - A [Padding] widget to provide spacing around the content.
+  /// - A [Column] widget to arrange the content vertically.
+  /// - [_buildSearchBar] for searching starred files.
+  /// - [_buildStarredDatasetsList] for displaying the list of starred files.
+  ///
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,6 +149,12 @@ class _FolderStarredState extends State<FolderStarred> {
     );
   }
 
+  /// Builds the search bar widget.
+  ///
+  /// This method returns a [SizedBox] containing a [TextField] that allows the user
+  /// to search for starred files. The search bar is styled with a hint text, a search
+  /// icon, and an outline border.
+  ///
   Widget _buildSearchBar() {
     return SizedBox(
       width: 300,
@@ -126,6 +170,12 @@ class _FolderStarredState extends State<FolderStarred> {
     );
   }
 
+  /// Builds the list of starred datasets with their details.
+  ///
+  /// This widget creates a visual list of the datasets that the user has marked as
+  /// starred. It displays the dataset's name, type, size, and last modified date.
+  /// It also includes actions to remove a dataset from starred and to open more details
+  /// about a specific dataset.
   Widget _buildStarredDatasetsList() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -254,7 +304,6 @@ class _FolderStarredState extends State<FolderStarred> {
                           ),
                       itemBuilder: (context, index) {
                         final file = starredDatasetFiles[index];
-                        // final fileData = file.toMap();
 
                         return Container(
                           padding: const EdgeInsets.symmetric(
@@ -380,6 +429,12 @@ class _FolderStarredState extends State<FolderStarred> {
     );
   }
 
+  /// Determines the appropriate icon for a given file type.
+  ///
+  /// This function takes a [fileType] and returns an [IconData] that corresponds to that type.
+  /// It supports specific icons for common file types like CSV, JSON, and XLSX, and a
+  /// default icon for other types.
+  /// [fileType] The type of the file (e.g., 'csv', 'json', 'txt').
   IconData _getFileIcon(String fileType) {
     switch (fileType.toLowerCase()) {
       case 'csv':
@@ -394,6 +449,12 @@ class _FolderStarredState extends State<FolderStarred> {
     }
   }
 
+  /// Determines the appropriate color for a given file type.
+  ///
+  /// This function takes a [fileType] and returns a [Color] that corresponds to that type.
+  /// It supports specific colors for common file types like CSV, JSON, and XLSX, and a
+  /// default color for other types, which changes based on whether the app is in dark mode.
+  /// [fileType] The type of the file (e.g., 'csv', 'json', 'txt').
   Color _getFileColor(String fileType) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -410,6 +471,12 @@ class _FolderStarredState extends State<FolderStarred> {
     }
   }
 
+  /// Opens the file details in a modal.
+  ///
+  /// This function is called when the user wants to see the details of a specific file.
+  /// It shows a dialog that contains all the information about the file.
+  ///
+  /// [file] The [DatasetFile] object containing the file's information.
   Future<void> _openFileDetails(DatasetFile file) async {
     // Show file details dialog or navigate to details screen
     showDialog(
@@ -418,6 +485,13 @@ class _FolderStarredState extends State<FolderStarred> {
     );
   }
 
+  /// Builds a dialog to display detailed information about a file.
+  ///
+  /// This function creates a [Dialog] widget that shows a detailed view of the file,
+  /// including its type, size, last modified date, and options to show the file in
+  /// its folder or open it. The dialog adapts its appearance based on the app's theme
+  /// (dark or light mode).
+  /// [file] The [DatasetFile] object containing the file's information.
   Widget _buildFileDetailsDialog(DatasetFile file) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -525,6 +599,14 @@ class _FolderStarredState extends State<FolderStarred> {
     );
   }
 
+  /// Builds a single item for the file details dialog.
+  ///
+  /// This function creates a [Widget] representing a single line item in the file details
+  /// dialog. It's used to display labels and values in a consistent format.
+  /// [label] The label to display (e.g., "Type", "Size").
+  /// [value] The value to display (e.g., "CSV", "1.2 MB").
+  /// [isDarkMode] Indicates if the app is in dark mode.
+  /// Returns: A [Widget] that displays the label and value.
   Widget _buildFileInfoItem(String label, String value, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -556,6 +638,13 @@ class _FolderStarredState extends State<FolderStarred> {
     );
   }
 
+  /// Opens the folder containing the specified file.
+  ///
+  /// This function attempts to open the folder where the file specified by [filePath] is located.
+  /// It handles different operating systems (Windows, macOS, Linux) by using the appropriate
+  /// command to open the folder.
+  ///
+  /// [filePath] The path of the file whose containing folder needs to be opened.
   Future<void> _openContainingFolder(String filePath) async {
     final directory = path.dirname(filePath);
     try {
@@ -574,6 +663,13 @@ class _FolderStarredState extends State<FolderStarred> {
     }
   }
 
+  /// Opens the specified file using the system's default application.
+  ///
+  /// This function attempts to open the file specified by [filePath] using the default
+  /// application associated with the file's type. It handles different operating systems
+  /// (Windows, macOS, Linux) by using the appropriate command to open the file.
+  ///
+  /// [filePath] The path of the file to be opened.
   Future<void> _openFile(String filePath) async {
     try {
       if (Platform.isWindows) {
@@ -591,6 +687,10 @@ class _FolderStarredState extends State<FolderStarred> {
     }
   }
 
+  /// Disposes of the resources used by the widget.
+  ///
+  /// This function is called when the widget is removed from the widget tree.
+  /// It disposes the [searchBarController] to release the memory it is using.
   @override
   void dispose() {
     searchBarController.dispose();

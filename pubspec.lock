@@ -387,6 +387,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.0"
+  flutter_staggered_animations:
+    dependency: "direct main"
+    description:
+      name: flutter_staggered_animations
+      sha256: "81d3c816c9bb0dca9e8a5d5454610e21ffb068aedb2bde49d2f8d04f75538351"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -986,6 +994,14 @@ packages:
     description:
       name: shelf_web_socket
       sha256: "3632775c8e90d6c9712f883e633716432a27758216dfb61bd86a8321c0580925"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
+  shimmer:
+    dependency: "direct main"
+    description:
+      name: shimmer
+      sha256: "5f88c883a22e9f9f299e5ba0e4f7e6054857224976a5d9f839d4ebdc94a14ac9"
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"

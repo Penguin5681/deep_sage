@@ -1,5 +1,5 @@
 import 'package:deep_sage/views/authentication_screens/signup_screen.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/core_screens/navigation_rail/dashboard_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
@@ -11,9 +11,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:top_snackbar_flutter/custom_snack_bar.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
 
+/// A widget that displays the login screen for DeepSage.
+///
+/// This screen provides email/password and Google authentication options,
+/// allowing users to sign in to their existing accounts.
 class LoginScreen extends StatelessWidget {
+  /// Creates a login screen widget.
   const LoginScreen({super.key});
 
+  /// Creates a custom page route with slide transitions.
+  ///
+  /// This method creates a route to navigate to [screen] with a slide animation
+  /// defined by [deltaX] and [deltaY] offsets.
+  ///
+  /// Parameters:
+  ///   - [screen]: The destination screen widget
+  ///   - [deltaX]: Starting X offset for the slide animation
+  ///   - [deltaY]: Starting Y offset for the slide animation
+  ///
+  /// Returns a [PageRouteBuilder] with the configured transition
   Route createScreenRoute(Widget screen, double deltaX, double deltaY) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => screen,
@@ -45,13 +61,24 @@ class LoginScreen extends StatelessWidget {
         ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
         Colors.black;
 
+    /// Handles the sign-in process with email and password.
+    ///
+    /// This function validates the email format and password length before
+    /// attempting to authenticate with Supabase. On successful authentication,
+    /// it stores the user session and navigates to the dashboard screen.
+    ///
+    /// Parameters:
+    ///   - [email]: The user's email address
+    ///   - [password]: The user's password
     Future<void> signIn(String email, String password) async {
       final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
 
+      /// Validates if the provided string is in email format.
       bool isEmail() {
         return emailRegex.hasMatch(email);
       }
 
+      /// Checks if the password meets the minimum length requirement (6 characters).
       bool isThePasswordLengthOk() {
         return password.length >= 6;
       }
@@ -63,9 +90,12 @@ class LoginScreen extends StatelessWidget {
             password: password,
           );
           if (response.session != null) {
-            await Hive.box(
-              dotenv.env['USER_HIVE_BOX']!,
-            ).put('userSessionToken', response.session!.accessToken);
+            final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+            await userBox.put(
+              'userSessionToken',
+              response.session!.accessToken,
+            );
+            await userBox.put('loginMethod', 'email');
           }
 
           if (!context.mounted) return;
