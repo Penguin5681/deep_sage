@@ -38,6 +38,7 @@ dependencies:
   oauth2: ^2.0.3
   flutter_staggered_animations: ^1.1.1
   shimmer: ^3.0.0
+  crypto: ^3.0.6
   
 
 dev_dependencies:

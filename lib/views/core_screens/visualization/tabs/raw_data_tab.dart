@@ -20,7 +20,7 @@ class RawDataTab extends StatefulWidget {
   State<RawDataTab> createState() => _RawDataTabState();
 }
 
-class _RawDataTabState extends State<RawDataTab> {
+class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMixin {
   /// Indicates whether a dataset has been imported.
   late bool isDatasetImported = false;
 
@@ -29,6 +29,12 @@ class _RawDataTabState extends State<RawDataTab> {
 
   /// Stores the type of the imported dataset (e.g., 'csv', 'json').
   late String importedDatasetType = '';
+
+  /// Cache key for current dataset identification
+  String? _currentDatasetCacheKey;
+
+  @override
+  bool get wantKeepAlive => true;
 
   /// Full data from the loaded dataset.
   List<List<dynamic>> fullData = [];
@@ -143,17 +149,17 @@ class _RawDataTabState extends State<RawDataTab> {
     });
   }
 
-  /// Loads additional rows from the dataset preview.
+  /// Loads more rows from the dataset preview.
   ///
-  /// This function fetches and appends more rows to the currently displayed
-  /// dataset preview. It manages states to prevent multiple simultaneous
-  /// loading requests and to indicate loading status to the user.
+  /// This method loads additional rows from the dataset, based on the current
+  /// `loadedRowsCount` and the provided `additionalRows` parameter. It updates
+  /// the `previewData` state with the new rows, and checks if there are more rows
+  /// to be loaded by comparing `loadedRowsCount` with `totalRowCount`.
   ///
-  /// It performs the following operations:
-  /// - Checks if rows are already loading or if all rows are loaded.
-  /// - Sets the `isLoadingMoreRows` state to true to show a loading indicator.
-  /// - Calls the data preview service to fetch additional rows.
-  Future<void> _loadMoreRows() async {
+  /// - [additionalRows]: The number of additional rows to load. Defaults to 20.
+  ///
+  /// This method will not execute if `isLoadingMoreRows` is true or if `hasMoreRows` is false.
+  Future<void> _loadMoreRows([int additionalRows = 20]) async {
     if (isLoadingMoreRows || !hasMoreRows) return;
 
     setState(() {
@@ -161,7 +167,6 @@ class _RawDataTabState extends State<RawDataTab> {
     });
 
     try {
-      final additionalRows = 10;
       final rowsToLoad = loadedRowsCount + additionalRows;
 
       final result = await _previewService.loadDatasetPreview(
@@ -172,24 +177,13 @@ class _RawDataTabState extends State<RawDataTab> {
 
       if (mounted) {
         setState(() {
+          previewData = result;
           isLoadingMoreRows = false;
 
-          if (result != null) {
-            previewData = result;
-            final newRows = result['preview'] as List<dynamic>;
-
-            loadedRowsCount = rowsToLoad;
-
-            if (result['metadata'] != null) {
-              totalRowCount = result['metadata']['total_rows'] ?? 0;
-              hasMoreRows = loadedRowsCount < totalRowCount;
-            } else {
-              hasMoreRows = newRows.length >= rowsToLoad;
-            }
-
-            if (importedDatasetType.toLowerCase() == 'csv' && isEditing) {
-              _initializeEditData();
-            }
+          loadedRowsCount = rowsToLoad;
+          if (result != null && result['metadata'] != null) {
+            totalRowCount = result['metadata']['total_rows'] ?? 0;
+            hasMoreRows = loadedRowsCount < totalRowCount;
           }
         });
       }
@@ -198,8 +192,9 @@ class _RawDataTabState extends State<RawDataTab> {
         setState(() {
           isLoadingMoreRows = false;
         });
+        _showNoMoreRowsDialog();
+        debugPrint('Preview error when loading more rows: $ex');
       }
-      debugPrint('Preview error when loading more rows: $ex');
     }
   }
 
@@ -296,6 +291,7 @@ class _RawDataTabState extends State<RawDataTab> {
         importedDatasetPath = '';
         importedDatasetType = '';
         previewData = null;
+        _currentDatasetCacheKey = null;
       });
       return;
     }
@@ -306,12 +302,16 @@ class _RawDataTabState extends State<RawDataTab> {
       isDatasetImported = true;
       importedDatasetPath = storedDatasetPath;
       importedDatasetType = storedDatasetType ?? '';
+
       if (isNewDataset) {
         previewData = null;
+        _currentDatasetCacheKey = null;
       }
     });
 
-    _loadPreviewData();
+    if (isNewDataset || previewData == null) {
+      _loadPreviewData();
+    }
   }
 
   /// Loads the dataset preview data based on the `importedDatasetPath` and `importedDatasetType`.
@@ -335,6 +335,23 @@ class _RawDataTabState extends State<RawDataTab> {
       return;
     }
 
+    final newCacheKey = '$importedDatasetPath-$loadedRowsCount';
+
+    if (_currentDatasetCacheKey == newCacheKey &&
+        previewData != null &&
+        !shouldToggleEditing) {
+      debugPrint('Using cached preview data');
+      if (shouldToggleEditing) {
+        setState(() {
+          isEditing = !isEditing;
+          if (isEditing && importedDatasetType.toLowerCase() == 'csv') {
+            _initializeEditData();
+          }
+        });
+      }
+      return;
+    }
+
     final pathToLoad = importedDatasetPath;
     final typeToLoad = importedDatasetType;
 
@@ -353,6 +370,7 @@ class _RawDataTabState extends State<RawDataTab> {
         setState(() {
           previewData = result;
           isLoading = false;
+          _currentDatasetCacheKey = newCacheKey;
 
           loadedRowsCount = rowsToLoad;
           if (result != null && result['metadata'] != null) {
@@ -630,6 +648,7 @@ class _RawDataTabState extends State<RawDataTab> {
   /// The [Padding] widget around the main content provides visual spacing.
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -786,47 +805,35 @@ class _RawDataTabState extends State<RawDataTab> {
                     ),
           ),
 
-          if (previewData != null && hasMoreRows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Center(
-                child: ElevatedButton(
-                  onPressed:
-                      isLoadingMoreRows
-                          ? null
-                          : () {
-                            if (hasMoreRows) {
-                              _loadMoreRows();
-                            } else {
-                              _showNoMoreRowsDialog();
-                            }
-                          },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child:
-                      isLoadingMoreRows
-                          ? const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
+          (previewData != null && hasMoreRows) ?
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    child: Center(
+                      child: ElevatedButton.icon(
+                        onPressed: isLoadingMoreRows ? null : () => _loadMoreRows(20),
+                        icon: isLoadingMoreRows
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Theme.of(context).colorScheme.onPrimary,
                               ),
-                              SizedBox(width: 8),
-                              Text('Loading...'),
-                            ],
-                          )
-                          : const Text('Load More Rows'),
-                ),
-              ),
-            ),
+                            )
+                          : const Icon(Icons.expand_more, size: 20, color: Colors.blue,),
+                        label: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: Text(
+                            isLoadingMoreRows ? 'Loading...' : 'Load More Rows',
+                            style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.blue),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ) : const SizedBox(),
           _buildQuickInsightsSection(),
           SizedBox(height: 20),
         ],
@@ -1410,28 +1417,64 @@ class _RawDataTabState extends State<RawDataTab> {
     final columns = previewData!['columns'] as List<dynamic>;
     final preview = previewData!['preview'] as List<dynamic>;
 
-    return DataTable(
-      headingRowHeight: 40,
-      dataRowMinHeight: 32,
-      dataRowMaxHeight: 40,
-      columns: List<DataColumn>.generate(
-        columns.length,
-        (index) => DataColumn(
-          label: Text(
-            columns[index].toString(),
-            style: const TextStyle(fontWeight: FontWeight.bold),
+    // Limit number of columns for very wide tables
+    final maxColumnsToShow = 20;
+    final displayColumns = columns.length > maxColumnsToShow
+        ? columns.sublist(0, maxColumnsToShow)
+        : columns;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (columns.length > maxColumnsToShow)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              'Showing ${displayColumns.length} of ${columns.length} columns',
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowHeight: 40,
+            dataRowMinHeight: 32,
+            dataRowMaxHeight: 40,
+            columns: List<DataColumn>.generate(
+              displayColumns.length,
+              (index) => DataColumn(
+                label: Text(
+                  displayColumns[index].toString(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            rows: List<DataRow>.generate(
+              preview.length,
+              (rowIndex) {
+                final row = preview[rowIndex] as Map<String, dynamic>;
+                return DataRow(
+                  cells: List<DataCell>.generate(
+                    displayColumns.length,
+                    (cellIndex) {
+                      final colName = displayColumns[cellIndex].toString();
+                      return DataCell(
+                        Text(
+                          row[colName]?.toString() ?? '',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }
+            ),
           ),
         ),
-      ),
-      rows: List<DataRow>.generate(preview.length, (rowIndex) {
-        final row = preview[rowIndex] as Map<String, dynamic>;
-        return DataRow(
-          cells: List<DataCell>.generate(
-            columns.length,
-            (cellIndex) => DataCell(Text(row[columns[cellIndex]]?.toString() ?? '')),
-          ),
-        );
-      }),
+      ],
     );
   }
 }
