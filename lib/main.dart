@@ -13,15 +13,13 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
-import 'core/services/cache_service.dart';
 import 'core/services/download_overlay_service.dart';
 import 'core/services/download_service.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  final appSupportDirectory =
-      await path_provider.getApplicationSupportDirectory();
+  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
 
   debugPrint("app data: ${appSupportDirectory.path}");
 
@@ -35,7 +33,7 @@ Future main() async {
   await Hive.openBox('starred_datasets');
   await Hive.openBox('user_preferences');
 
-  await CacheService().initCacheBox();
+  // await CacheService().initCacheBox();
 
   final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
   final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
@@ -73,10 +71,7 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
       home: hasValidSession ? DashboardScreen() : SplashScreen(),
-      routes: {
-        '/login': (context) => LoginScreen(),
-        '/dashboard': (context) => DashboardScreen(),
-      },
+      routes: {'/login': (context) => LoginScreen(), '/dashboard': (context) => DashboardScreen()},
     );
   }
 }
