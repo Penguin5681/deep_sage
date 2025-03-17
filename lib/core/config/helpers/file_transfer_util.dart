@@ -3,7 +3,27 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:path/path.dart' as path;
 
+/// A utility class that provides file transfer functionality.
+///
+/// This class contains static methods to move files from one location to another
+/// while handling file name conflicts and preserving starred status.
 class FileTransferUtil {
+  /// Moves files from source paths to a destination directory.
+  ///
+  /// Takes a list of source file paths and moves them to the specified destination
+  /// directory. Returns a list of the new file paths after the move operation.
+  ///
+  /// Parameters:
+  /// - [sourcePaths]: List of file paths to be moved.
+  /// - [destinationDirectory]: Target directory where files will be moved.
+  /// - [createDestinationIfMissing]: Creates the destination directory if it doesn't exist (default: true).
+  /// - [overwriteExisting]: Overwrites existing files in the destination (default: false).
+  ///
+  /// Returns:
+  /// A [Future] that completes with a list of new file paths after the move operation.
+  ///
+  /// Throws:
+  /// - [Exception] if the destination directory cannot be created.
   static Future<List<String>> moveFiles({
     required List<String> sourcePaths,
     required String destinationDirectory,
@@ -87,6 +107,17 @@ class FileTransferUtil {
     return newFilePaths;
   }
 
+  /// Creates a unique file name to avoid overwriting existing files.
+  ///
+  /// If a file with the same name exists in the destination directory,
+  /// this method appends a counter to the file name until a unique name is found.
+  ///
+  /// Parameters:
+  /// - [directory]: The directory path where the file will be saved.
+  /// - [fileName]: The original file name.
+  ///
+  /// Returns:
+  /// A [Future] that completes with a unique file name.
   static Future<String> _getUniqueFileName(
     String directory,
     String fileName,
