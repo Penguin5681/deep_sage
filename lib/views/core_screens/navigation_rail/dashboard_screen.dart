@@ -34,7 +34,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// Fallback user avatar image to display when no profile image is available.
   /// This asset is used as the default profile picture.
-  final Image fallbackUserAvatar = Image.asset('assets/fallback/fallback_user_image.png');
+  final Image fallbackUserAvatar = Image.asset(
+    'assets/fallback/fallback_user_image.png',
+  );
 
   /// Checks if the current user signed in with Google authentication.
   ///
@@ -115,11 +117,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ///
   /// Returns: A widget that displays the appropriate icon for the current theme.
 
-  Widget getIconForTheme({required String lightIcon, required String darkIcon, double size = 24}) {
+  Widget getIconForTheme({
+    required String lightIcon,
+    required String darkIcon,
+    double size = 24,
+  }) {
     return Builder(
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+        return Image.asset(
+          isDarkMode ? darkIcon : lightIcon,
+          width: size,
+          height: size,
+        );
       },
     );
   }
@@ -228,10 +238,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 48,
                 height: 48,
                 color: Colors.grey[300],
-                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               );
             } else if (snapshot.hasData) {
-              return ClipOval(child: SizedBox(width: 48, height: 48, child: snapshot.data!));
+              return ClipOval(
+                child: SizedBox(width: 48, height: 48, child: snapshot.data!),
+              );
             } else {
               return _buildFallbackImage();
             }
@@ -260,7 +274,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ///  * [buildProfileImage], which uses this method as a fallback
   ///  * [fallbackUserAvatar], the default image asset used
   Widget _buildFallbackImage() {
-    return ClipOval(child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar));
+    return ClipOval(
+      child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar),
+    );
   }
 
   /// Builds the main application interface with a navigation rail and content area.
@@ -306,30 +322,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Row(
         children: [
           NavigationRail(
-            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? Color(0xFF2A2D37)
-                : Colors.grey[100],
+            backgroundColor:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Color(0xFF2A2D37)
+                    : Colors.grey[100],
             selectedIconTheme: IconThemeData(
               color: Theme.of(context).colorScheme.primary,
             ),
             unselectedIconTheme: IconThemeData(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[400]
-                  : Colors.grey[700],
+              color:
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[400]
+                      : Colors.grey[700],
             ),
             selectedLabelTextStyle: TextStyle(
               color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
             ),
             unselectedLabelTextStyle: TextStyle(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey[400]
-                  : Colors.grey[700],
+              color:
+                  Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[400]
+                      : Colors.grey[700],
             ),
             useIndicator: true,
-            indicatorColor: Theme.of(context).brightness == Brightness.dark
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            indicatorColor:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.2)
+                    : Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
             elevation: 1,
             trailing: Expanded(
               child: Align(
@@ -357,7 +381,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(height: 40),
-                      MouseRegion(cursor: SystemMouseCursors.click, child: buildProfileImage()),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: buildProfileImage(),
+                      ),
                     ],
                   ),
                 ),
@@ -460,7 +487,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(child: screens[selectedIndex]),
         ],
       ),
-      floatingActionButton: env == 'development' ? DevFAB(parentContext: context) : null,
+      floatingActionButton:
+          env == 'development' ? DevFAB(parentContext: context) : null,
     );
   }
 }

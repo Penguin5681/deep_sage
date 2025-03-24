@@ -8,6 +8,7 @@ import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,7 +20,8 @@ import 'core/services/download_service.dart';
 Future main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-  final appSupportDirectory = await path_provider.getApplicationSupportDirectory();
+  final appSupportDirectory =
+      await path_provider.getApplicationSupportDirectory();
 
   debugPrint("app data: ${appSupportDirectory.path}");
 
@@ -50,7 +52,7 @@ Future main() async {
         ChangeNotifierProvider(create: (_) => DownloadService()),
         ChangeNotifierProvider(create: (_) => DownloadOverlayService()),
       ],
-      child: MyApp(hasValidSession: hasValidSession),
+      child: Phoenix(child: MyApp(hasValidSession: hasValidSession)),
     ),
   );
 }
@@ -71,7 +73,10 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
       home: hasValidSession ? DashboardScreen() : SplashScreen(),
-      routes: {'/login': (context) => LoginScreen(), '/dashboard': (context) => DashboardScreen()},
+      routes: {
+        '/login': (context) => LoginScreen(),
+        '/dashboard': (context) => DashboardScreen(),
+      },
     );
   }
 }
