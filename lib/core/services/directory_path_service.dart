@@ -19,6 +19,12 @@ class DirectoryPathService {
   /// Private constructor used by the singleton pattern.
   DirectoryPathService._internal();
 
+  /// Stores the currently selected path
+  String _selectedPath = '';
+
+  /// Gets the currently selected path
+  String get selectedPath => _selectedPath;
+
   /// Stream controller for broadcasting path changes.
   final _controller = StreamController<String>.broadcast();
 
@@ -31,6 +37,7 @@ class DirectoryPathService {
   ///
   /// [path] The new directory path to broadcast.
   void notifyPathChange(String path) {
+    _selectedPath = path;
     _controller.add(path);
   }
 
