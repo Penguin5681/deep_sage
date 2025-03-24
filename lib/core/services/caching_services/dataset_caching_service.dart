@@ -36,7 +36,8 @@ class DatasetCachingService {
   ///   filePath (String): The path to the dataset file.
   ///   fileType (String): The type of the dataset file (e.g., 'csv', 'json').
   void queueForCaching(String filePath, String fileType) {
-    if (_cachedPreviews.containsKey(filePath) || _cachingQueue.contains(filePath)) {
+    if (_cachedPreviews.containsKey(filePath) ||
+        _cachingQueue.contains(filePath)) {
       return;
     }
     _cachingQueue.add(filePath);
@@ -82,7 +83,11 @@ class DatasetCachingService {
 
       await Future.delayed(cachingDelay);
 
-      final preview = await _previewService.loadDatasetPreview(filePath, fileType, preloadRowCount);
+      final preview = await _previewService.loadDatasetPreview(
+        filePath,
+        fileType,
+        preloadRowCount,
+      );
 
       if (preview != null) {
         _cachedPreviews[filePath] = preview;
