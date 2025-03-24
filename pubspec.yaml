@@ -39,6 +39,8 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
   shimmer: ^3.0.0
   crypto: ^3.0.6
+  showcaseview: ^4.0.1
+  flutter_phoenix: ^1.1.1
   
 
 dev_dependencies:

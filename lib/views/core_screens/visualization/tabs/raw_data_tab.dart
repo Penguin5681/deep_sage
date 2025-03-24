@@ -21,10 +21,10 @@ class RawDataTab extends StatefulWidget {
   State<RawDataTab> createState() => _RawDataTabState();
 }
 
-class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMixin {
-
-  final DatasetInsightsCachingService _insightsCachingService = DatasetInsightsCachingService();
-
+class _RawDataTabState extends State<RawDataTab>
+    with AutomaticKeepAliveClientMixin {
+  final DatasetInsightsCachingService _insightsCachingService =
+      DatasetInsightsCachingService();
 
   /// Indicates whether a dataset has been imported.
   late bool isDatasetImported = false;
@@ -123,7 +123,6 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   ///
   /// Returns a [Future] that completes when the insights loading process is finished.
   Future<void> _loadQuickInsights() async {
-
     if (!isDatasetImported || importedDatasetPath.isEmpty) {
       setState(() {
         insightsData = null;
@@ -143,10 +142,14 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
     });
 
     try {
-      final cachedInsights = await _insightsCachingService.getCachedInsights(importedDatasetPath);
+      final cachedInsights = await _insightsCachingService.getCachedInsights(
+        importedDatasetPath,
+      );
 
       if (importedDatasetPath != importedDatasets.get('currentDatasetPath')) {
-        debugPrint('Dataset changed after loading insights, discarding results');
+        debugPrint(
+          'Dataset changed after loading insights, discarding results',
+        );
         return;
       }
 
@@ -170,7 +173,10 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
       }
 
       if (insights != null) {
-        await _insightsCachingService.cacheInsights(importedDatasetPath, insights);
+        await _insightsCachingService.cacheInsights(
+          importedDatasetPath,
+          insights,
+        );
 
         if (mounted) {
           setState(() {
@@ -266,7 +272,12 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
             content: const Text(
               'You have reached the end of the dataset. There are no more rows to load.',
             ),
-            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
     );
   }
@@ -423,7 +434,11 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
     });
 
     try {
-      final result = await _previewService.loadDatasetPreview(pathToLoad, typeToLoad, rowsToLoad);
+      final result = await _previewService.loadDatasetPreview(
+        pathToLoad,
+        typeToLoad,
+        rowsToLoad,
+      );
 
       if (mounted) {
         setState(() {
@@ -517,7 +532,11 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
       fullData = [headerChunk[0]];
 
       // Now load only the rows we need for editing (those visible in the preview)
-      final visibleRowsChunk = await loadCsvChunk(importedDatasetPath, 1, rows.length);
+      final visibleRowsChunk = await loadCsvChunk(
+        importedDatasetPath,
+        1,
+        rows.length,
+      );
       if (visibleRowsChunk != null && visibleRowsChunk.isNotEmpty) {
         fullData.addAll(visibleRowsChunk);
       }
@@ -539,9 +558,9 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   /// displaying the appropriate table format based on the new `isEditing` state.
   void _toggleEditing() {
     if (importedDatasetType.toLowerCase() != 'csv') {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Only CSV files can be edited in-place')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only CSV files can be edited in-place')),
+      );
       return;
     }
 
@@ -737,19 +756,25 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
             'No Dataset imported yet',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26.0),
           ),
-          const Text('Import a dataset to begin exploring and analyzing your data'),
+          const Text(
+            'Import a dataset to begin exploring and analyzing your data',
+          ),
           const SizedBox(height: 18.0),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
-                onPressed: () {
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade600,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
                 child: Text(
                   'Import Locally',
@@ -761,9 +786,14 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: Colors.blue.shade600, width: 2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   foregroundColor: Colors.blue.shade600,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
                 child: const Text(
                   "Browse Kaggle",
@@ -807,7 +837,10 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
               Expanded(
                 child: Text(
                   'Dataset: $fileName',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
+                  ),
                 ),
               ),
               if (isCSV)
@@ -818,11 +851,14 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                         : (isEditing ? Icons.visibility : Icons.edit),
                   ),
                   label: Text(
-                    isEditModeLoading ? 'Loading...' : (isEditing ? 'View Only' : 'Edit Data'),
+                    isEditModeLoading
+                        ? 'Loading...'
+                        : (isEditing ? 'View Only' : 'Edit Data'),
                   ),
                   onPressed: isEditModeLoading ? null : _toggleEditing,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isEditing ? Colors.grey : Colors.blue.shade600,
+                    backgroundColor:
+                        isEditing ? Colors.grey : Colors.blue.shade600,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -836,7 +872,11 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Row(
                 children: [
-                  SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Saving changes...',
@@ -859,19 +899,24 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                       scrollDirection: Axis.vertical,
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: isEditing && isCSV ? _buildEditableDataTable() : _buildDataTable(),
+                        child:
+                            isEditing && isCSV
+                                ? _buildEditableDataTable()
+                                : _buildDataTable(),
                       ),
                     ),
           ),
 
-          (previewData != null && hasMoreRows) ?
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Center(
-                      child: ElevatedButton.icon(
-                        onPressed: isLoadingMoreRows ? null : () => _loadMoreRows(20),
-                        icon: isLoadingMoreRows
-                          ? SizedBox(
+          (previewData != null && hasMoreRows)
+              ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        isLoadingMoreRows ? null : () => _loadMoreRows(20),
+                    icon:
+                        isLoadingMoreRows
+                            ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
@@ -879,20 +924,31 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                                 color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             )
-                          : const Icon(Icons.expand_more, size: 20, color: Colors.blue,),
-                        label: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: Text(
-                            isLoadingMoreRows ? 'Loading...' : 'Load More Rows',
-                            style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.blue),
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            : const Icon(
+                              Icons.expand_more,
+                              size: 20,
+                              color: Colors.blue,
+                            ),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Text(
+                        isLoadingMoreRows ? 'Loading...' : 'Load More Rows',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blue,
                         ),
                       ),
                     ),
-                  ) : const SizedBox(),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              : const SizedBox(),
           _buildQuickInsightsSection(),
           SizedBox(height: 20),
         ],
@@ -928,7 +984,11 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
             ),
             child: Row(
               children: [
-                Icon(Icons.insights, color: Theme.of(context).colorScheme.secondary, size: 24),
+                Icon(
+                  Icons.insights,
+                  color: Theme.of(context).colorScheme.secondary,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -942,21 +1002,29 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                     ),
                     child:
                         isLoadingInsights
                             ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                             : const Text('Generate'),
                   ),
                 const SizedBox(width: 8),
                 Icon(
                   showInsights ? Icons.expand_less : Icons.expand_more,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ],
             ),
@@ -982,7 +1050,9 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                   padding: const EdgeInsets.all(24.0),
                   child: Text(
                     'No insights available. Click "Generate" to analyze this dataset.',
-                    style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1022,11 +1092,23 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildQualityScoreRow('Overall Quality', dataQuality['overall_score']),
+              _buildQualityScoreRow(
+                'Overall Quality',
+                dataQuality['overall_score'],
+              ),
               const SizedBox(height: 8),
-              _buildQualityScoreRow('Completeness', dataQuality['completeness_score']),
-              _buildQualityScoreRow('Outlier Score', dataQuality['outlier_score']),
-              _buildQualityScoreRow('Duplication Score', dataQuality['duplication_score']),
+              _buildQualityScoreRow(
+                'Completeness',
+                dataQuality['completeness_score'],
+              ),
+              _buildQualityScoreRow(
+                'Outlier Score',
+                dataQuality['outlier_score'],
+              ),
+              _buildQualityScoreRow(
+                'Duplication Score',
+                dataQuality['duplication_score'],
+              ),
               const SizedBox(height: 12),
               Text(
                 'Missing Data: ${dataQuality['total_missing_percentage'].toStringAsFixed(2)}%',
@@ -1044,7 +1126,9 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
           Icons.category_outlined,
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildColumnTypeDistribution(dataQuality['column_types'])],
+            children: [
+              _buildColumnTypeDistribution(dataQuality['column_types']),
+            ],
           ),
           cardColor,
         ),
@@ -1086,7 +1170,12 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   /// [icon] The icon to display next to the title.
   /// [content] The widget containing the insight content.
   /// [cardColor] The background color of the card.
-  Widget _buildInsightCard(String title, IconData icon, Widget content, Color? cardColor) {
+  Widget _buildInsightCard(
+    String title,
+    IconData icon,
+    Widget content,
+    Color? cardColor,
+  ) {
     return Card(
       color: cardColor,
       elevation: 1,
@@ -1098,9 +1187,19 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
           children: [
             Row(
               children: [
-                Icon(icon, size: 20, color: Theme.of(context).colorScheme.secondary),
+                Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             const Divider(height: 24),
@@ -1116,11 +1215,15 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   /// [label] The name of the quality metric.
   /// [score] The numerical score value (0-100).
   Widget _buildQualityScoreRow(String label, double score) {
-    final Color scoreColor = score > 90 ? Colors.green : (score > 70 ? Colors.orange : Colors.red);
+    final Color scoreColor =
+        score > 90 ? Colors.green : (score > 70 ? Colors.orange : Colors.red);
 
     return Row(
       children: [
-        SizedBox(width: 140, child: Text(label, style: const TextStyle(fontSize: 14))),
+        SizedBox(
+          width: 140,
+          child: Text(label, style: const TextStyle(fontSize: 14)),
+        ),
         Expanded(
           child: LinearProgressIndicator(
             value: score / 100,
@@ -1141,12 +1244,18 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   ///
   /// [columnTypes] Map containing counts of different column types.
   Widget _buildColumnTypeDistribution(Map<String, dynamic> columnTypes) {
-    final totalColumns = columnTypes.values.fold<int>(0, (sum, value) => sum + value as int);
+    final totalColumns = columnTypes.values.fold<int>(
+      0,
+      (sum, value) => sum + value as int,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Total columns: $totalColumns', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          'Total columns: $totalColumns',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
@@ -1155,14 +1264,21 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
               columnTypes.entries.map((entry) {
                 final type = entry.key.toString();
                 final count = entry.value as int;
-                final percentage = (count * 100 / totalColumns).toStringAsFixed(1);
+                final percentage = (count * 100 / totalColumns).toStringAsFixed(
+                  1,
+                );
 
                 return Chip(
-                  backgroundColor: _getColumnTypeColor(type).withValues(alpha: 0.15),
+                  backgroundColor: _getColumnTypeColor(
+                    type,
+                  ).withValues(alpha: 0.15),
                   side: BorderSide(color: _getColumnTypeColor(type), width: 1),
                   label: Text(
                     '$type: $count ($percentage%)',
-                    style: TextStyle(color: _getColumnTypeColor(type), fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      color: _getColumnTypeColor(type),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   avatar: CircleAvatar(
                     backgroundColor: _getColumnTypeColor(type),
@@ -1213,7 +1329,8 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
       children:
           columnsToShow.map((columnName) {
             final columnStats = categoricalStats[columnName];
-            final topValues = columnStats['top_5_values'] as Map<String, dynamic>;
+            final topValues =
+                columnStats['top_5_values'] as Map<String, dynamic>;
             final uniqueValues = columnStats['unique_values'] as int;
 
             return Padding(
@@ -1269,7 +1386,10 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(columnName.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    columnName.toString(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0),
@@ -1299,14 +1419,19 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   Widget _buildStatItem(String label, dynamic value) {
     final formattedValue =
         value is double
-            ? (value > 100 ? value.toStringAsFixed(1) : value.toStringAsFixed(2))
+            ? (value > 100
+                ? value.toStringAsFixed(1)
+                : value.toStringAsFixed(2))
             : value.toString();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        Text(formattedValue, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          formattedValue,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
@@ -1329,12 +1454,17 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Table(
-      border: TableBorder.all(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!, width: 1),
+      border: TableBorder.all(
+        color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+        width: 1,
+      ),
       defaultColumnWidth: const IntrinsicColumnWidth(),
       children: [
         // Header row
         TableRow(
-          decoration: BoxDecoration(color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+          ),
           children:
               columns
                   .map(
@@ -1369,9 +1499,13 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                       controller: controller,
                       decoration: InputDecoration(
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: 8,
+                          horizontal: 8,
+                        ),
                       ),
-                      onChanged: (value) => _saveChanges(rowIndex, colIndex, value),
+                      onChanged:
+                          (value) => _saveChanges(rowIndex, colIndex, value),
                     ),
                   );
                 }).toList(),
@@ -1397,12 +1531,19 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
   ///
   /// The method skips header rows and starts reading from the specified `startRow`.
   /// It stops reading when it reaches `startRow + chunkSize` or the end of the file.
-  Future<List<List<dynamic>>?> loadCsvChunk(String filePath, int startRow, int chunkSize) async {
+  Future<List<List<dynamic>>?> loadCsvChunk(
+    String filePath,
+    int startRow,
+    int chunkSize,
+  ) async {
     try {
       final file = File(filePath);
       if (!await file.exists()) return null;
 
-      final lineStream = file.openRead().transform(utf8.decoder).transform(const LineSplitter());
+      final lineStream = file
+          .openRead()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
 
       List<List<dynamic>> chunk = [];
       int currentLine = 0;
@@ -1478,9 +1619,10 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
 
     // Limit number of columns for very wide tables
     final maxColumnsToShow = 20;
-    final displayColumns = columns.length > maxColumnsToShow
-        ? columns.sublist(0, maxColumnsToShow)
-        : columns;
+    final displayColumns =
+        columns.length > maxColumnsToShow
+            ? columns.sublist(0, maxColumnsToShow)
+            : columns;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1492,7 +1634,9 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
               'Showing ${displayColumns.length} of ${columns.length} columns',
               style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ),
@@ -1511,26 +1655,22 @@ class _RawDataTabState extends State<RawDataTab> with AutomaticKeepAliveClientMi
                 ),
               ),
             ),
-            rows: List<DataRow>.generate(
-              preview.length,
-              (rowIndex) {
-                final row = preview[rowIndex] as Map<String, dynamic>;
-                return DataRow(
-                  cells: List<DataCell>.generate(
-                    displayColumns.length,
-                    (cellIndex) {
-                      final colName = displayColumns[cellIndex].toString();
-                      return DataCell(
-                        Text(
-                          row[colName]?.toString() ?? '',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    },
-                  ),
-                );
-              }
-            ),
+            rows: List<DataRow>.generate(preview.length, (rowIndex) {
+              final row = preview[rowIndex] as Map<String, dynamic>;
+              return DataRow(
+                cells: List<DataCell>.generate(displayColumns.length, (
+                  cellIndex,
+                ) {
+                  final colName = displayColumns[cellIndex].toString();
+                  return DataCell(
+                    Text(
+                      row[colName]?.toString() ?? '',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }),
+              );
+            }),
           ),
         ),
       ],
