@@ -90,44 +90,78 @@ class DataPreviewService {
       }
 
       final fileSize = await file.length();
+      List<String> headerLine = [];
+      List<Map<String, dynamic>> preview = [];
 
-      final lineStream = file
-          .openRead()
+      // Estimate total rows based on average line size for large files
+      int totalRows = 0;
+      bool isLargeFile = fileSize > 10 * 1024 * 1024; // 10MB threshold
+
+      final inputStream = file.openRead();
+      final lines = inputStream
           .transform(utf8.decoder)
           .transform(const LineSplitter());
 
-      List<String> headerLine = [];
-      List<List<dynamic>> previewData = [];
+      // Create a limited stream that stops after previewRows + 1 lines (header + data rows)
       int lineCount = 0;
-      int totalRows = 0;
 
-      await for (var line in lineStream) {
+      await for (var line in lines) {
+        // Stop reading when we have enough rows
+        if (lineCount > previewRows) {
+          break;
+        }
+
         if (lineCount == 0) {
-          headerLine =
-              const CsvToListConverter()
-                  .convert(line)
-                  .first
-                  .map((e) => e.toString())
-                  .toList();
-        } else if (lineCount <= previewRows) {
-          previewData.add(const CsvToListConverter().convert(line).first);
+          // Parse header
+          try {
+            headerLine =
+                const CsvToListConverter()
+                    .convert(line)
+                    .first
+                    .map((e) => e.toString())
+                    .toList();
+          } catch (e) {
+            debugPrint('Error parsing CSV header: $e');
+            headerLine = List<String>.generate(
+              line.split(',').length,
+              (i) => 'Column_${i + 1}',
+            );
+          }
+        } else {
+          // Parse data rows
+          try {
+            final parsedRow = const CsvToListConverter().convert(line).first;
+            final rowMap = <String, dynamic>{};
+            for (
+              int i = 0;
+              i < headerLine.length && i < parsedRow.length;
+              i++
+            ) {
+              rowMap[headerLine[i]] = parsedRow[i];
+            }
+            preview.add(rowMap);
+          } catch (e) {
+            debugPrint('Error parsing CSV row $lineCount: $e');
+          }
         }
 
         lineCount++;
-        if (lineCount > previewRows + 1) {
-          totalRows++;
-        }
       }
 
-      totalRows += lineCount - 1;
-
-      final List<Map<String, dynamic>> preview = [];
-      for (var row in previewData) {
-        final Map<String, dynamic> rowMap = {};
-        for (int i = 0; i < headerLine.length && i < row.length; i++) {
-          rowMap[headerLine[i]] = row[i];
+      // For large files, use an estimation of total rows
+      if (isLargeFile) {
+        final avgRowSize = lineCount > 1 ? fileSize / lineCount : fileSize;
+        totalRows =
+            (fileSize / avgRowSize).round() - 1; // Subtract 1 for header
+        totalRows = totalRows.clamp(preview.length, double.infinity).toInt();
+      } else {
+        // For smaller files, we can count rows more accurately
+        try {
+          totalRows =
+              await _countCsvLines(filePath) - 1; // Subtract 1 for header
+        } catch (e) {
+          totalRows = preview.length; // Fallback to what we know
         }
-        preview.add(rowMap);
       }
 
       return {
@@ -144,6 +178,27 @@ class DataPreviewService {
       debugPrint('Error loading CSV directly: $e');
       return null;
     }
+  }
+
+  // Helper method to count lines in a file more efficiently
+  Future<int> _countCsvLines(String filePath) async {
+    final file = File(filePath);
+    final sampleSize = 1024 * 64; // 64KB sample
+
+    if (await file.length() < sampleSize * 2) {
+      // Small file, just count lines directly
+      return LineSplitter().convert(await file.readAsString()).length;
+    }
+
+    // For larger files, use statistical estimation
+    final fileSize = await file.length();
+    final sample =
+        await file.openRead(0, sampleSize).transform(utf8.decoder).join();
+    final sampleLineCount = LineSplitter().convert(sample).length;
+
+    // Extrapolate the total based on the sample
+    final bytesPerLine = sampleSize / sampleLineCount;
+    return (fileSize / bytesPerLine).round();
   }
 
   /// Saves edited CSV data back to the file.

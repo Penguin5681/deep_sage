@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 import 'package:path/path.dart' as path;
 
@@ -60,6 +61,8 @@ class _FolderAllState extends State<FolderAll> {
 
   /// Subscription for the directory path stream.
   late StreamSubscription<String> pathSubscription;
+
+  late int hoveredFolderIndex = -1;
 
   /// Watcher for changes in the root directory.
   StreamSubscription<FileSystemEvent>? directoryWatcher;
@@ -121,6 +124,7 @@ class _FolderAllState extends State<FolderAll> {
   /// the `datasetFiles` list and the `anyFilesPresent` flag based on the scan
   /// results. If an error occurs during the scanning process, it prints an
   /// error message to the debug console.
+  /// This function also updates the [DatasetManagerService] class used in dashboard
   Future<void> scanForDatasetFiles(String rootPath) async {
     if (rootPath.isEmpty) return;
     List<DatasetFile> files = [];
@@ -792,165 +796,188 @@ class _FolderAllState extends State<FolderAll> {
                         }
                         return false;
                       },
-                      child: ListView.separated(
-                        physics: ClampingScrollPhysics(),
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: filesMetaData.length,
-                        separatorBuilder:
-                            (context, index) => Divider(
-                              color:
-                                  isDarkMode
-                                      ? Colors.grey[800]
-                                      : Colors.grey[200],
-                              height: 1,
-                            ),
-                        itemBuilder: (context, index) {
-                          final fileData = filesMetaData[index];
-                          debugPrint('$fileData');
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12.0,
-                              horizontal: 16.0,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                                  isDarkMode ? Color(0xFF1F222A) : Colors.white,
-                              border:
-                                  index == filesMetaData.length - 1
-                                      ? Border(
-                                        bottom: BorderSide(
-                                          color: Colors.transparent,
-                                        ),
-                                      )
-                                      : null,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getFileIcon(fileData['fileType'] ?? ''),
-                                  size: 24,
-                                  color: _getFileColor(
-                                    fileData['fileType'] ?? '',
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    fileData['fileName'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.w500,
-                                      color:
-                                          isDarkMode
-                                              ? Colors.white
-                                              : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
+                      child: AnimationLimiter(
+                        child: ListView.separated(
+                          physics: ClampingScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: filesMetaData.length,
+                          separatorBuilder:
+                              (context, index) => Divider(
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey[800]
+                                        : Colors.grey[200],
+                                height: 1,
+                              ),
+                          itemBuilder: (context, index) {
+                            final fileData = filesMetaData[index];
+                            debugPrint('$fileData');
+                            return AnimationConfiguration.staggeredList(
+                              position: index,
+                              duration: const Duration(milliseconds: 375),
+                              child: SlideAnimation(
+                                verticalOffset: 50.0,
+                                child: FadeInAnimation(
                                   child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.0,
-                                      vertical: 4.0,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12.0,
+                                      horizontal: 16.0,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: _getFileColor(
-                                        fileData['fileType'] ?? '',
-                                      ).withValues(
-                                        alpha: isDarkMode ? 0.2 : 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12.0),
+                                      color:
+                                          isDarkMode
+                                              ? Color(0xFF1F222A)
+                                              : Colors.white,
+                                      border:
+                                          index == filesMetaData.length - 1
+                                              ? Border(
+                                                bottom: BorderSide(
+                                                  color: Colors.transparent,
+                                                ),
+                                              )
+                                              : null,
                                     ),
-                                    child: Text(
-                                      fileData['fileType'] ?? '',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 14.0,
-                                        color: _getFileColor(
-                                          fileData['fileType'] ?? '',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _getFileIcon(
+                                            fileData['fileType'] ?? '',
+                                          ),
+                                          size: 24,
+                                          color: _getFileColor(
+                                            fileData['fileType'] ?? '',
+                                          ),
                                         ),
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          flex: 3,
+                                          child: Text(
+                                            fileData['fileName'] ?? '',
+                                            style: TextStyle(
+                                              fontSize: 16.0,
+                                              fontWeight: FontWeight.w500,
+                                              color:
+                                                  isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 1,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 8.0,
+                                              vertical: 4.0,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getFileColor(
+                                                fileData['fileType'] ?? '',
+                                              ).withValues(
+                                                alpha: isDarkMode ? 0.2 : 0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12.0),
+                                            ),
+                                            child: Text(
+                                              fileData['fileType'] ?? '',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontSize: 14.0,
+                                                color: _getFileColor(
+                                                  fileData['fileType'] ?? '',
+                                                ),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 1,
+                                          child: Text(
+                                            fileData['fileSize'] ?? '',
+                                            style: TextStyle(
+                                              fontSize: 14.0,
+                                              color:
+                                                  isDarkMode
+                                                      ? Colors.grey[400]
+                                                      : Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            fileData['modified'] ?? '',
+                                            style: TextStyle(
+                                              fontSize: 14.0,
+                                              color:
+                                                  isDarkMode
+                                                      ? Colors.grey[400]
+                                                      : Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            datasetFiles[index].isStarred
+                                                ? Icons.star
+                                                : Icons.star_border,
+                                            size: 20,
+                                            color:
+                                                datasetFiles[index].isStarred
+                                                    ? Colors.amber
+                                                    : (isDarkMode
+                                                        ? Colors.grey[400]
+                                                        : null),
+                                          ),
+                                          onPressed: () {
+                                            final index = datasetFiles
+                                                .indexWhere(
+                                                  (file) =>
+                                                      file.filePath ==
+                                                      fileData['filePath'],
+                                                );
+                                            if (index != -1) {
+                                              setState(() {
+                                                datasetFiles[index].isStarred =
+                                                    !datasetFiles[index]
+                                                        .isStarred;
+                                              });
+                                              _saveStarredStatus(
+                                                datasetFiles[index].filePath,
+                                                datasetFiles[index].isStarred,
+                                              );
+                                            }
+                                          },
+                                          tooltip: "Add to favorites",
+                                          splashRadius: 20,
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.more_vert,
+                                            size: 20,
+                                            color:
+                                                isDarkMode
+                                                    ? Colors.grey[400]
+                                                    : null,
+                                          ),
+                                          onPressed:
+                                              () => _openFileDetails(
+                                                datasetFiles[index],
+                                              ),
+                                          tooltip: "More options",
+                                          splashRadius: 20,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    fileData['fileSize'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 14.0,
-                                      color:
-                                          isDarkMode
-                                              ? Colors.grey[400]
-                                              : Colors.grey[700],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    fileData['modified'] ?? '',
-                                    style: TextStyle(
-                                      fontSize: 14.0,
-                                      color:
-                                          isDarkMode
-                                              ? Colors.grey[400]
-                                              : Colors.grey[700],
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    datasetFiles[index].isStarred
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                    size: 20,
-                                    color:
-                                        datasetFiles[index].isStarred
-                                            ? Colors.amber
-                                            : (isDarkMode
-                                                ? Colors.grey[400]
-                                                : null),
-                                  ),
-                                  onPressed: () {
-                                    final index = datasetFiles.indexWhere(
-                                      (file) =>
-                                          file.filePath == fileData['filePath'],
-                                    );
-                                    if (index != -1) {
-                                      setState(() {
-                                        datasetFiles[index].isStarred =
-                                            !datasetFiles[index].isStarred;
-                                      });
-                                      _saveStarredStatus(
-                                        datasetFiles[index].filePath,
-                                        datasetFiles[index].isStarred,
-                                      );
-                                    }
-                                  },
-                                  tooltip: "Add to favorites",
-                                  splashRadius: 20,
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.more_vert,
-                                    size: 20,
-                                    color: isDarkMode ? Colors.grey[400] : null,
-                                  ),
-                                  onPressed:
-                                      () =>
-                                          _openFileDetails(datasetFiles[index]),
-                                  tooltip: "More options",
-                                  splashRadius: 20,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
           ),
@@ -1624,7 +1651,11 @@ class _FolderAllState extends State<FolderAll> {
                         ),
                         child: SizedBox(
                           width: 280,
-                          child: _buildFolderCard(folders[index], isDarkMode),
+                          child: _buildFolderCard(
+                            folders[index],
+                            isDarkMode,
+                            index,
+                          ),
                         ),
                       );
                     },
@@ -1648,100 +1679,123 @@ class _FolderAllState extends State<FolderAll> {
   /// Args:
   ///   - `folder`: A map containing folder details, including 'name' and 'files'.
   ///   - `isDarkMode`: A boolean indicating whether dark mode is enabled.
-  Widget _buildFolderCard(Map<String, String> folder, bool isDarkMode) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
-        borderRadius: BorderRadius.circular(12.0),
-        border: Border.all(
-          color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color:
-                isDarkMode
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4.0,
-            offset: Offset(0, 2),
+  Widget _buildFolderCard(
+    Map<String, String> folder,
+    bool isDarkMode,
+    int index,
+  ) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => hoveredFolderIndex = index),
+      onExit: (_) => setState(() => hoveredFolderIndex = -1),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform:
+            hoveredFolderIndex == index
+                ? Matrix4.translationValues(0, -5, 0)
+                : Matrix4.identity(),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
+          borderRadius: BorderRadius.circular(12.0),
+          border: Border.all(
+            color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+            width: 1.0,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Color(0xFF3A3E4A) : Color(0xFFF5F7FB),
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: Icon(
-                    Icons.folder,
-                    color: Colors.blue[400],
-                    size: 24.0,
-                  ),
-                ),
-                SizedBox(width: 12.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        folder['name']!,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.0,
-                          color: isDarkMode ? Colors.white : Colors.black87,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4.0),
-                      Text(
-                        folder['files']!,
-                        style: TextStyle(
-                          fontSize: 12.0,
-                          color:
-                              isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: () {
-                openFileExplorer(folder['name']!);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
-                foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
-                elevation: 0,
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                  side: BorderSide(
-                    color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Open"),
-                  SizedBox(width: 4.0),
-                  Icon(Icons.arrow_forward, size: 16.0),
-                ],
-              ),
+          boxShadow: [
+            BoxShadow(
+              color:
+                  hoveredFolderIndex == index
+                      ? (isDarkMode
+                          ? Colors.black.withValues(alpha: 0.4)
+                          : Colors.black.withValues(alpha: 0.1))
+                      : (isDarkMode
+                          ? Colors.black.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.05)),
+              blurRadius: hoveredFolderIndex == index ? 8.0 : 4.0,
+              offset: Offset(0, 2),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.0),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Color(0xFF3A3E4A) : Color(0xFFF5F7FB),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Icon(
+                      Icons.folder,
+                      color: Colors.blue[400],
+                      size: 24.0,
+                    ),
+                  ),
+                  SizedBox(width: 12.0),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          folder['name']!,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.0,
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4.0),
+                        Text(
+                          folder['files']!,
+                          style: TextStyle(
+                            fontSize: 12.0,
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  openFileExplorer(folder['name']!);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
+                  foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                    side: BorderSide(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Open"),
+                    SizedBox(width: 4.0),
+                    Icon(Icons.arrow_forward, size: 16.0),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
