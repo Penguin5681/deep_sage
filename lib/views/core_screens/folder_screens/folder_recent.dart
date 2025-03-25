@@ -81,7 +81,9 @@ class _FolderRecentState extends State<FolderRecent> {
     if (dirPath.isEmpty) return;
 
     try {
-      directoryWatcher = Directory(dirPath).watch(recursive: true).listen((event) {
+      directoryWatcher = Directory(dirPath).watch(recursive: true).listen((
+        event,
+      ) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             _fetchRecentFiles(dirPath);
@@ -128,7 +130,10 @@ class _FolderRecentState extends State<FolderRecent> {
     }
   }
 
-  Future<void> _scanDirectory(String directoryPath, List<DatasetFile> files) async {
+  Future<void> _scanDirectory(
+    String directoryPath,
+    List<DatasetFile> files,
+  ) async {
     final dir = Directory(directoryPath);
     if (!await dir.exists()) return;
 
@@ -292,7 +297,10 @@ class _FolderRecentState extends State<FolderRecent> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 16.0,
+            ),
             decoration: BoxDecoration(
               color: isDarkMode ? Color(0xFF2A2D37) : Colors.grey[200],
               borderRadius: BorderRadius.only(
@@ -354,8 +362,10 @@ class _FolderRecentState extends State<FolderRecent> {
                 padding: EdgeInsets.zero,
                 itemCount: recentDatasetFiles.length,
                 separatorBuilder:
-                    (context, index) =>
-                        Divider(color: isDarkMode ? Colors.grey[800] : Colors.grey[200], height: 1),
+                    (context, index) => Divider(
+                      color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                      height: 1,
+                    ),
                 itemBuilder: (context, index) {
                   final file = recentDatasetFiles[index];
                   return AnimationConfiguration.staggeredList(
@@ -365,7 +375,10 @@ class _FolderRecentState extends State<FolderRecent> {
                       verticalOffset: 50.0,
                       child: FadeInAnimation(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12.0,
+                            horizontal: 16.0,
+                          ),
                           child: Row(
                             children: [
                               Icon(
@@ -381,14 +394,20 @@ class _FolderRecentState extends State<FolderRecent> {
                                   style: TextStyle(
                                     fontSize: 16.0,
                                     fontWeight: FontWeight.w500,
-                                    color: isDarkMode ? Colors.white : Colors.black87,
+                                    color:
+                                        isDarkMode
+                                            ? Colors.white
+                                            : Colors.black87,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 flex: 1,
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8.0,
+                                    vertical: 4.0,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: _getFileColor(
                                       file.fileType,
@@ -412,33 +431,48 @@ class _FolderRecentState extends State<FolderRecent> {
                                   file.fileSize,
                                   style: TextStyle(
                                     fontSize: 14.0,
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                 ),
                               ),
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  DateFormat('MMM dd, yyyy - HH:mm').format(file.modified),
+                                  DateFormat(
+                                    'MMM dd, yyyy - HH:mm',
+                                  ).format(file.modified),
                                   style: TextStyle(
                                     fontSize: 14.0,
-                                    color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                    color:
+                                        isDarkMode
+                                            ? Colors.grey[400]
+                                            : Colors.grey[700],
                                   ),
                                 ),
                               ),
                               IconButton(
                                 icon: Icon(
-                                  file.isStarred ? Icons.star : Icons.star_border,
+                                  file.isStarred
+                                      ? Icons.star
+                                      : Icons.star_border,
                                   size: 20,
                                   color:
                                       file.isStarred
                                           ? Colors.amber
-                                          : (isDarkMode ? Colors.grey[400] : null),
+                                          : (isDarkMode
+                                              ? Colors.grey[400]
+                                              : null),
                                 ),
                                 onPressed: () {
                                   setState(() {
                                     file.isStarred = !file.isStarred;
-                                    _saveStarredStatus(file.filePath, file.isStarred);
+                                    _saveStarredStatus(
+                                      file.filePath,
+                                      file.isStarred,
+                                    );
                                   });
                                 },
                                 tooltip: "Add to favorites",
@@ -448,7 +482,10 @@ class _FolderRecentState extends State<FolderRecent> {
                                 onPressed: () => _handleImportDataset(file),
                                 child: Text(
                                   'Import',
-                                  style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -541,9 +578,14 @@ class _FolderRecentState extends State<FolderRecent> {
       builder:
           (context) => AlertDialog(
             title: Text('Select Root Directory'),
-            content: Text('Choose a location where your datasets will be stored.'),
+            content: Text(
+              'Choose a location where your datasets will be stored.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () {
                   // Directory selection logic would go here

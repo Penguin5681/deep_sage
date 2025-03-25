@@ -81,7 +81,10 @@ class DatasetInsightsCachingService {
   ///
   /// @param filePath Path to the dataset file
   /// @param insights The insights data to cache
-  Future<void> cacheInsights(String filePath, Map<String, dynamic> insights) async {
+  Future<void> cacheInsights(
+    String filePath,
+    Map<String, dynamic> insights,
+  ) async {
     final cacheKey = _generateCacheKey(filePath);
 
     _insightsCache[cacheKey] = insights;

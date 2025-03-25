@@ -127,7 +127,10 @@ class _DashboardState extends State<Dashboard> {
   /// itself for each subdirectory found. If an error occurs during scanning, it
   /// prints an error message to the debug console.
   ///
-  Future<void> _scanDirectory(String directoryPath, List<DatasetFile> files) async {
+  Future<void> _scanDirectory(
+    String directoryPath,
+    List<DatasetFile> files,
+  ) async {
     final dir = Directory(directoryPath);
     if (!await dir.exists()) return;
 
@@ -216,7 +219,11 @@ class _DashboardState extends State<Dashboard> {
               const SizedBox(width: 16),
               _buildOverviewCard(
                 title: 'Starred Files',
-                value: datasetFiles.where((file) => file.isStarred).length.toString(),
+                value:
+                    datasetFiles
+                        .where((file) => file.isStarred)
+                        .length
+                        .toString(),
                 icon: Icons.star,
                 color: Colors.amber,
                 isDarkMode: isDarkMode,
@@ -224,7 +231,11 @@ class _DashboardState extends State<Dashboard> {
               const SizedBox(width: 16),
               _buildOverviewCard(
                 title: 'CSV Files',
-                value: datasetFiles.where((file) => file.fileType == 'csv').length.toString(),
+                value:
+                    datasetFiles
+                        .where((file) => file.fileType == 'csv')
+                        .length
+                        .toString(),
                 icon: Icons.table_chart,
                 color: Colors.green,
                 isDarkMode: isDarkMode,
@@ -232,7 +243,11 @@ class _DashboardState extends State<Dashboard> {
               const SizedBox(width: 16),
               _buildOverviewCard(
                 title: 'JSON Files',
-                value: datasetFiles.where((file) => file.fileType == 'json').length.toString(),
+                value:
+                    datasetFiles
+                        .where((file) => file.fileType == 'json')
+                        .length
+                        .toString(),
                 icon: Icons.data_object,
                 color: Colors.orange,
                 isDarkMode: isDarkMode,
@@ -260,12 +275,15 @@ class _DashboardState extends State<Dashboard> {
               valueListenable: recentImportsBox.listenable(),
               builder: (context, box, _) {
                 final recentImports = box.get('recentImports');
-                if (recentImports == null || (recentImports is List && recentImports.isEmpty)) {
+                if (recentImports == null ||
+                    (recentImports is List && recentImports.isEmpty)) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     child: Text(
                       'No recent imports yet. Import a dataset to get started.',
-                      style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                      ),
                     ),
                   );
                 }
@@ -323,7 +341,10 @@ class _DashboardState extends State<Dashboard> {
         decoration: BoxDecoration(
           color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
+          border: Border.all(
+            color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
               color:
@@ -391,33 +412,46 @@ class _DashboardState extends State<Dashboard> {
   ///   - File name, with an ellipsis overflow for longer names.
   ///   - File size and the date/time of import, formatted for readability.
   ///
-  Widget _buildRecentImportCard(RecentImportsModel import, bool isDarkMode, int index) {
+  Widget _buildRecentImportCard(
+    RecentImportsModel import,
+    bool isDarkMode,
+    int index,
+  ) {
     return MouseRegion(
       onEnter: (_) => setState(() => hoveredIndex = index),
       onExit: (_) => setState(() => hoveredIndex = -1),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        transform: hoveredIndex == index ? Matrix4.translationValues(0, -5, 0) : Matrix4.identity(),
+        transform:
+            hoveredIndex == index
+                ? Matrix4.translationValues(0, -5, 0)
+                : Matrix4.identity(),
         width: 220,
         margin: const EdgeInsets.only(right: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1),
+          border: Border.all(
+            color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+            width: 1,
+          ),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min, // Use min size to prevent overflow
+              mainAxisSize:
+                  MainAxisSize.min, // Use min size to prevent overflow
               children: [
                 Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _getFileColor(import.fileType).withValues(alpha: 0.1),
+                        color: _getFileColor(
+                          import.fileType,
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Icon(
@@ -604,7 +638,8 @@ class _DashboardState extends State<Dashboard> {
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: isDarkMode ? Color(0xFF2A2D37) : Colors.grey[100],
+                      fillColor:
+                          isDarkMode ? Color(0xFF2A2D37) : Colors.grey[100],
                       contentPadding: EdgeInsets.symmetric(vertical: 8),
                     ),
                     onChanged: (value) {
@@ -617,8 +652,9 @@ class _DashboardState extends State<Dashboard> {
                           final List<DatasetFile> filteredFiles =
                               datasetFiles
                                   .where(
-                                    (file) =>
-                                        file.fileName.toLowerCase().contains(value.toLowerCase()),
+                                    (file) => file.fileName
+                                        .toLowerCase()
+                                        .contains(value.toLowerCase()),
                                   )
                                   .toList();
                           datasetFiles = filteredFiles;
@@ -654,7 +690,10 @@ class _DashboardState extends State<Dashboard> {
                           'Name',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -664,7 +703,10 @@ class _DashboardState extends State<Dashboard> {
                           'Type',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -674,7 +716,10 @@ class _DashboardState extends State<Dashboard> {
                           'Size',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -684,7 +729,10 @@ class _DashboardState extends State<Dashboard> {
                           'Date Modified',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                         ),
                       ),
@@ -727,7 +775,10 @@ class _DashboardState extends State<Dashboard> {
                             ),
                             onPressed: () async {
                               final newStarredStatus = !file.isStarred;
-                              await _saveStarredStatus(file.filePath, newStarredStatus);
+                              await _saveStarredStatus(
+                                file.filePath,
+                                newStarredStatus,
+                              );
 
                               setStarState(() {
                                 file.isStarred = newStarredStatus;
@@ -747,7 +798,10 @@ class _DashboardState extends State<Dashboard> {
                             child: Text(
                               file.fileName,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
+                              style: TextStyle(
+                                color:
+                                    isDarkMode ? Colors.white : Colors.black87,
+                              ),
                             ),
                           ),
                           Expanded(
@@ -755,9 +809,14 @@ class _DashboardState extends State<Dashboard> {
                             child: Row(
                               children: [
                                 Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: _getFileColor(file.fileType).withValues(alpha: 0.1),
+                                    color: _getFileColor(
+                                      file.fileType,
+                                    ).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -777,7 +836,10 @@ class _DashboardState extends State<Dashboard> {
                             child: Text(
                               file.fileSize,
                               style: TextStyle(
-                                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                               ),
                             ),
                           ),
@@ -786,7 +848,10 @@ class _DashboardState extends State<Dashboard> {
                             child: Text(
                               _formatDate(file.modified),
                               style: TextStyle(
-                                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
                               ),
                             ),
                           ),
@@ -797,19 +862,31 @@ class _DashboardState extends State<Dashboard> {
                         children: [
                           IconButton(
                             icon: Icon(Icons.edit, size: 20),
-                            onPressed: () => _handleRenameDataset(file.filePath),
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            onPressed:
+                                () => _handleRenameDataset(file.filePath),
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                           IconButton(
                             icon: Icon(Icons.delete, size: 20),
-                            onPressed: () => _handleDeleteDataset(file.filePath),
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            onPressed:
+                                () => _handleDeleteDataset(file.filePath),
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                           TextButton(
-                            onPressed: () => _handleImportDataset(file.filePath),
+                            onPressed:
+                                () => _handleImportDataset(file.filePath),
                             child: Text(
                               'Import',
-                              style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -915,7 +992,9 @@ class _DashboardState extends State<Dashboard> {
   void _handleRenameDataset(String filePath) {
     final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
 
-    TextEditingController renameController = TextEditingController(text: file.fileName);
+    TextEditingController renameController = TextEditingController(
+      text: file.fileName,
+    );
 
     showDialog(
       context: context,
@@ -925,13 +1004,20 @@ class _DashboardState extends State<Dashboard> {
             content: TextField(
               controller: renameController,
               autofocus: true,
-              decoration: InputDecoration(hintText: 'Enter new name', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                hintText: 'Enter new name',
+                border: OutlineInputBorder(),
+              ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () async {
-                  if (renameController.text.isNotEmpty && renameController.text != file.fileName) {
+                  if (renameController.text.isNotEmpty &&
+                      renameController.text != file.fileName) {
                     String newName = renameController.text;
                     String extension = path.extension(file.filePath);
 
@@ -953,9 +1039,9 @@ class _DashboardState extends State<Dashboard> {
                       Navigator.pop(context);
                     } catch (e) {
                       debugPrint('Error renaming file: $e');
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Failed to rename file: $e')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to rename file: $e')),
+                      );
                       Navigator.pop(context);
                     }
                   }
@@ -1012,7 +1098,10 @@ class _DashboardState extends State<Dashboard> {
               'Are you sure you want to delete "${file.fileName}"? This cannot be undone.',
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 onPressed: () async {
@@ -1029,9 +1118,9 @@ class _DashboardState extends State<Dashboard> {
                     Navigator.pop(context);
                   } catch (e) {
                     debugPrint('Error deleting file: $e');
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Failed to delete file: $e')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to delete file: $e')),
+                    );
                     Navigator.pop(context);
                   }
                 },
@@ -1178,7 +1267,9 @@ class _DashboardState extends State<Dashboard> {
       decoration: BoxDecoration(
         color: isDarkMode ? Color(0xFF2A2D37) : Colors.grey[100],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[300]!),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[800]! : Colors.grey[300]!,
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1197,7 +1288,10 @@ class _DashboardState extends State<Dashboard> {
           Text(
             'Upload or import your datasets to get started with analysis and visualization',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 16,
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            ),
           ),
           SizedBox(height: 32),
           Row(
