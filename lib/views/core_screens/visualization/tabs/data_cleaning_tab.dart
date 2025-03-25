@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 class DataCleaningTab extends StatefulWidget {
-  const DataCleaningTab({super.key});
+  final String? currentDataset;
+  final String? currentDatasetPath;
+  final String? currentDatasetType;
+  const DataCleaningTab({super.key, this.currentDataset, this.currentDatasetPath, this.currentDatasetType});
 
   @override
   State<DataCleaningTab> createState() => _DataCleaningTabState();
@@ -135,6 +138,22 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     super.dispose();
   }
 
+  /// Builds the indicator for the currently selected dataset.
+  ///
+  /// This widget dynamically displays information about the dataset being
+  /// worked on, including its name, path, and file type. If no dataset is
+  /// currently selected, it displays a message prompting the user to select one.
+  ///
+  /// The display varies based on the presence of a dataset:
+  /// - If `widget.currentDataset` is null or empty, it shows an informational
+  ///   message in a gray container with an info icon.
+  /// - If `widget.currentDataset` is not null and not empty, it shows a
+  ///   blue-themed container with the dataset name, an icon based on the file
+  ///   type, and an optionally displayed file path.
+  ///
+  /// Returns a [Widget] that displays the current dataset information or a
+  /// message to select a dataset. It adapts its appearance based on whether
+  /// a dataset is active and the current theme's brightness.
   /// Builds the main widget for the Data Cleaning tab.
   ///
   /// This widget includes the header, tab bar, and the content for each tab.
@@ -146,8 +165,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         /// Builds the header section of the Data Cleaning tab.
         _buildHeader(),
-        const SizedBox(height: 16),
-
+        const SizedBox(height: 8),
+        _buildCurrentDatasetIndicator(),
+        const SizedBox(height: 12),
         /// Builds the tab bar for navigating between different sections.
         _buildTabBar(),
         const SizedBox(height: 8),
@@ -194,6 +214,169 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         ],
       ),
     );
+  }
+
+  /// Builds the indicator for the currently selected dataset.
+  ///
+  /// This widget dynamically displays information about the dataset being
+  /// worked on, including its name, path, and file type. If no dataset is
+  /// currently selected, it displays a message prompting the user to select one.
+  ///
+  /// The display varies based on the presence of a dataset:
+  /// - If `widget.currentDataset` is null or empty, it shows an informational
+  ///   message in a gray container with an info icon.
+  /// - If `widget.currentDataset` is not null and not empty, it shows a
+  ///   blue-themed container with the dataset name, an icon based on the file
+  ///   type, and an optionally displayed file path.
+  ///
+  /// Returns a [Widget] that displays the current dataset information or a
+  /// message to select a dataset. It adapts its appearance based on whether
+  /// a dataset is active and the current theme's brightness.
+  ///
+  /// The function uses helper methods:
+  /// - [_getFileIcon]: Returns the appropriate icon based on the file type.
+  /// - [_getFileColor]: Returns the color associated with the file type.
+  /// - [_getDisplayPath]: Shortens the file path for display purposes.
+  Widget _buildCurrentDatasetIndicator() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    if (widget.currentDataset == null || widget.currentDataset!.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isDarkMode ? Colors.grey.shade800.withValues(alpha: 0.2) : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade400, width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.amber,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'No dataset selected. Please select a dataset from the sidebar.',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? Colors.blue.shade900.withValues(alpha: 0.2) : Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blue.shade400, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              _getFileIcon(widget.currentDatasetType ?? ''),
+              color: _getFileColor(widget.currentDatasetType ?? ''),
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Working with: ${widget.currentDataset}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.blue.shade200 : Colors.blue.shade800,
+                    ),
+                  ),
+                  if (widget.currentDatasetPath != null)
+                    Text(
+                      _getDisplayPath(widget.currentDatasetPath!),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Returns the appropriate icon based on the file type.
+  ///
+  /// This method maps common file types (csv, json, xlsx) to their
+  /// corresponding Material Design icons. If the file type does not match
+  /// any known type, it defaults to a generic file icon.
+  ///
+  /// [fileType] The type of the file (e.g., 'csv', 'json', 'xlsx').
+  ///
+  /// Returns an [IconData] representing the file type.
+  IconData _getFileIcon(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'csv':
+        return Icons.table_chart;
+      case 'json':
+        return Icons.data_object;
+      case 'xlsx':
+        return Icons.grid_on;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  /// Returns the appropriate color associated with the file type.
+  ///
+  /// This method maps common file types (csv, json, xlsx) to specific
+  /// colors to visually differentiate them. If the file type is not known,
+  /// it defaults to gray.
+  ///
+  /// [fileType] The type of the file (e.g., 'csv', 'json', 'xlsx').
+  ///
+  /// Returns a [Color] associated with the file type.
+  Color _getFileColor(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'csv':
+        return Colors.green;
+      case 'json':
+        return Colors.orange;
+      case 'xlsx':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Shortens a file path for display if it's longer than 60 characters.
+  ///
+  /// This method checks the length of the input path. If it exceeds 60
+  /// characters, it returns an abbreviated version that includes "..." at
+  /// the start, the second-to-last part, and the last part of the path. If
+  /// the path has 3 or fewer parts, or its length is less than 60, it returns
+  /// the original path.
+  ///
+  /// [path] The full file path to potentially shorten.
+  /// Returns a [String] representing the shortened or original path.
+  String _getDisplayPath(String path) {
+    if (path.length <= 60) return path;
+
+    final pathParts = path.split('/');
+    if (pathParts.length <= 3) return path;
+
+    return '.../${pathParts[pathParts.length - 2]}/${pathParts.last}';
   }
 
   /// Builds a card widget for a specific data cleaning operation.

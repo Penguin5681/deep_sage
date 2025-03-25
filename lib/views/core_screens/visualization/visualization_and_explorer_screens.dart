@@ -290,7 +290,11 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                     controller: tabController,
                     children: [
                       RawDataTab(selectedDatasetNotifier: selectedDatasetNotifier),
-                      DataCleaningTab(),
+                      DataCleaningTab(
+                        currentDataset: currentDataset,
+                        currentDatasetPath: currentDatasetPath,
+                        currentDatasetType: currentDatasetType,
+                      ),
                       VisualizeTab(),
                     ],
                   ),
@@ -540,7 +544,7 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
       decoration: BoxDecoration(
         color:
             isCurrentDataset
-                ? (isDarkMode ? Colors.blue.shade900.withOpacity(0.2) : Colors.blue.shade50)
+                ? (isDarkMode ? Colors.blue.shade900.withValues(alpha: 0.2) : Colors.blue.shade50)
                 : (isDarkMode ? Color(0xFF1F222A) : Colors.white),
         borderRadius: BorderRadius.circular(8),
         border: isCurrentDataset ? Border.all(color: Colors.blue.shade400, width: 2) : null,
@@ -580,8 +584,8 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                         if (isCurrentDataset)
                           Icon(
                             Icons.check_circle,
-                            color: Colors.blue.shade400,
-                            size: 16,
+                            color: Colors.green.shade400,
+                            size: 20,
                           ),
                       ],
                     ),
