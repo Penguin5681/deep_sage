@@ -1,5 +1,5 @@
 import 'package:deep_sage/views/authentication_screens/login_screen.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/core_screens/navigation_rail/dashboard_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:deep_sage/widgets/google_button.dart';
 import 'package:deep_sage/widgets/primary_edit_text.dart';
@@ -35,10 +35,7 @@ class SignupScreen extends StatelessWidget {
         const end = Offset.zero;
         const curve = Curves.ease;
 
-        var tween = Tween(
-          begin: begin,
-          end: end,
-        ).chain(CurveTween(curve: curve));
+        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
         return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
@@ -47,20 +44,11 @@ class SignupScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _ = dotenv.env['FLUTTER_ENV'];
-
+    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
-    final TextEditingController confirmPasswordController =
-        TextEditingController();
-
+    final TextEditingController confirmPasswordController = TextEditingController();
     final TextEditingController nameController = TextEditingController();
-
-    final backgroundColor =
-        Theme.of(
-          context,
-        ).elevatedButtonTheme.style?.backgroundColor?.resolve({}) ??
-        Colors.black;
-
     final supabaseAuthInstance = Supabase.instance.client;
 
     /// Handles the sign-up process with validation and error handling.
@@ -108,29 +96,18 @@ class SignupScreen extends StatelessWidget {
           } else {
             final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
             if (response.session != null) {
-              await userBox.put(
-                'userSessionToken',
-                response.session!.accessToken,
-              );
+              await userBox.put('userSessionToken', response.session!.accessToken);
               await userBox.put('loginMethod', 'email');
             }
 
             if (!context.mounted) return;
-            Navigator.of(
-              context,
-            ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
+            Navigator.of(context).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
           }
         } catch (e) {
-          showTopSnackBar(
-            Overlay.of(context),
-            CustomSnackBar.error(message: 'Sign Up Error: $e'),
-          );
+          showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Sign Up Error: $e'));
         }
       } else if (!isEmail()) {
-        showTopSnackBar(
-          Overlay.of(context),
-          CustomSnackBar.error(message: 'Invalid Email'),
-        );
+        showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Invalid Email'));
       } else if (doesPasswordMatch()) {
         showTopSnackBar(
           Overlay.of(context),
@@ -151,135 +128,230 @@ class SignupScreen extends StatelessWidget {
 
     return Scaffold(
       floatingActionButton: DevFAB(parentContext: context),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Deep Sage',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 35.0,
-                letterSpacing: 4.0,
-              ),
-            ),
-            Text(
-              'Empowering Data Science with AI',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 25.0),
-            ),
-            SizedBox(height: 30),
-            SizedBox(
-              width: 300,
-              child: Column(
-                children: [
-                  PrimaryEditText(
-                    placeholderText: 'Name',
-                    controller: nameController,
-                    obscureText: false,
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  SizedBox(height: 25),
-                  PrimaryEditText(
-                    placeholderText: 'Email',
-                    controller: emailController,
-                    obscureText: false,
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  SizedBox(height: 25),
-                  PrimaryEditText(
-                    placeholderText: 'Password',
-                    controller: passwordController,
-                    obscureText: true,
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  SizedBox(height: 25),
-                  PrimaryEditText(
-                    placeholderText: 'Confirm Password',
-                    controller: confirmPasswordController,
-                    obscureText: true,
-                    prefixIcon: Icon(Icons.lock),
-                  ),
-                  SizedBox(height: 10),
-                  SizedBox(height: 25),
-                  MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: ProgressiveButtonFlutter(
-                      height: 40,
-                      progressColor: Colors.green,
-                      textStyle: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 20.0,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors:
+                isDarkTheme
+                    ? [
+                      const Color(0xFF1A1A1A),
+                      const Color(0xFF2C2C2C),
+                      const Color(0xFF2A2626),
+                      const Color(0xFF000000),
+                    ]
+                    : [
+                      const Color(0xFFFFFFFF),
+                      const Color(0xFFF5F5F5),
+                      const Color(0xFFE0E0E0),
+                      const Color(0xFFBDBDBD),
+                    ],
+            stops: const [0.0, 0.3, 0.7, 1.0],
+          ),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                physics: BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'DeepSage',
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: isDarkTheme ? Colors.white : const Color(0xFF2C5364),
+                        letterSpacing: 4.0,
                       ),
-                      backgroundColor: backgroundColor,
-                      text: 'Sign Up',
-                      onPressed: () async {
-                        await signUp(
-                          emailController.text,
-                          passwordController.text,
-                          confirmPasswordController.text,
-                          nameController.text,
-                        );
-                      },
-                      estimatedTime: const Duration(seconds: 5),
-                      elevation: 0,
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Divider(color: Colors.green, thickness: 1),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Empowering Data Science with AI',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: isDarkTheme ? Colors.white70 : Colors.grey[700],
                       ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10.0),
-                        child: Center(
-                          child: Text(
-                            'or continue with',
-                            style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 48),
+
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color:
+                            isDarkTheme
+                                ? Colors.grey[850]!.withValues(alpha: 0.7)
+                                : Colors.white.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                        ),
+                        ],
                       ),
-                      Expanded(
-                        child: Divider(color: Colors.green, thickness: 1),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  GoogleButton(
-                    onSignInSuccess: () {
-                      Navigator.of(context).pushReplacement(
-                        createScreenRoute(DashboardScreen(), -1.0, 0.0),
-                      );
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('Already have an account?  '),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pushReplacement(
-                              createScreenRoute(LoginScreen(), -1.0, 0),
-                            );
-                          },
-                          child: Text(
-                            'Sign In',
-                            style: TextStyle(color: Colors.blue),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Create Account',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: isDarkTheme ? Colors.white : Colors.black,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 24),
+
+                          PrimaryEditText(
+                            placeholderText: 'Name',
+                            controller: nameController,
+                            obscureText: false,
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                          const SizedBox(height: 16),
+
+                          PrimaryEditText(
+                            placeholderText: 'Email',
+                            controller: emailController,
+                            obscureText: false,
+                            prefixIcon: Icon(Icons.email),
+                          ),
+                          const SizedBox(height: 16),
+
+                          PrimaryEditText(
+                            placeholderText: 'Password',
+                            controller: passwordController,
+                            obscureText: true,
+                            prefixIcon: Icon(Icons.lock),
+                          ),
+                          const SizedBox(height: 16),
+
+                          PrimaryEditText(
+                            placeholderText: 'Confirm Password',
+                            controller: confirmPasswordController,
+                            obscureText: true,
+                            prefixIcon: Icon(Icons.lock_outline),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: ProgressiveButtonFlutter(
+                                height: 50,
+                                progressColor: Colors.green,
+                                textStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 20.0,
+                                ),
+                                backgroundColor: const Color(0xff3fb2e7),
+                                text: 'Sign Up',
+                                onPressed: () async {
+                                  await signUp(
+                                    emailController.text,
+                                    passwordController.text,
+                                    confirmPasswordController.text,
+                                    nameController.text,
+                                  );
+                                },
+                                estimatedTime: const Duration(seconds: 5),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: isDarkTheme ? Colors.grey[600] : Colors.green,
+                                  thickness: 1,
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'or continue with',
+                                  style: TextStyle(
+                                    color: isDarkTheme ? Colors.grey[400] : Colors.grey[600],
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: isDarkTheme ? Colors.grey[600] : Colors.green,
+                                  thickness: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          Center(
+                            child: GoogleButton(
+                              onSignInSuccess: () {
+                                Navigator.of(
+                                  context,
+                                ).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
+                              },
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Already have an account? ',
+                                style: TextStyle(
+                                  color: isDarkTheme ? Colors.grey[400] : Colors.grey[700],
+                                ),
+                              ),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(
+                                      context,
+                                    ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
+                                  },
+                                  child: Text(
+                                    'Sign In',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

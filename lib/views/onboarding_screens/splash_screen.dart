@@ -1,5 +1,5 @@
 import 'package:deep_sage/views/authentication_screens/login_screen.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/core_screens/navigation_rail/dashboard_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

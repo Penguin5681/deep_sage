@@ -24,7 +24,10 @@ class QuickInsightsService {
   ///
   /// Returns a [Future] that completes with a [Map] containing the analysis results.
   /// Returns null if the request fails.
-  Future<Map<String, dynamic>?> analyzeCsvFile(File csvFile, {bool useAI = false}) async {
+  Future<Map<String, dynamic>?> analyzeCsvFile(
+    File csvFile, {
+    bool useAI = false,
+  }) async {
     try {
       // Create multipart request
       final uri = Uri.parse('$baseUrl/api/analyze-csv?use_ai=$useAI');
@@ -37,7 +40,7 @@ class QuickInsightsService {
         'file',
         fileStream,
         fileLength,
-        filename: csvFile.path.split('/').last
+        filename: csvFile.path.split('/').last,
       );
       request.files.add(multipartFile);
 
@@ -49,7 +52,9 @@ class QuickInsightsService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        debugPrint('Failed to analyze CSV. Status code: ${response.statusCode}');
+        debugPrint(
+          'Failed to analyze CSV. Status code: ${response.statusCode}',
+        );
         debugPrint('Response body: ${response.body}');
         return null;
       }
@@ -63,7 +68,9 @@ class QuickInsightsService {
   ///
   /// Takes the [insights] map returned from [analyzeCsvFile].
   /// Returns a [Map] containing simplified data quality metrics.
-  Map<String, dynamic> extractDataQualitySummary(Map<String, dynamic> insights) {
+  Map<String, dynamic> extractDataQualitySummary(
+    Map<String, dynamic> insights,
+  ) {
     final dataQuality = insights['basic_insights']['data_quality'];
     return {
       'overall_score': dataQuality['overall_score'],

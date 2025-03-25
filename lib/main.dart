@@ -3,17 +3,17 @@ import 'package:deep_sage/core/models/hive_models/recent_imports_model.dart';
 import 'package:deep_sage/core/models/hive_models/user_api_model.dart';
 import 'package:deep_sage/core/services/user_session_service.dart';
 import 'package:deep_sage/providers/theme_provider.dart';
-import 'package:deep_sage/views/core_screens/dashboard_screen.dart';
+import 'package:deep_sage/views/core_screens/navigation_rail/dashboard_screen.dart';
 import 'package:deep_sage/views/authentication_screens/login_screen.dart';
 import 'package:deep_sage/views/onboarding_screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
-import 'core/services/cache_service.dart';
 import 'core/services/download_overlay_service.dart';
 import 'core/services/download_service.dart';
 
@@ -35,7 +35,7 @@ Future main() async {
   await Hive.openBox('starred_datasets');
   await Hive.openBox('user_preferences');
 
-  await CacheService().initCacheBox();
+  // await CacheService().initCacheBox();
 
   final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
   final supabaseApi = dotenv.env['SUPABASE_API'] ?? '';
@@ -52,7 +52,7 @@ Future main() async {
         ChangeNotifierProvider(create: (_) => DownloadService()),
         ChangeNotifierProvider(create: (_) => DownloadOverlayService()),
       ],
-      child: MyApp(hasValidSession: hasValidSession),
+      child: Phoenix(child: MyApp(hasValidSession: hasValidSession)),
     ),
   );
 }
