@@ -15,12 +15,10 @@ class VisualizationAndExplorerScreens extends StatefulWidget {
   const VisualizationAndExplorerScreens({super.key});
 
   @override
-  State<VisualizationAndExplorerScreens> createState() =>
-      _VisualizationAndExplorerScreensState();
+  State<VisualizationAndExplorerScreens> createState() => _VisualizationAndExplorerScreensState();
 }
 
-class _VisualizationAndExplorerScreensState
-    extends State<VisualizationAndExplorerScreens>
+class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplorerScreens>
     with TickerProviderStateMixin {
   /// [tabController] is used to manage the tabbed interface (Raw Data, Data Cleaning, Visualize).
   late TabController tabController;
@@ -50,9 +48,7 @@ class _VisualizationAndExplorerScreensState
   /// [selectedDatasetNotifier] is a [ValueNotifier] that notifies listeners whenever the selected dataset changes.
   /// It's used to trigger UI updates and other actions that depend on the currently selected dataset.
   /// The initial value is set to null, indicating no dataset is selected initially.
-  final ValueNotifier<String?> selectedDatasetNotifier = ValueNotifier<String?>(
-    null,
-  );
+  final ValueNotifier<String?> selectedDatasetNotifier = ValueNotifier<String?>(null);
   List<StreamSubscription<FileSystemEvent>> fileWatchers = [];
   Set<String> watchedFiles = {};
 
@@ -103,8 +99,7 @@ class _VisualizationAndExplorerScreensState
   /// This ensures that the application's state and the persistent storage are synchronized with the user's
   /// most recent dataset selection.
   void _handleDatasetSelectionChange() {
-    if (selectedDatasetNotifier.value != null &&
-        selectedDatasetNotifier.value != currentDataset) {
+    if (selectedDatasetNotifier.value != null && selectedDatasetNotifier.value != currentDataset) {
       setState(() {
         currentDataset = selectedDatasetNotifier.value;
 
@@ -194,10 +189,8 @@ class _VisualizationAndExplorerScreensState
 
       if (directory.existsSync()) {
         final subscription = directory.watch(recursive: false).listen((event) {
-          if (event.path == filePath ||
-              event.path.contains(file.uri.pathSegments.last)) {
-            if (event.type == FileSystemEvent.delete ||
-                !File(filePath).existsSync()) {
+          if (event.path == filePath || event.path.contains(file.uri.pathSegments.last)) {
+            if (event.type == FileSystemEvent.delete || !File(filePath).existsSync()) {
               debugPrint('File was deleted or moved: $filePath');
               setState(() {});
             }
@@ -296,9 +289,7 @@ class _VisualizationAndExplorerScreensState
                   child: TabBarView(
                     controller: tabController,
                     children: [
-                      RawDataTab(
-                        selectedDatasetNotifier: selectedDatasetNotifier,
-                      ),
+                      RawDataTab(selectedDatasetNotifier: selectedDatasetNotifier),
                       DataCleaningTab(),
                       VisualizeTab(),
                     ],
@@ -430,10 +421,7 @@ class _VisualizationAndExplorerScreensState
             ),
           ),
         ),
-        Divider(
-          height: 1,
-          color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-        ),
+        Divider(height: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
         Expanded(
           child: ValueListenableBuilder(
             valueListenable: recentImportsBox.listenable(),
@@ -452,9 +440,7 @@ class _VisualizationAndExplorerScreensState
               recentImports =
                   recentImports
                       .where(
-                        (import) =>
-                            import.filePath != null &&
-                            File(import.filePath!).existsSync(),
+                        (import) => import.filePath != null && File(import.filePath!).existsSync(),
                       )
                       .toList();
 
@@ -471,17 +457,13 @@ class _VisualizationAndExplorerScreensState
                       SizedBox(height: 16),
                       Text(
                         'No recent imports',
-                        style: TextStyle(
-                          color:
-                              isDarkMode ? Colors.grey[500] : Colors.grey[600],
-                        ),
+                        style: TextStyle(color: isDarkMode ? Colors.grey[500] : Colors.grey[600]),
                       ),
                       Text(
                         'Import datasets to see them here',
                         style: TextStyle(
                           fontSize: 12,
-                          color:
-                              isDarkMode ? Colors.grey[600] : Colors.grey[500],
+                          color: isDarkMode ? Colors.grey[600] : Colors.grey[500],
                         ),
                       ),
                     ],
@@ -545,8 +527,8 @@ class _VisualizationAndExplorerScreensState
   /// _buildImportItem(recentImports[index], isDarkMode);
 
   Widget _buildImportItem(RecentImportsModel import, bool isDarkMode) {
-    final fileExists =
-        import.filePath != null && File(import.filePath!).existsSync();
+    final fileExists = import.filePath != null && File(import.filePath!).existsSync();
+    final isCurrentDataset = import.fileName == currentDataset;
 
     if (!fileExists) {
       return SizedBox.shrink();
@@ -556,8 +538,12 @@ class _VisualizationAndExplorerScreensState
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+        color:
+            isCurrentDataset
+                ? (isDarkMode ? Colors.blue.shade900.withOpacity(0.2) : Colors.blue.shade50)
+                : (isDarkMode ? Color(0xFF1F222A) : Colors.white),
         borderRadius: BorderRadius.circular(8),
+        border: isCurrentDataset ? Border.all(color: Colors.blue.shade400, width: 2) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -571,25 +557,33 @@ class _VisualizationAndExplorerScreensState
         children: [
           Row(
             children: [
-              Icon(
-                _getFileIcon(import.fileType),
-                color: _getFileColor(import.fileType),
-                size: 24,
-              ),
+              Icon(_getFileIcon(import.fileType), color: _getFileColor(import.fileType), size: 24),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      import.fileName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            import.fileName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isDarkMode ? Colors.white : Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isCurrentDataset)
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.blue.shade400,
+                            size: 16,
+                          ),
+                      ],
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -613,7 +607,6 @@ class _VisualizationAndExplorerScreensState
               Spacer(),
               ElevatedButton(
                 onPressed: () async {
-                  // todo:  in next commit i'll prolly make the imports work
                   selectDataset(import);
                   tabController.animateTo(0);
                 },
@@ -622,9 +615,7 @@ class _VisualizationAndExplorerScreensState
                   foregroundColor: Colors.white,
                   minimumSize: Size(60, 30),
                   padding: EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
                 child: Text('Use', style: TextStyle(fontSize: 12)),
               ),
@@ -665,10 +656,7 @@ class _VisualizationAndExplorerScreensState
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 12,
-          color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
-        ),
+        style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.grey[300] : Colors.grey[700]),
       ),
     );
   }
