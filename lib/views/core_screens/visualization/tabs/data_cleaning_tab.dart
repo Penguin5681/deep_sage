@@ -169,6 +169,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+
         /// Builds the header section of the Data Cleaning tab.
         _buildHeader(),
         const SizedBox(height: 8),
@@ -215,7 +216,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             'Make your data ready for analysis by fixing common problems',
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -245,7 +250,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// - [_getFileColor]: Returns the color associated with the file type.
   /// - [_getDisplayPath]: Shortens the file path for display purposes.
   Widget _buildCurrentDatasetIndicator() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
 
     if (widget.currentDataset == null || widget.currentDataset!.isEmpty) {
       return Padding(
@@ -394,7 +401,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     required IconData icon,
     required Widget content,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme
+        .of(context)
+        .colorScheme;
 
     return Card(
       elevation: 1,
@@ -490,7 +499,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             'Date fill value',
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),
@@ -512,7 +525,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).colorScheme.outline),
+                border: Border.all(color: Theme
+                    .of(context)
+                    .colorScheme
+                    .outline),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -678,7 +694,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         if (_enableTextCleaning) ...[
           Card(
             elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: Theme
+                .of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withValues(alpha: 0.3),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             child: Column(
               children: [
@@ -801,118 +821,204 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// changes is currently a placeholder comment: '// Here we would apply the
   /// changes'.)
   void _showPreviewDialog() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
+    final isDarkMode = Theme
+        .of(context)
+        .brightness == Brightness.dark;
     List<String> activeOperations = _getActiveOperations();
 
     if (activeOperations.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No cleaning operations selected to preview')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No cleaning operations selected to preview'))
+      );
       return;
     }
 
     showDialog(
       context: context,
-      builder:
-          (context) => Dialog(
+      builder: (context) =>
+          Dialog(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
+              constraints: const BoxConstraints(
+                maxWidth: 900,
+                maxHeight: 700,
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Dialog header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Preview Changes', style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          'Preview Changes',
+                          style: Theme
+                              .of(context)
+                              .textTheme
+                              .headlineSmall,
+                        ),
                         IconButton(
                           icon: const Icon(Icons.close),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-
-                    // Dataset info
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color:
-                            isDarkMode
-                                ? Colors.blue.shade900.withValues(alpha: 0.2)
-                                : Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _getFileIcon(widget.currentDatasetType ?? ''),
-                            color: _getFileColor(widget.currentDatasetType ?? ''),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            widget.currentDataset ?? 'Unknown dataset',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Operations summary
-                    Text(
-                      'Operations to be applied:',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    const Divider(),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final operation in activeOperations)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.check_circle_outline, size: 16),
-                                  const SizedBox(width: 8),
-                                  Text(operation),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
 
-                    // Before/After comparison
-                    Expanded(
-                      child: DefaultTabController(
-                        length: 2,
-                        child: Column(
-                          children: [
-                            const TabBar(tabs: [Tab(text: 'Before'), Tab(text: 'After')]),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: TabBarView(
-                                children: [
-                                  _buildDataPreview(isBefore: true),
-                                  _buildDataPreview(isBefore: false),
-                                ],
+                    // Dataset info and operations in a horizontal layout
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left panel: dataset info & operations
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Dataset info
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? Colors.blue.shade900.withValues(alpha: 0.2)
+                                      : Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _getFileIcon(widget.currentDatasetType ?? ''),
+                                      color: _getFileColor(widget.currentDatasetType ?? ''),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            widget.currentDataset ?? 'Unknown dataset',
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          if (widget.currentDatasetPath != null)
+                                            Text(
+                                              _getDisplayPath(widget.currentDatasetPath!),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Theme
+                                                    .of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+
+                              // Operations summary
+                              Text(
+                                'Operations to be applied:',
+                                style: Theme
+                                    .of(context)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Scrollable operations list
+                              Container(
+                                constraints: const BoxConstraints(maxHeight: 160),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: SingleChildScrollView(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        for (int i = 0; i < activeOperations.length; i++)
+                                          Padding(
+                                            padding: const EdgeInsets.only(bottom: 4),
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text("${i + 1}. ",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Theme
+                                                        .of(context)
+                                                        .colorScheme
+                                                        .primary,
+                                                  ),
+                                                ),
+                                                Expanded(child: Text(activeOperations[i])),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 16),
+
+                        // Right panel: Before/After preview
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Data Preview',
+                                style: Theme
+                                    .of(context)
+                                    .textTheme
+                                    .titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 400, // Fixed height prevents shrinking
+                                child: DefaultTabController(
+                                  length: 2,
+                                  child: Column(
+                                    children: [
+                                      const TabBar(
+                                        tabs: [
+                                          Tab(text: 'Before'),
+                                          Tab(text: 'After'),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Expanded(
+                                        child: TabBarView(
+                                          children: [
+                                            _buildDataPreview(isBefore: true),
+                                            _buildDataPreview(isBefore: false),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
+
+                    const Spacer(),
+                    const Divider(),
 
                     // Action buttons
                     Row(
@@ -1051,7 +1157,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           child: DataTable(
             columnSpacing: 16,
             headingRowColor: WidgetStateProperty.all(
-              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              Theme
+                  .of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.5),
             ),
             columns: [
               DataColumn(label: Text(isBefore ? 'id' : 'id')),
@@ -1092,29 +1202,29 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 isBefore: isBefore,
                 id: '2',
                 productName:
-                    isBefore
-                        ? 'Smart phone'
-                        : isBefore
-                        ? 'Smart phone'
-                        : '<removed duplicate>',
+                isBefore
+                    ? 'Smart phone'
+                    : isBefore
+                    ? 'Smart phone'
+                    : '<removed duplicate>',
                 price:
-                    isBefore
-                        ? '799.0'
-                        : isBefore
-                        ? '799.0'
-                        : '',
+                isBefore
+                    ? '799.0'
+                    : isBefore
+                    ? '799.0'
+                    : '',
                 discount:
-                    isBefore
-                        ? '5'
-                        : isBefore
-                        ? '5'
-                        : '',
+                isBefore
+                    ? '5'
+                    : isBefore
+                    ? '5'
+                    : '',
                 date:
-                    isBefore
-                        ? '02/18/2023'
-                        : isBefore
-                        ? '02/18/2023'
-                        : '',
+                isBefore
+                    ? '02/18/2023'
+                    : isBefore
+                    ? '02/18/2023'
+                    : '',
                 hasNull: false,
                 isDuplicate: !isBefore,
               ),
@@ -1172,15 +1282,15 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     bool hasTextAsNumber = false,
   }) {
     final TextStyle? baseStyle =
-        isDuplicate && !isBefore
-            ? const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough)
-            : null;
+    isDuplicate && !isBefore
+        ? const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough)
+        : null;
 
     return DataRow(
       color:
-          isDuplicate && !isBefore
-              ? WidgetStateProperty.all(Colors.red.withValues(alpha: 0.1))
-              : null,
+      isDuplicate && !isBefore
+          ? WidgetStateProperty.all(Colors.red.withValues(alpha: 0.1))
+          : null,
       cells: [
         DataCell(Text(id, style: baseStyle)),
         DataCell(Text(productName, style: baseStyle)),
@@ -1323,10 +1433,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                color: Theme
+                    .of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.5),
               ),
             ),
             child: Column(
@@ -1753,7 +1871,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         Card(
           elevation: 0,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: Theme
+              .of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Column(
             children: [
