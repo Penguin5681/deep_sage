@@ -36,6 +36,11 @@ dependencies:
   excel:
   google_sign_in: ^6.3.0
   oauth2: ^2.0.3
+  flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
+  crypto: ^3.0.6
+  showcaseview: ^4.0.1
+  flutter_phoenix: ^1.1.1
   
 
 dev_dependencies:
@@ -46,52 +51,11 @@ dev_dependencies:
   build_runner: ^2.4.15
 flutter:
   assets:
-    - assets/icons/light/chart.png
-    - assets/icons/light/chart_outlined.png
-    - assets/icons/light/folder.png
-    - assets/icons/light/folder_outlined.png
-    - assets/icons/light/home.png
-    - assets/icons/light/home_outlined.png
-    - assets/icons/light/report.png
-    - assets/icons/light/report_outlined.png
-    - assets/icons/light/search.png
-    - assets/icons/light/search_outlined.png
-    - assets/icons/light/settings.png
-    - assets/icons/light/settings_outlined.png
-    - assets/icons/light/plus.png
-    - assets/icons/light/add.png
-    - assets/icons/light/ai.png
-    - assets/icons/light/factory.png
-    - assets/icons/light/government.png
-    - assets/icons/light/download.png
-    - assets/icons/light/server.png
-    - assets/icons/light/check.png
-
-
-    - assets/icons/brand/hf-logo.png
-    - assets/icons/brand/kaggle-logo.png
-
-
-    - assets/icons/dark/chart.png
-    - assets/icons/dark/chart_outlined.png
-    - assets/icons/dark/folder.png
-    - assets/icons/dark/folder_outlined.png
-    - assets/icons/dark/home.png
-    - assets/icons/dark/home_outlined.png
-    - assets/icons/dark/report.png
-    - assets/icons/dark/report_outlined.png
-    - assets/icons/dark/search.png
-    - assets/icons/dark/search_outlined.png
-    - assets/icons/dark/settings.png
-    - assets/icons/dark/settings_outlined.png
-    - assets/icons/dark/plus.png
-    - assets/icons/dark/add.png
-    - assets/icons/dark/ai.png
-    - assets/icons/dark/factory.png
-    - assets/icons/dark/government.png
-    - assets/icons/dark/download.png
-    - assets/icons/dark/server.png
-    - assets/icons/dark/check.png
+    - assets/icons/
+    - assets/icons/light/
+    - assets/icons/brand/
+    - assets/icons/dark/
+    - assets/icons/colorful/
     - assets/larry/larry.png
     - .env
     - assets/deepsage-452909-06ec904ead63.json

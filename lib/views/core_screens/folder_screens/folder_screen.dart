@@ -1,4 +1,5 @@
 import 'package:deep_sage/views/core_screens/folder_screens/folder_all.dart';
+import 'package:deep_sage/views/core_screens/folder_screens/folder_recent.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_starred.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -115,7 +116,7 @@ class _FolderScreenState extends State<FolderScreen>
               controller: tabController,
               children: [
                 FolderAll(onNavigate: widget.onNavigate),
-                FolderStarred(),
+                FolderRecent(onNavigate: widget.onNavigate),
                 FolderStarred(),
                 FolderStarred(),
               ],
