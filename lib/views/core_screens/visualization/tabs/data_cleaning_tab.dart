@@ -4,7 +4,13 @@ class DataCleaningTab extends StatefulWidget {
   final String? currentDataset;
   final String? currentDatasetPath;
   final String? currentDatasetType;
-  const DataCleaningTab({super.key, this.currentDataset, this.currentDatasetPath, this.currentDatasetType});
+
+  const DataCleaningTab({
+    super.key,
+    this.currentDataset,
+    this.currentDatasetPath,
+    this.currentDatasetType,
+  });
 
   @override
   State<DataCleaningTab> createState() => _DataCleaningTabState();
@@ -168,6 +174,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         const SizedBox(height: 8),
         _buildCurrentDatasetIndicator(),
         const SizedBox(height: 12),
+
         /// Builds the tab bar for navigating between different sections.
         _buildTabBar(),
         const SizedBox(height: 8),
@@ -252,17 +259,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.amber,
-                size: 20,
-              ),
+              Icon(Icons.info_outline, color: Colors.amber, size: 20),
               const SizedBox(width: 12),
               Text(
                 'No dataset selected. Please select a dataset from the sidebar.',
-                style: TextStyle(
-                  color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
-                ),
+                style: TextStyle(color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700),
               ),
             ],
           ),
@@ -743,14 +744,458 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   Widget _buildBottomActions() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: FilledButton.icon(
-        onPressed: () {},
-        icon: const Icon(Icons.auto_fix_high),
-        label: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Text('Apply Cleaning Operations'),
+      child: Row(
+        children: [
+          OutlinedButton.icon(
+            onPressed: () => _showPreviewDialog(),
+            icon: const Icon(Icons.visibility_outlined),
+            label: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              child: Text('Preview Changes'),
+            ),
+          ),
+          const SizedBox(width: 16),
+          FilledButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.auto_fix_high),
+            label: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              child: Text('Apply Cleaning Operations'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Displays a dialog to preview the data cleaning operations and their effects.
+  ///
+  /// This function shows a dialog that summarizes the active cleaning operations,
+  /// displays a preview of the dataset before and after the operations, and
+  /// allows the user to apply or cancel the changes.
+  ///
+  /// The dialog includes:
+  /// - A title 'Preview Changes' with a close button.
+  /// - Information about the current dataset, including its name and file type.
+  /// - A list of the operations that will be applied.
+  /// - A tabbed interface to compare the 'Before' and 'After' states of the data.
+  /// - Action buttons to 'Cancel' or 'Apply Changes'.
+  ///
+  /// The preview is generated based on the operations selected by the user in
+  /// the Data Cleaning tab. If no operations are selected, a SnackBar is displayed
+  /// informing the user to select at least one operation.
+  ///
+  /// The function uses helper methods:
+  /// - `_getActiveOperations`: To get the list of active cleaning operations.
+  /// - `_getFileIcon`: To get the appropriate icon based on the file type.
+  /// - `_getFileColor`: To get the color associated with the file type.
+  /// - `_buildDataPreview`: To build the 'Before' and 'After' data preview tables.
+  ///
+  /// The dialog adapts to the theme brightness for color consistency.
+  ///
+  /// The dialog's content is constrained to a maximum width of 800 and height of
+  /// 600 to ensure it fits comfortably on various screen sizes.
+  ///
+  /// When the 'Apply Changes' button is pressed, the dialog is closed, and the
+  /// changes are intended to be applied. (Note: The actual application of the
+  /// changes is currently a placeholder comment: '// Here we would apply the
+  /// changes'.)
+  void _showPreviewDialog() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    List<String> activeOperations = _getActiveOperations();
+
+    if (activeOperations.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No cleaning operations selected to preview')));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Preview Changes', style: Theme.of(context).textTheme.titleLarge),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Dataset info
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color:
+                            isDarkMode
+                                ? Colors.blue.shade900.withValues(alpha: 0.2)
+                                : Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getFileIcon(widget.currentDatasetType ?? ''),
+                            color: _getFileColor(widget.currentDatasetType ?? ''),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            widget.currentDataset ?? 'Unknown dataset',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Operations summary
+                    Text(
+                      'Operations to be applied:',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final operation in activeOperations)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_outline, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(operation),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Before/After comparison
+                    Expanded(
+                      child: DefaultTabController(
+                        length: 2,
+                        child: Column(
+                          children: [
+                            const TabBar(tabs: [Tab(text: 'Before'), Tab(text: 'After')]),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  _buildDataPreview(isBefore: true),
+                                  _buildDataPreview(isBefore: false),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 16),
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            // Here we would apply the changes
+                          },
+                          icon: const Icon(Icons.auto_fix_high),
+                          label: const Text('Apply Changes'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
+  /// Retrieves a list of currently active cleaning operations based on the selected
+  /// options in the UI.
+  ///
+  /// This method checks the state of each cleaning operation's configuration and
+  /// assembles a list of strings describing the active operations and their
+  /// respective parameters. This list is then used to provide a preview of the
+  /// operations that will be applied to the dataset.
+  ///
+  /// The method checks for the following operations:
+  /// - Handling of null values (missing data).
+  /// - Removal of duplicate rows.
+  /// - Correction of inconsistent values.
+  /// - Conversion of text to numbers.
+  /// - Detection and formatting of dates.
+  /// - Cleaning of text (e.g., lowercasing, trimming, special character removal).
+  /// - Encoding of categorical data.
+  List<String> _getActiveOperations() {
+    List<String> operations = [];
+
+    // Check each enabled operation
+    if (_nullMethod != 'nan') {
+      operations.add(
+        'Fix Missing Values: ${_nullMethod == 'custom' ? 'Custom values' : _nullMethod}',
+      );
+    }
+
+    if (_enableDuplicateRemoval) {
+      operations.add('Remove Duplicates: Keep $_duplicateKeepStrategy');
+    }
+
+    if (_enableValueCorrection) {
+      operations.add('Fix Spelling Mistakes: $_valueCorrectionMethod');
+    }
+
+    if (_enableNumericFix) {
+      operations.add('Convert Text to Numbers: Threshold $_numericThreshold');
+    }
+
+    if (_enableDateDetection) {
+      operations.add('Find and Format Dates: Threshold $_dateThreshold');
+    }
+
+    if (_enableTextCleaning) {
+      operations.add('Clean Text: ${_getTextCleaningDetails()}');
+    }
+
+    if (_enableCategoricalEncoding) {
+      operations.add('Convert Categories: $_encodingMethod encoding');
+    }
+
+    if (_enableNumericScaling) {
+      operations.add('Scale Numbers: $_scalingMethod scaling');
+    }
+
+    if (_enableOutlierHandling) {
+      operations.add('Handle Outliers: $_outlierDetectionMethod method, $_outlierAction');
+    }
+
+    if (_enableColumnStandardization) {
+      operations.add('Clean Column Names: $_columnCaseStyle style');
+    }
+
+    return operations;
+  }
+
+  /// Creates a detailed string description of the current text cleaning options.
+  ///
+  /// This method checks the state of each text cleaning option (convert to lowercase,
+  /// trim whitespace, remove special characters) and generates a comma-separated
+  /// string of the enabled options. This string is used to provide a preview of
+  /// the text cleaning operations that will be applied.
+  ///
+  /// Returns a [String] containing a comma-separated list of enabled text cleaning
+  /// operations. If no options are enabled, returns an empty string.
+  String _getTextCleaningDetails() {
+    List<String> details = [];
+    if (_convertToLowercase) details.add('lowercase');
+    if (_trimWhitespace) details.add('trim spaces');
+    if (_removeSpecialChars) details.add('remove special chars');
+    return details.join(', ');
+  }
+
+  /// Builds a data preview table for both "before" and "after" states of data cleaning.
+  ///
+  /// This method constructs a DataTable widget wrapped within scrollable views to
+  /// display a sample of data. The table is dynamically generated based on whether
+  /// the preview is for the "before" state (original data) or the "after" state
+  /// (data after applying cleaning operations).
+  ///
+  /// The table includes columns for 'id', 'product name', 'price', 'discount %', and
+  /// 'date added', with sample rows to illustrate potential changes in the data.
+  ///
+  /// The table is designed to handle:
+  /// - Horizontal and vertical scrolling for large datasets.
+  /// - Visual differentiation between "before" and "after" states of the data.
+  /// - Displaying indicators for missing values, duplicates, and type corrections.
+  ///
+  /// [isBefore] A boolean flag indicating whether to display the "before" or "after" data preview.
+  Widget _buildDataPreview({required bool isBefore}) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(
+          child: DataTable(
+            columnSpacing: 16,
+            headingRowColor: WidgetStateProperty.all(
+              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            ),
+            columns: [
+              DataColumn(label: Text(isBefore ? 'id' : 'id')),
+              DataColumn(label: Text(isBefore ? 'product name' : 'product_name')),
+              DataColumn(label: Text(isBefore ? 'price' : 'price')),
+              DataColumn(label: Text(isBefore ? 'discount %' : 'discount_pct')),
+              DataColumn(label: Text(isBefore ? 'date added' : 'date_added')),
+            ],
+            rows: [
+              _buildPreviewRow(
+                isBefore: isBefore,
+                id: '1',
+                productName: isBefore ? 'Laptop' : 'laptop',
+                price: isBefore ? '1299.99' : '1299.99',
+                discount: isBefore ? '10' : '10.0',
+                date: isBefore ? '01/05/2023' : '2023-01-05',
+                hasNull: false,
+              ),
+              _buildPreviewRow(
+                isBefore: isBefore,
+                id: '2',
+                productName: isBefore ? 'Smart Phone' : 'smart_phone',
+                price: isBefore ? '799.0' : '799.0',
+                discount: isBefore ? null : '0.0',
+                date: isBefore ? '02/17/2023' : '2023-02-17',
+                hasNull: true,
+              ),
+              _buildPreviewRow(
+                isBefore: isBefore,
+                id: '3',
+                productName: isBefore ? 'HeadPhones' : 'headphones',
+                price: isBefore ? '99.99' : '99.99',
+                discount: isBefore ? '15' : '15.0',
+                date: isBefore ? '03/10/2023' : '2023-03-10',
+                hasNull: false,
+              ),
+              _buildPreviewRow(
+                isBefore: isBefore,
+                id: '2',
+                productName:
+                    isBefore
+                        ? 'Smart phone'
+                        : isBefore
+                        ? 'Smart phone'
+                        : '<removed duplicate>',
+                price:
+                    isBefore
+                        ? '799.0'
+                        : isBefore
+                        ? '799.0'
+                        : '',
+                discount:
+                    isBefore
+                        ? '5'
+                        : isBefore
+                        ? '5'
+                        : '',
+                date:
+                    isBefore
+                        ? '02/18/2023'
+                        : isBefore
+                        ? '02/18/2023'
+                        : '',
+                hasNull: false,
+                isDuplicate: !isBefore,
+              ),
+              _buildPreviewRow(
+                isBefore: isBefore,
+                id: '4',
+                productName: isBefore ? 'Tablet' : 'tablet',
+                price: isBefore ? 'one thousand' : '1000.0',
+                discount: isBefore ? '20' : '20.0',
+                date: isBefore ? '04/22/2023' : '2023-04-22',
+                hasNull: false,
+                hasTextAsNumber: true,
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  /// Builds a single data row for the data preview table.
+  ///
+  /// This method creates a [DataRow] widget that represents a single row in
+  /// the data preview table. It is used to display sample data and highlight
+  /// any changes or special conditions, such as missing values, duplicates, or
+  /// corrected values.
+  ///
+  /// Each row contains cells for 'id', 'productName', 'price', 'discount', and
+  /// 'date'. The display of these cells is styled based on the following:
+  /// - [isDuplicate]: If true and `isBefore` is false, the row is styled to
+  ///   indicate it as a removed duplicate.
+  /// - [hasNull]: If true and `isBefore` is true, the discount cell is styled
+  ///   to indicate a missing value.
+  /// - [hasTextAsNumber]: If true and `isBefore` is false, the price cell is
+  ///   styled to indicate a corrected numeric value.
+  ///
+  /// [isBefore] - Indicates whether this is a "before" or "after" preview row.
+  /// [id] - The unique identifier of the row.
+  /// [productName] - The name of the product in this row.
+  /// [price] - The price value, may be null or a string representation.
+  /// [discount] - The discount value, may be null or a string representation.
+  /// [date] - The date value for this row.
+  /// [hasNull] - Indicates whether a missing value should be highlighted.
+  /// [isDuplicate] - Indicates whether this row is a duplicate and should be styled as such.
+  /// [hasTextAsNumber] - Indicates if a text value was converted to a number and should be highlighted.
+  DataRow _buildPreviewRow({
+    required bool isBefore,
+    required String id,
+    required String productName,
+    required String? price,
+    required String? discount,
+    required String date,
+    required bool hasNull,
+    bool isDuplicate = false,
+    bool hasTextAsNumber = false,
+  }) {
+    final TextStyle? baseStyle =
+        isDuplicate && !isBefore
+            ? const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough)
+            : null;
+
+    return DataRow(
+      color:
+          isDuplicate && !isBefore
+              ? WidgetStateProperty.all(Colors.red.withValues(alpha: 0.1))
+              : null,
+      cells: [
+        DataCell(Text(id, style: baseStyle)),
+        DataCell(Text(productName, style: baseStyle)),
+        DataCell(
+          hasTextAsNumber && !isBefore
+              ? Text(price!, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
+              : Text(price ?? '', style: baseStyle),
+        ),
+        DataCell(
+          hasNull && isBefore
+              ? Text('', style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic))
+              : Text(discount ?? '', style: baseStyle),
+        ),
+        DataCell(Text(date, style: baseStyle)),
+      ],
     );
   }
 
