@@ -536,8 +536,9 @@ class CacheService {
                               );
 
                               if (clearHive) await clearAppSupportCache();
-                              if (clearSharedPrefs)
+                              if (clearSharedPrefs) {
                                 await clearSharedPreferences();
+                              }
                               if (clearImageCache) await _clearImageCache();
                               if (clearDatasets) await _clearDatasets();
 
