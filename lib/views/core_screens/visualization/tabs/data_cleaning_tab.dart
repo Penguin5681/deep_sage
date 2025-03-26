@@ -1,4 +1,9 @@
+import 'package:deep_sage/core/services/core_services/data_cleaning_services/data_cleaning_preview_service.dart';
+import 'package:deep_sage/core/services/core_services/data_cleaning_services/data_cleaning_service.dart';
 import 'package:flutter/material.dart';
+
+import '../../../../core/services/core_services/data_preview_service.dart';
+import '../../../../core/services/core_services/data_cleaning_services/missing_value_service.dart';
 
 class DataCleaningTab extends StatefulWidget {
   final String? currentDataset;
@@ -121,17 +126,87 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
 
   /// Flag to enable or disable parallel processing globally. Defaults to false.
   bool _enableParallelGlobalProcessing = false;
+
+  /// Flag indicating whether data processing should be done in-place (modifying the original dataset) or not.
+  /// Defaults to true, meaning in-place processing is enabled.
   bool _enableInPlaceProcessing = true;
+
+  /// Flag to determine whether the dataset preview feature is enabled.
+  /// Defaults to true, meaning the preview is enabled.
   bool _enableDatasetPreview = true;
+
+  /// Flag indicating if progress visualization (e.g., progress bars) should be displayed during operations.
+  /// Defaults to true, meaning progress visualization is enabled.
   bool _enableProgressVisualization = true;
+
+  /// Flag to enable or disable the generation of a detailed report after data cleaning.
+  /// Defaults to false, meaning the report generation is disabled.
   bool _enableReportGeneration = false;
 
+  /// Flag indicating whether metadata is currently being loaded.
+  /// When true, UI should display a loading indicator for metadata-related components.
+  bool _isLoadingMetadata = false;
+
+  /// Contains statistics about missing values in the dataset.
+  /// This map holds information like missing value counts, percentages, and column stats.
+  Map<String, dynamic> _missingValueStats = {};
+
+  /// Set of column names that the user has selected for cleaning operations.
+  /// Operations will only be applied to these columns when this set is not empty.
+  Set<String> _selectedColumns = {};
+
+  /// Flag indicating whether a cleaning operation is currently being applied.
+  /// Used to show loading state and disable UI controls during processing.
+  bool isApplyingCleanOperation = false;
+
+  /// Service for handling operations related to missing values in datasets.
+  /// Provides functionality for detecting, filling, and reporting missing data.
+  final MissingValuesService _missingValuesService = MissingValuesService();
+
+  /// Service for generating and managing data previews.
+  /// Handles retrieving samples of data for display in the UI.
+  final DataPreviewService _dataPreviewService = DataPreviewService();
+
+  /// Service for performing core data cleaning operations.
+  /// Encapsulates logic for all data transformation and cleaning functions.
+  final DataCleaningService _dataCleaningService = DataCleaningService();
+
+  /// Preview of the dataset for display in the UI.
+  /// Contains column names and a sample of rows from the dataset.
+  Map<String, dynamic>? _dataPreview;
+
+  /// Flag indicating whether data preview is currently being loaded.
+  /// When true, UI should display a loading indicator in the preview area.
+  bool isLoadingDataPreview = false;
+
+  /// File path to the cleaned/processed dataset.
+  /// Null when no cleaning operations have been applied yet.
+  String? cleanedFilePath;
+
+  /// Controller for text input fields used for regular expression operations.
+  /// Used in pattern matching and text manipulation functions.
   final TextEditingController _regexController = TextEditingController();
+
+  /// Flag that indicates whether a preview operation is currently in progress.
+  /// When true, the UI should show a loading indicator.
+  bool isLoadingPreview = false;
+
+  /// Flag that indicates whether a cleaned data preview is ready to be displayed.
+  /// Set to true after a successful preview operation completes.
+  bool cleanedPreviewReady = false;
+
+  /// Holds the preview data that shows before/after comparison of cleaning operations.
+  /// Contains separate 'before' and 'after' datasets along with metadata about changes.
+  Map<String, dynamic>? _previewData;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 6, vsync: this);
+
+    if (widget.currentDatasetPath != null) {
+      _fetchMissingValueStats();
+    }
   }
 
   @override
@@ -142,6 +217,46 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     _regexController.dispose();
     _customMappingController.dispose();
     super.dispose();
+  }
+
+  /// Fetches and sets the missing value statistics for the current dataset.
+  ///
+  /// This asynchronous function retrieves metadata about missing values
+  /// in the currently selected dataset using the `_dataCleaningService`.
+  /// It first checks if a dataset path is available. If not, it returns
+  /// immediately, doing nothing. If a dataset path is available, it sets
+  /// the `_isLoadingMetadata` flag to true to indicate that data is being
+  /// loaded.
+  ///
+  /// Upon successfully fetching the metadata, it updates the `_missingValueStats`
+  /// state variable with the retrieved metadata and sets `_isLoadingMetadata` to
+  /// false. If an error occurs during the fetch, it sets `_isLoadingMetadata`
+  /// to false and displays a SnackBar with an error message.
+  ///
+  /// This function is typically called during the initialization phase to
+  /// pre-load missing value information.
+  Future<void> _fetchMissingValueStats() async {
+    if (widget.currentDatasetPath == null) return;
+
+    setState(() {
+      _isLoadingMetadata = true;
+    });
+
+    try {
+      final metadata = await _dataCleaningService.getMetadata(widget.currentDatasetPath!);
+      setState(() {
+        _missingValueStats = metadata;
+        _isLoadingMetadata = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingMetadata = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error fetching missing value stats: $e')));
+    }
   }
 
   /// Builds the indicator for the currently selected dataset.
@@ -169,7 +284,6 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         /// Builds the header section of the Data Cleaning tab.
         _buildHeader(),
         const SizedBox(height: 8),
@@ -216,11 +330,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             'Make your data ready for analysis by fixing common problems',
             style: TextStyle(
               fontSize: 14,
-              color: Theme
-                  .of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -250,9 +360,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// - [_getFileColor]: Returns the color associated with the file type.
   /// - [_getDisplayPath]: Shortens the file path for display purposes.
   Widget _buildCurrentDatasetIndicator() {
-    final isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     if (widget.currentDataset == null || widget.currentDataset!.isEmpty) {
       return Padding(
@@ -401,9 +509,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     required IconData icon,
     required Widget content,
   }) {
-    final colorScheme = Theme
-        .of(context)
-        .colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       elevation: 1,
@@ -428,19 +534,26 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     );
   }
 
-  /// Builds the UI for handling null values in the dataset.
+  /// Builds the UI content for handling null values in the dataset.
   ///
-  /// This widget returns a Column that contains a DropdownButtonFormField
-  /// to choose a fill method for null values. The available methods include
-  /// leaving the value as NaN, filling with 0, mean, median, mode, or providing
-  /// custom fill values. When using the custom fill method, additional fields are
-  /// displayed for numeric and categorical values, as well as a date picker for a
-  /// date fill value.
+  /// This widget creates a column containing controls for configuring how to handle
+  /// null values in the dataset:
+  /// - A dropdown to select the fill method (e.g., leave as NaN, fill with 0, mean, median, mode, custom values)
+  /// - If custom values are selected, additional text fields for numeric and categorical fills
+  /// - A date picker for selecting a default date fill value
+  /// - A section for displaying missing value statistics if available
+  /// - A button to apply the missing value cleaning operation
+  ///
+  /// Returns a [Widget] containing the complete null value handling configuration UI.
   Widget _buildNullValueContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
+        _isLoadingMetadata
+            ? const Center(child: CircularProgressIndicator())
+            : _buildMissingValueStats(),
+        const SizedBox(height: 16),
         DropdownButtonFormField<String>(
           decoration: InputDecoration(
             labelText: 'Fill method',
@@ -499,11 +612,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             'Date fill value',
             style: TextStyle(
               fontSize: 14,
-              color: Theme
-                  .of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.8),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),
@@ -525,10 +634,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme
-                    .of(context)
-                    .colorScheme
-                    .outline),
+                border: Border.all(color: Theme.of(context).colorScheme.outline),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -541,6 +647,307 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             ),
           ),
         ],
+
+        const SizedBox(height: 16),
+        if (_missingValueStats.isNotEmpty && _missingValueStats.containsKey('columns'))
+          _buildColumnSelectionSection(),
+
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: _applyMissingValueCleaning,
+          icon: const Icon(Icons.healing),
+          label: const Text('Apply Missing Value Cleaning'),
+        ),
+      ],
+    );
+  }
+
+  /// Applies cleaning operations to handle missing values in the dataset.
+  ///
+  /// This method orchestrates the missing value cleaning process by:
+  /// 1. Validating that a dataset is currently selected
+  /// 2. Preparing custom values if the 'custom' method is selected
+  /// 3. Updating UI to show a loading state
+  /// 4. Calling the service to perform the cleaning operation
+  /// 5. Storing the path to the cleaned file for future operations
+  /// 6. Loading a preview of the cleaned data
+  /// 7. Showing success or error notifications to the user
+  ///
+  /// The method handles different cleaning strategies based on the selected
+  /// [_nullMethod] and provides appropriate feedback throughout the process.
+  ///
+  /// Throws an exception if the cleaning operation fails, which is caught
+  /// and displayed to the user.
+  Future<void> _applyMissingValueCleaning() async {
+    if (widget.currentDatasetPath == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No dataset selected')));
+      return;
+    }
+
+    Map<String, dynamic>? customValues;
+    if (_nullMethod == 'custom') {
+      customValues = {
+        'numeric':
+            _numericFillController.text.isEmpty
+                ? 0
+                : double.tryParse(_numericFillController.text) ?? 0,
+        'categorical':
+            _categoricalFillController.text.isEmpty ? 'unknown' : _categoricalFillController.text,
+        'datetime': _dateFillValue.toIso8601String(),
+      };
+    }
+
+    setState(() {
+      isApplyingCleanOperation = true;
+    });
+
+    try {
+      final cleanedPath = await _missingValuesService.cleanMissingValues(
+        filePath: widget.currentDatasetPath!,
+        method: _nullMethod,
+        customValues: customValues,
+        selectedColumns: _selectedColumns.isEmpty ? null : _selectedColumns.toList(),
+      );
+
+      // Store the cleaned file path for potential future operations
+      cleanedFilePath = cleanedPath;
+
+      // Load preview of cleaned data
+      await _loadDataPreview(cleanedPath);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Successfully cleaned missing values')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error applying cleaning: $e')));
+    } finally {
+      setState(() {
+        isApplyingCleanOperation = false;
+      });
+    }
+  }
+
+  /// Loads a preview of the specified dataset file.
+  ///
+  /// This asynchronous method attempts to load a preview of the data from the
+  /// provided [filePath]. It manages loading state via [isLoadingDataPreview]
+  /// to indicate when a preview operation is in progress.
+  ///
+  /// The preview uses the [DataPreviewService] to fetch a small sample (up to 10 rows)
+  /// of the dataset, maintaining the correct format based on the dataset type.
+  ///
+  /// Parameters:
+  /// - [filePath]: The path to the dataset file to preview
+  ///
+  /// The method handles errors gracefully by logging them with [debugPrint]
+  /// without interrupting the UI flow, and ensures the loading state is always
+  /// reset even if an error occurs.
+  ///
+  /// Sets [_dataPreview] with the preview data when successful.
+  Future<void> _loadDataPreview(String filePath) async {
+    setState(() {
+      isLoadingDataPreview = true;
+    });
+
+    try {
+      final preview = await _dataPreviewService.loadDatasetPreview(
+        filePath,
+        widget.currentDatasetType ?? 'csv',
+        10,
+      );
+      debugPrint('_dataPreview: $_dataPreview');
+      setState(() {
+        _dataPreview = preview;
+      });
+    } catch (e) {
+      debugPrint('Error loading data preview: $e');
+    } finally {
+      setState(() {
+        isLoadingDataPreview = false;
+      });
+    }
+  }
+
+  /// Builds and returns a widget displaying missing value statistics for the dataset.
+  ///
+  /// This method visualizes the analysis of missing values in the current dataset.
+  /// It has three possible states:
+  /// 1. If [_missingValueStats] is empty, displays a message indicating no statistics are available
+  /// 2. If there are no columns with missing values, shows a success message with a green indicator
+  /// 3. Otherwise, displays a detailed table showing which columns have missing values,
+  ///    their data types, count and percentage of missing values
+  ///
+  /// The detailed table includes:
+  /// - Column names
+  /// - Data types
+  /// - Absolute count of missing values per column
+  /// - Percentage of missing values relative to the total row count
+  ///
+  /// The table is horizontally scrollable to accommodate datasets with many columns.
+  ///
+  /// Returns a Widget containing either a message about the state of missing values
+  /// or a detailed table of missing value statistics.
+  Widget _buildMissingValueStats() {
+    if (_missingValueStats.isEmpty) {
+      return const Center(child: Text('No missing value statistics available'));
+    }
+
+    final columns = List<Map<String, dynamic>>.from(_missingValueStats['columns'] ?? []);
+    final columnsWithMissingValues =
+        columns.where((col) => (col['missing_values'] ?? 0) > 0).toList();
+
+    if (columnsWithMissingValues.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Card(
+          color: Colors.green.withValues(alpha: 0.1),
+          child: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('No missing values detected in this dataset!'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Missing Values Statistics',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columnSpacing: 16,
+              headingRowColor: WidgetStateProperty.all(
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+              columns: const [
+                DataColumn(label: Text('Column')),
+                DataColumn(label: Text('Type')),
+                DataColumn(label: Text('Missing Values')),
+                DataColumn(label: Text('% Missing')),
+              ],
+              rows:
+                  columnsWithMissingValues.map((col) {
+                    final totalRows = _missingValueStats['num_rows'] ?? 1;
+                    final missingCount = col['missing_values'] ?? 0;
+                    final percentMissing = (missingCount / totalRows * 100).toStringAsFixed(1);
+
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(col['name'] ?? '')),
+                        DataCell(Text(col['type'] ?? '')),
+                        DataCell(Text('$missingCount')),
+                        DataCell(Text('$percentMissing%')),
+                      ],
+                    );
+                  }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds a section for selecting columns with missing values that need cleaning.
+  ///
+  /// This method creates a UI component containing:
+  /// - A title label identifying the section
+  /// - A wrap layout with [FilterChip] widgets for each column that has missing values
+  /// - "Select All" and "Clear Selection" buttons for batch selection operations
+  ///
+  /// The method filters the columns list to only show those with missing values,
+  /// making it easier for users to identify and select columns that need attention.
+  /// Each column can be individually toggled by tapping its chip.
+  ///
+  /// Returns a [Widget] (Column) containing the column selection interface.
+  Widget _buildColumnSelectionSection() {
+    final columns = List<Map<String, dynamic>>.from(_missingValueStats['columns'] ?? []);
+    final columnsWithMissingValues =
+        columns.where((col) => (col['missing_values'] ?? 0) > 0).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select columns to clean:',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              columnsWithMissingValues.map((col) {
+                final columnName = col['name'] as String;
+                final isSelected = _selectedColumns.contains(columnName);
+
+                return FilterChip(
+                  label: Text(columnName),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedColumns.add(columnName);
+                      } else {
+                        _selectedColumns.remove(columnName);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedColumns = Set<String>.from(
+                    columnsWithMissingValues.map((col) => col['name'] as String),
+                  );
+                });
+              },
+              child: const Text('Select All'),
+            ),
+            const SizedBox(width: 16),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedColumns = {};
+                });
+              },
+              child: const Text('Clear Selection'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -694,11 +1101,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         if (_enableTextCleaning) ...[
           Card(
             elevation: 0,
-            color: Theme
-                .of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withValues(alpha: 0.3),
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             child: Column(
               children: [
@@ -767,7 +1170,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       child: Row(
         children: [
           OutlinedButton.icon(
-            onPressed: () => _showPreviewDialog(),
+            onPressed: () => _previewMissingValueCleaning(),
             icon: const Icon(Icons.visibility_outlined),
             label: const Padding(
               padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -785,265 +1188,6 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           ),
         ],
       ),
-    );
-  }
-
-  /// Displays a dialog to preview the data cleaning operations and their effects.
-  ///
-  /// This function shows a dialog that summarizes the active cleaning operations,
-  /// displays a preview of the dataset before and after the operations, and
-  /// allows the user to apply or cancel the changes.
-  ///
-  /// The dialog includes:
-  /// - A title 'Preview Changes' with a close button.
-  /// - Information about the current dataset, including its name and file type.
-  /// - A list of the operations that will be applied.
-  /// - A tabbed interface to compare the 'Before' and 'After' states of the data.
-  /// - Action buttons to 'Cancel' or 'Apply Changes'.
-  ///
-  /// The preview is generated based on the operations selected by the user in
-  /// the Data Cleaning tab. If no operations are selected, a SnackBar is displayed
-  /// informing the user to select at least one operation.
-  ///
-  /// The function uses helper methods:
-  /// - `_getActiveOperations`: To get the list of active cleaning operations.
-  /// - `_getFileIcon`: To get the appropriate icon based on the file type.
-  /// - `_getFileColor`: To get the color associated with the file type.
-  /// - `_buildDataPreview`: To build the 'Before' and 'After' data preview tables.
-  ///
-  /// The dialog adapts to the theme brightness for color consistency.
-  ///
-  /// The dialog's content is constrained to a maximum width of 800 and height of
-  /// 600 to ensure it fits comfortably on various screen sizes.
-  ///
-  /// When the 'Apply Changes' button is pressed, the dialog is closed, and the
-  /// changes are intended to be applied. (Note: The actual application of the
-  /// changes is currently a placeholder comment: '// Here we would apply the
-  /// changes'.)
-  void _showPreviewDialog() {
-    final isDarkMode = Theme
-        .of(context)
-        .brightness == Brightness.dark;
-    List<String> activeOperations = _getActiveOperations();
-
-    if (activeOperations.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No cleaning operations selected to preview'))
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) =>
-          Dialog(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 900,
-                maxHeight: 700,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Dialog header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Preview Changes',
-                          style: Theme
-                              .of(context)
-                              .textTheme
-                              .headlineSmall,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    const SizedBox(height: 8),
-
-                    // Dataset info and operations in a horizontal layout
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left panel: dataset info & operations
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Dataset info
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isDarkMode
-                                      ? Colors.blue.shade900.withValues(alpha: 0.2)
-                                      : Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _getFileIcon(widget.currentDatasetType ?? ''),
-                                      color: _getFileColor(widget.currentDatasetType ?? ''),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            widget.currentDataset ?? 'Unknown dataset',
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                          if (widget.currentDatasetPath != null)
-                                            Text(
-                                              _getDisplayPath(widget.currentDatasetPath!),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Theme
-                                                    .of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Operations summary
-                              Text(
-                                'Operations to be applied:',
-                                style: Theme
-                                    .of(context)
-                                    .textTheme
-                                    .titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Scrollable operations list
-                              Container(
-                                constraints: const BoxConstraints(maxHeight: 160),
-                                decoration: BoxDecoration(
-                                  color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: SingleChildScrollView(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        for (int i = 0; i < activeOperations.length; i++)
-                                          Padding(
-                                            padding: const EdgeInsets.only(bottom: 4),
-                                            child: Row(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text("${i + 1}. ",
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Theme
-                                                        .of(context)
-                                                        .colorScheme
-                                                        .primary,
-                                                  ),
-                                                ),
-                                                Expanded(child: Text(activeOperations[i])),
-                                              ],
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Right panel: Before/After preview
-                        Expanded(
-                          flex: 5,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Data Preview',
-                                style: Theme
-                                    .of(context)
-                                    .textTheme
-                                    .titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: 400, // Fixed height prevents shrinking
-                                child: DefaultTabController(
-                                  length: 2,
-                                  child: Column(
-                                    children: [
-                                      const TabBar(
-                                        tabs: [
-                                          Tab(text: 'Before'),
-                                          Tab(text: 'After'),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Expanded(
-                                        child: TabBarView(
-                                          children: [
-                                            _buildDataPreview(isBefore: true),
-                                            _buildDataPreview(isBefore: false),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(),
-                    const Divider(),
-
-                    // Action buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 16),
-                        FilledButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            // Here we would apply the changes
-                          },
-                          icon: const Icon(Icons.auto_fix_high),
-                          label: const Text('Apply Changes'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
     );
   }
 
@@ -1145,7 +1289,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// - Displaying indicators for missing values, duplicates, and type corrections.
   ///
   /// [isBefore] A boolean flag indicating whether to display the "before" or "after" data preview.
-  Widget _buildDataPreview({required bool isBefore}) {
+  Widget buildDataPreview({required bool isBefore}) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
@@ -1157,11 +1301,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           child: DataTable(
             columnSpacing: 16,
             headingRowColor: WidgetStateProperty.all(
-              Theme
-                  .of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.5),
+              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             ),
             columns: [
               DataColumn(label: Text(isBefore ? 'id' : 'id')),
@@ -1202,29 +1342,29 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 isBefore: isBefore,
                 id: '2',
                 productName:
-                isBefore
-                    ? 'Smart phone'
-                    : isBefore
-                    ? 'Smart phone'
-                    : '<removed duplicate>',
+                    isBefore
+                        ? 'Smart phone'
+                        : isBefore
+                        ? 'Smart phone'
+                        : '<removed duplicate>',
                 price:
-                isBefore
-                    ? '799.0'
-                    : isBefore
-                    ? '799.0'
-                    : '',
+                    isBefore
+                        ? '799.0'
+                        : isBefore
+                        ? '799.0'
+                        : '',
                 discount:
-                isBefore
-                    ? '5'
-                    : isBefore
-                    ? '5'
-                    : '',
+                    isBefore
+                        ? '5'
+                        : isBefore
+                        ? '5'
+                        : '',
                 date:
-                isBefore
-                    ? '02/18/2023'
-                    : isBefore
-                    ? '02/18/2023'
-                    : '',
+                    isBefore
+                        ? '02/18/2023'
+                        : isBefore
+                        ? '02/18/2023'
+                        : '',
                 hasNull: false,
                 isDuplicate: !isBefore,
               ),
@@ -1239,6 +1379,842 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 hasTextAsNumber: true,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Generates a preview of how missing value cleaning will affect the dataset.
+  ///
+  /// This asynchronous method provides a before/after comparison of the data
+  /// without actually modifying the original dataset. It follows these steps:
+  ///
+  /// 1. Validates that a dataset is currently selected, returning early with
+  ///    an error message if not.
+  /// 2. Verifies that at least one column has been selected for cleaning,
+  ///    returning early with an error message if not.
+  /// 3. Prepares custom values if the 'custom' method is selected.
+  /// 4. Updates UI to show a loading state.
+  /// 5. Calls the preview service to generate a sample of the data
+  ///    both before and after the cleaning operation.
+  /// 6. Updates the state with the preview data.
+  /// 7. Shows a dialog with the comparison preview.
+  /// 8. Handles errors by displaying appropriate messages.
+  /// 9. Always resets the loading state when complete.
+  ///
+  /// The preview is limited to 10 rows by default to optimize performance.
+  ///
+  /// Throws exceptions if the preview operation fails, which are caught
+  /// and presented to the user via a SnackBar.
+  Future<void> _previewMissingValueCleaning() async {
+    if (widget.currentDatasetPath == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No dataset selected')));
+      return;
+    }
+
+    if (_selectedColumns.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select at least one column to clean')));
+      return;
+    }
+
+    Map<String, dynamic>? customValues;
+    if (_nullMethod == 'custom') {
+      customValues = {
+        'numeric':
+            _numericFillController.text.isEmpty
+                ? 0
+                : double.tryParse(_numericFillController.text) ?? 0,
+        'categorical':
+            _categoricalFillController.text.isEmpty ? 'unknown' : _categoricalFillController.text,
+        'datetime': _dateFillValue.toIso8601String(),
+      };
+    }
+
+    setState(() {
+      isLoadingPreview = true;
+    });
+
+    try {
+      final previewService = DataCleaningPreviewService(baseUrl: 'http://localhost:5000');
+
+      final previewData = await previewService.previewMissingValueCleaning(
+        filePath: widget.currentDatasetPath!,
+        method: _nullMethod,
+        customValues: customValues,
+        selectedColumns: _selectedColumns.toList(),
+        // Convert set to list
+        limit: 10,
+      );
+
+      debugPrint('previewData: $previewData');
+
+      setState(() {
+        _previewData = previewData;
+        cleanedPreviewReady = true;
+      });
+
+      _showDataPreviewDialog();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error generating preview: $e')));
+    } finally {
+      setState(() {
+        isLoadingPreview = false;
+      });
+    }
+  }
+
+  /// Displays a dialog that previews the data before and after cleaning operations.
+  ///
+  /// This method creates a rich, interactive dialog that allows users to visualize the
+  /// effects of data cleaning operations before committing to them. The dialog features:
+  ///
+  /// * A summary of the affected rows and cleaning operations
+  /// * Toggle between split view (before/after side by side) and unified view
+  /// * Visual highlighting of changes between original and cleaned data
+  /// * Lists of affected columns and active operations
+  /// * Options to apply or cancel the changes
+  ///
+  /// The method requires [_previewData] to be populated with the "before" and "after"
+  /// data samples, typically from a call to [_previewMissingValueCleaning].
+  ///
+  /// If [_previewData] is null, the method returns early without showing anything.
+  /// If the before or after data arrays are empty, a snackbar message is displayed.
+  ///
+  /// The dialog performs comparisons between before and after rows to identify which
+  /// columns were affected by the cleaning operations, and provides appropriate visual
+  /// feedback.
+  void _showDataPreviewDialog() {
+    if (_previewData == null) return;
+
+    final beforeRows = List<Map<String, dynamic>>.from(_previewData!['before'] ?? []);
+    final afterRows = List<Map<String, dynamic>>.from(_previewData!['after'] ?? []);
+    final affectedRows = _previewData!['affected_rows'] ?? 0;
+    final sampledRows = _previewData!['sampled_rows'] ?? 0;
+    final message = _previewData!['message'] ?? '';
+
+    if (beforeRows.isEmpty || afterRows.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
+    // Identify affected columns (columns that have changes)
+    final allColumns = beforeRows.first.keys.toList();
+    Set<String> affectedColumns = {};
+
+    // Compare before and after to find columns with changes
+    for (int i = 0; i < beforeRows.length; i++) {
+      for (String column in allColumns) {
+        if (beforeRows[i][column] != afterRows[i][column]) {
+          affectedColumns.add(column);
+        }
+      }
+    }
+
+    // If no columns are affected, use the selected columns or all columns
+    if (affectedColumns.isEmpty) {
+      if (_selectedColumns.isNotEmpty) {
+        affectedColumns = Set.from(_selectedColumns);
+      } else {
+        affectedColumns = Set.from(allColumns);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No changes were detected in the data preview')),
+        );
+      }
+    }
+
+    // Get active operations
+    final activeOperations = _getActiveOperations();
+
+    // Track current view mode (split or unified)
+    bool splitView = true;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              insetPadding: const EdgeInsets.all(16),
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: MediaQuery.of(context).size.height * 0.8,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Dialog header with title and close button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Data Cleaning Preview',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // View mode selector
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment<bool>(
+                          value: true,
+                          label: Text('Split View'),
+                          icon: Icon(Icons.vertical_split),
+                        ),
+                        ButtonSegment<bool>(
+                          value: false,
+                          label: Text('Unified View'),
+                          icon: Icon(Icons.view_agenda),
+                        ),
+                      ],
+                      selected: {splitView},
+                      onSelectionChanged: (Set<bool> newSelection) {
+                        setState(() {
+                          splitView = newSelection.first;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Summary statistics with highlighting
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Summary',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              Text(
+                                '$affectedRows rows affected',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      affectedRows > 0
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Progress indicator showing percentage of affected rows
+                          if (sampledRows > 0) ...[
+                            LinearProgressIndicator(
+                              value: affectedRows / sampledRows,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Showing $sampledRows sample rows (${(affectedRows / sampledRows * 100).toStringAsFixed(1)}% affected)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Active operations section
+                    if (activeOperations.isNotEmpty) ...[
+                      Text(
+                        'Active Operations',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            activeOperations
+                                .map(
+                                  (op) => Chip(
+                                    label: Text(op),
+                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                    labelStyle: TextStyle(
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Column names that were affected
+                    if (affectedColumns.isNotEmpty) ...[
+                      Text(
+                        'Affected Columns',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            affectedColumns
+                                .map(
+                                  (col) => Chip(
+                                    label: Text(col),
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.tertiaryContainer,
+                                    labelStyle: TextStyle(
+                                      color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Data preview tables
+                    Expanded(
+                      child:
+                          splitView
+                              ? _buildSplitView(beforeRows, afterRows, affectedColumns.toList())
+                              : _buildUnifiedView(beforeRows, afterRows, affectedColumns.toList()),
+                    ),
+
+                    // Bottom actions
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 16),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _applyMissingValueCleaning();
+                          },
+                          child: const Text('Apply Changes'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Builds a split view showing both before and after data cleaning states side by side.
+  ///
+  /// This widget creates a horizontal split layout with two tables:
+  /// - Left side shows the original data ("Before" state)
+  /// - Right side shows the cleaned data ("After" state)
+  ///
+  /// Each side has its own header with an appropriate icon and styling to visually
+  /// differentiate between the before and after states.
+  ///
+  /// Parameters:
+  /// - [beforeRows]: List of maps representing the original data before cleaning
+  /// - [afterRows]: List of maps representing the data after cleaning operations
+  /// - [columns]: List of column names to display in the tables, typically focuses
+  ///   on columns that were affected by cleaning operations
+  ///
+  /// Returns a [Widget] containing the side-by-side comparison view with appropriate
+  /// styling and headers.
+  Widget _buildSplitView(
+    List<Map<String, dynamic>> beforeRows,
+    List<Map<String, dynamic>> afterRows,
+    List<String> columns,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.history,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Before',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _buildPreviewTable(
+                  columns: columns,
+                  rows: beforeRows,
+                  compareRows: afterRows,
+                  isBefore: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'After',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _buildPreviewTable(
+                  columns: columns,
+                  rows: afterRows,
+                  compareRows: beforeRows,
+                  isBefore: false,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds a unified view that shows before and after data changes in a single table.
+  ///
+  /// This widget creates a column containing a header and an expanded table view that
+  /// visualizes the differences between the original and cleaned datasets side by side.
+  /// The unified view is designed to help users easily identify which values have been
+  /// modified by the cleaning operations.
+  ///
+  /// Parameters:
+  /// * [beforeRows] - A list of maps representing the original dataset rows before cleaning
+  /// * [afterRows] - A list of maps representing the dataset rows after cleaning operations
+  /// * [columns] - A list of column names to display in the table, typically focusing on
+  ///   columns that have been affected by cleaning operations
+  ///
+  /// Returns a [Column] widget containing a styled header and the unified preview table.
+  /// The header has a tertiary color scheme to distinguish it from split view headers.
+  Widget _buildUnifiedView(
+    List<Map<String, dynamic>> beforeRows,
+    List<Map<String, dynamic>> afterRows,
+    List<String> columns,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.compare_arrows,
+                size: 16,
+                color: Theme.of(context).colorScheme.onTertiaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Changes',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _buildUnifiedPreviewTable(
+            columns: columns,
+            beforeRows: beforeRows,
+            afterRows: afterRows,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds a data preview table for comparing dataset values.
+  ///
+  /// This method creates a scrollable data table that displays dataset values and
+  /// highlights changes between the original and processed data. It is used in both
+  /// the "before" and "after" views of the data cleaning preview dialog.
+  ///
+  /// Features:
+  /// - Highlights cells with changed values (red for before, green for after)
+  /// - Shows tooltips for column names that might be truncated
+  /// - Adds visual indicators (arrow icon) for new values
+  /// - Applies appropriate text styling (strikethrough for old values, bold for changes)
+  /// - Handles null and empty values with descriptive placeholders
+  /// - Provides horizontal and vertical scrolling for large datasets
+  ///
+  /// Parameters:
+  /// - [columns]: List of column names to display
+  /// - [rows]: List of data rows to display in the table
+  /// - [compareRows]: Reference data to compare against for highlighting changes
+  /// - [isBefore]: Whether this table shows the "before" state (true) or "after" state (false)
+  ///
+  /// Returns a Container widget containing the formatted data table with appropriate styling.
+  Widget _buildPreviewTable({
+    required List<String> columns,
+    required List<Map<String, dynamic>> rows,
+    required List<Map<String, dynamic>> compareRows,
+    required bool isBefore,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(
+              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            ),
+            columnSpacing: 16,
+            dataRowMinHeight: 36,
+            dataRowMaxHeight: 56,
+            border: TableBorder(
+              horizontalInside: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            columns:
+                columns.map((column) {
+                  return DataColumn(
+                    label: Tooltip(
+                      message: column,
+                      child: Text(
+                        column,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  );
+                }).toList(),
+            rows: List<DataRow>.generate(
+              rows.length,
+              (rowIndex) => DataRow(
+                cells:
+                    columns.map((column) {
+                      // Extract values from both datasets for comparison
+                      final value = rows[rowIndex][column];
+                      final compareValue = compareRows[rowIndex][column];
+                      final isChanged = value != compareValue;
+
+                      // Format the displayed value appropriately
+                      String displayValue =
+                          (value == null)
+                              ? 'null'
+                              : (value == '')
+                              ? '(empty)'
+                              : value.toString();
+
+                      return DataCell(
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          // Apply highlighting background for changed cells
+                          decoration:
+                              isChanged
+                                  ? BoxDecoration(
+                                    color:
+                                        (isBefore
+                                            ? Colors.red.withValues(alpha: 0.1)
+                                            : Colors.green.withValues(alpha: 0.1)),
+                                    borderRadius: BorderRadius.circular(4),
+                                  )
+                                  : null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Show an arrow indicator for new values
+                              if (isChanged && !isBefore)
+                                Icon(Icons.arrow_right_alt, size: 16, color: Colors.green.shade700),
+                              Flexible(
+                                child: Text(
+                                  displayValue,
+                                  style: TextStyle(
+                                    // Make changed values bold
+                                    fontWeight: isChanged ? FontWeight.bold : FontWeight.normal,
+                                    // Use red for removed values, green for new values
+                                    color:
+                                        isChanged
+                                            ? (isBefore
+                                                ? Colors.red.shade700
+                                                : Colors.green.shade700)
+                                            : null,
+                                    // Apply strikethrough to old values being replaced
+                                    decoration:
+                                        isChanged && isBefore ? TextDecoration.lineThrough : null,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds a unified view data table showing both before and after values in a single table.
+  ///
+  /// This widget creates a table that shows changes between the before and after datasets
+  /// in a unified view, with changes highlighted inline. Each changed value shows both
+  /// the original value (struck through in red) and the new value (in bold green).
+  ///
+  /// Parameters:
+  /// - [columns]: List of column names to display in the table
+  /// - [beforeRows]: List of maps containing the original data rows
+  /// - [afterRows]: List of maps containing the modified data after cleaning
+  ///
+  /// Returns a scrollable [Container] with a [DataTable] showing the unified comparison view.
+  Widget _buildUnifiedPreviewTable({
+    required List<String> columns,
+    required List<Map<String, dynamic>> beforeRows,
+    required List<Map<String, dynamic>> afterRows,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            headingRowColor: WidgetStateProperty.all(
+              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            ),
+            columnSpacing: 16,
+            dataRowMinHeight: 36,
+            dataRowMaxHeight: 56,
+            border: TableBorder(
+              horizontalInside: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            columns: [
+              const DataColumn(label: Text('Row')),
+              const DataColumn(label: Text('Status')),
+              ...columns.map((column) {
+                return DataColumn(
+                  label: Tooltip(
+                    message: column,
+                    child: Text(
+                      column,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                );
+              }),
+            ],
+            rows: List<DataRow>.generate(beforeRows.length, (rowIndex) {
+              // Determine if this row has any changes
+              bool hasChanges = false;
+              for (final column in columns) {
+                if (beforeRows[rowIndex][column] != afterRows[rowIndex][column]) {
+                  hasChanges = true;
+                  break;
+                }
+              }
+
+              return DataRow(
+                color:
+                    hasChanges
+                        ? WidgetStateProperty.all(
+                          Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.1),
+                        )
+                        : null,
+                cells: [
+                  // Row number
+                  DataCell(Text('${rowIndex + 1}')),
+                  // Status cell
+                  DataCell(
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color:
+                            hasChanges
+                                ? Colors.amber.withValues(alpha: 0.2)
+                                : Colors.grey.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        hasChanges ? 'Changed' : 'Unchanged',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: hasChanges ? Colors.amber.shade900 : Colors.grey.shade700,
+                          fontWeight: hasChanges ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Data columns
+                  ...columns.map((column) {
+                    final beforeValue = beforeRows[rowIndex][column];
+                    final afterValue = afterRows[rowIndex][column];
+                    final isChanged = beforeValue != afterValue;
+
+                    // Format the displayed values
+                    String beforeDisplay =
+                        (beforeValue == null)
+                            ? 'null'
+                            : (beforeValue == '')
+                            ? '(empty)'
+                            : beforeValue.toString();
+
+                    String afterDisplay =
+                        (afterValue == null)
+                            ? 'null'
+                            : (afterValue == '')
+                            ? '(empty)'
+                            : afterValue.toString();
+
+                    return DataCell(
+                      isChanged
+                          ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.remove, size: 12, color: Colors.red.shade700),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    beforeDisplay,
+                                    style: TextStyle(
+                                      color: Colors.red.shade700,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.add, size: 12, color: Colors.green.shade700),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    afterDisplay,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          )
+                          : Text(beforeDisplay),
+                    );
+                  }),
+                ],
+              );
+            }),
           ),
         ),
       ),
@@ -1282,15 +2258,15 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     bool hasTextAsNumber = false,
   }) {
     final TextStyle? baseStyle =
-    isDuplicate && !isBefore
-        ? const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough)
-        : null;
+        isDuplicate && !isBefore
+            ? const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough)
+            : null;
 
     return DataRow(
       color:
-      isDuplicate && !isBefore
-          ? WidgetStateProperty.all(Colors.red.withValues(alpha: 0.1))
-          : null,
+          isDuplicate && !isBefore
+              ? WidgetStateProperty.all(Colors.red.withValues(alpha: 0.1))
+              : null,
       cells: [
         DataCell(Text(id, style: baseStyle)),
         DataCell(Text(productName, style: baseStyle)),
@@ -1433,18 +2409,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme
-                  .of(context)
-                  .colorScheme
-                  .surfaceContainerHighest
-                  .withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme
-                    .of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
               ),
             ),
             child: Column(
@@ -1871,11 +2839,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         Card(
           elevation: 0,
-          color: Theme
-              .of(context)
-              .colorScheme
-              .surfaceContainerHighest
-              .withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Column(
             children: [
@@ -2157,3 +3121,5 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     );
   }
 }
+
+// NOTE: I would kill my self before I actually explain this code to someone
