@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/keyboard/shortcut_service.dart';
 import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
@@ -318,177 +319,182 @@ class _DashboardScreenState extends State<DashboardScreen> {
       const Center(child: Text('Reports')),
       SettingsScreen(),
     ];
-    return Scaffold(
-      body: Row(
-        children: [
-          NavigationRail(
-            backgroundColor:
-                Theme.of(context).brightness == Brightness.dark
-                    ? Color(0xFF2A2D37)
-                    : Colors.grey[100],
-            selectedIconTheme: IconThemeData(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            unselectedIconTheme: IconThemeData(
-              color:
+    return ShortcutService(
+      tabCount: screens.length,
+      onTabChange: navigateToIndex,
+      currentIndex: selectedIndex,
+      child: Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              backgroundColor:
                   Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[400]
-                      : Colors.grey[700],
-            ),
-            selectedLabelTextStyle: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-            unselectedLabelTextStyle: TextStyle(
-              color:
+                      ? Color(0xFF2A2D37)
+                      : Colors.grey[100],
+              selectedIconTheme: IconThemeData(
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              unselectedIconTheme: IconThemeData(
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[400]
+                        : Colors.grey[700],
+              ),
+              selectedLabelTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+              unselectedLabelTextStyle: TextStyle(
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[400]
+                        : Colors.grey[700],
+              ),
+              useIndicator: true,
+              indicatorColor:
                   Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey[400]
-                      : Colors.grey[700],
-            ),
-            useIndicator: true,
-            indicatorColor:
-                Theme.of(context).brightness == Brightness.dark
-                    ? Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.2)
-                    : Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.1),
-            elevation: 1,
-            trailing: Expanded(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blueGrey,
-                            borderRadius: BorderRadius.circular(13.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(14.0),
-                            child: getIconForTheme(
-                              lightIcon: AppIcons.plusLight,
-                              darkIcon: AppIcons.plusLight,
-                              size: 16,
+                      ? Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2)
+                      : Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+              elevation: 1,
+              trailing: Expanded(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey,
+                              borderRadius: BorderRadius.circular(13.0),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14.0),
+                              child: getIconForTheme(
+                                lightIcon: AppIcons.plusLight,
+                                darkIcon: AppIcons.plusLight,
+                                size: 16,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      SizedBox(height: 40),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: buildProfileImage(),
-                      ),
-                    ],
+                        SizedBox(height: 40),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: buildProfileImage(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
+              onDestinationSelected: (int index) {
+                setState(() {
+                  selectedIndex = index;
+                });
+              },
+              destinations: [
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    lightIcon: AppIcons.homeOutlinedLight,
+                    darkIcon: AppIcons.homeOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.only(top: 10),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.homeLight,
+                    darkIcon: AppIcons.homeDark,
+                    size: 18,
+                  ),
+                  label: Text('Dashboard'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    lightIcon: AppIcons.searchOutlinedLight,
+                    darkIcon: AppIcons.searchOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.searchLight,
+                    darkIcon: AppIcons.searchDark,
+                    size: 18,
+                  ),
+                  label: Text('Search'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    lightIcon: AppIcons.folderOutlinedLight,
+                    darkIcon: AppIcons.folderOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.folderLight,
+                    darkIcon: AppIcons.folderDark,
+                    size: 18,
+                  ),
+                  label: Text('Folders'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    lightIcon: AppIcons.chartOutlinedLight,
+                    darkIcon: AppIcons.chartOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.chartLight,
+                    darkIcon: AppIcons.chartDark,
+                    size: 18,
+                  ),
+                  label: Text('Visualizations'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    lightIcon: AppIcons.reportOutlinedLight,
+                    darkIcon: AppIcons.reportOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.reportLight,
+                    darkIcon: AppIcons.reportDark,
+                    size: 18,
+                  ),
+                  label: Text('Reports'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    lightIcon: AppIcons.settingsOutlinedLight,
+                    darkIcon: AppIcons.settingsOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.settingsLight,
+                    darkIcon: AppIcons.settingsDark,
+                    size: 18,
+                  ),
+                  label: Text('Settings'),
+                ),
+              ],
+              selectedIndex: selectedIndex,
             ),
-            onDestinationSelected: (int index) {
-              setState(() {
-                selectedIndex = index;
-              });
-            },
-            destinations: [
-              NavigationRailDestination(
-                icon: getIconForTheme(
-                  lightIcon: AppIcons.homeOutlinedLight,
-                  darkIcon: AppIcons.homeOutlinedDark,
-                  size: 18,
-                ),
-                padding: EdgeInsets.only(top: 10),
-                selectedIcon: getIconForTheme(
-                  lightIcon: AppIcons.homeLight,
-                  darkIcon: AppIcons.homeDark,
-                  size: 18,
-                ),
-                label: Text('Dashboard'),
-              ),
-              NavigationRailDestination(
-                icon: getIconForTheme(
-                  lightIcon: AppIcons.searchOutlinedLight,
-                  darkIcon: AppIcons.searchOutlinedDark,
-                  size: 18,
-                ),
-                padding: EdgeInsets.symmetric(vertical: 4),
-                selectedIcon: getIconForTheme(
-                  lightIcon: AppIcons.searchLight,
-                  darkIcon: AppIcons.searchDark,
-                  size: 18,
-                ),
-                label: Text('Search'),
-              ),
-              NavigationRailDestination(
-                icon: getIconForTheme(
-                  lightIcon: AppIcons.folderOutlinedLight,
-                  darkIcon: AppIcons.folderOutlinedDark,
-                  size: 18,
-                ),
-                padding: EdgeInsets.symmetric(vertical: 4),
-                selectedIcon: getIconForTheme(
-                  lightIcon: AppIcons.folderLight,
-                  darkIcon: AppIcons.folderDark,
-                  size: 18,
-                ),
-                label: Text('Folders'),
-              ),
-              NavigationRailDestination(
-                icon: getIconForTheme(
-                  lightIcon: AppIcons.chartOutlinedLight,
-                  darkIcon: AppIcons.chartOutlinedDark,
-                  size: 18,
-                ),
-                padding: EdgeInsets.symmetric(vertical: 4),
-                selectedIcon: getIconForTheme(
-                  lightIcon: AppIcons.chartLight,
-                  darkIcon: AppIcons.chartDark,
-                  size: 18,
-                ),
-                label: Text('Visualizations'),
-              ),
-              NavigationRailDestination(
-                icon: getIconForTheme(
-                  lightIcon: AppIcons.reportOutlinedLight,
-                  darkIcon: AppIcons.reportOutlinedDark,
-                  size: 18,
-                ),
-                padding: EdgeInsets.symmetric(vertical: 4),
-                selectedIcon: getIconForTheme(
-                  lightIcon: AppIcons.reportLight,
-                  darkIcon: AppIcons.reportDark,
-                  size: 18,
-                ),
-                label: Text('Reports'),
-              ),
-              NavigationRailDestination(
-                icon: getIconForTheme(
-                  lightIcon: AppIcons.settingsOutlinedLight,
-                  darkIcon: AppIcons.settingsOutlinedDark,
-                  size: 18,
-                ),
-                padding: EdgeInsets.symmetric(vertical: 4),
-                selectedIcon: getIconForTheme(
-                  lightIcon: AppIcons.settingsLight,
-                  darkIcon: AppIcons.settingsDark,
-                  size: 18,
-                ),
-                label: Text('Settings'),
-              ),
-            ],
-            selectedIndex: selectedIndex,
-          ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: screens[selectedIndex]),
-        ],
+            const VerticalDivider(thickness: 1, width: 1),
+            Expanded(child: screens[selectedIndex]),
+          ],
+        ),
+        floatingActionButton:
+            env == 'development' ? DevFAB(parentContext: context) : null,
       ),
-      floatingActionButton:
-          env == 'development' ? DevFAB(parentContext: context) : null,
     );
   }
 }
