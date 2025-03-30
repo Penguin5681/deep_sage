@@ -170,7 +170,7 @@ class PopularDatasetService {
   ///   - [Exception] if Kaggle credentials are missing
   ///   - [Exception] with API error details if the request fails
   Future<List<PopularDataset>> fetchPopularDatasets({
-    int limit = 10,
+    int limit = 50,
     String sortBy = 'votes',
   }) async {
     if (baseUrl.isEmpty) {
@@ -242,7 +242,7 @@ class PopularDatasetService {
   ///   - [Exception] if Kaggle credentials are missing
   ///   - [Exception] with API error details if the request fails
   Future<List<PopularDataset>> fetchPopularHealthcareDatasets({
-    int limit = 10,
+    int limit = 50,
     String sortBy = 'hottest',
   }) async {
     if (baseUrl.isEmpty) {
@@ -304,7 +304,7 @@ class PopularDatasetService {
   /// Makes an API request to retrieve finance-specific datasets with configurable parameters.
   ///
   /// Parameters:
-  ///   - [limit]: Maximum number of datasets to return (default: 10)
+  ///   - [limit]: Maximum number of datasets to return (default: 50)
   ///   - [sortBy]: Criterion to sort results by (default: 'hottest')
   ///
   /// Returns:
@@ -315,7 +315,7 @@ class PopularDatasetService {
   ///   - [Exception] if Kaggle credentials are missing
   ///   - [Exception] with API error details if the request fails
   Future<List<PopularDataset>> fetchPopularFinanceDatasets({
-    int limit = 10,
+    int limit = 50,
     String sortBy = 'hottest',
   }) async {
     if (baseUrl.isEmpty) {
@@ -377,7 +377,7 @@ class PopularDatasetService {
   /// Makes an API request to retrieve technology-specific datasets with configurable parameters.
   ///
   /// Parameters:
-  ///   - [limit]: Maximum number of datasets to return (default: 10)
+  ///   - [limit]: Maximum number of datasets to return (default: 50)
   ///   - [sortBy]: Criterion to sort results by (default: 'hottest')
   ///
   /// Returns:
@@ -388,7 +388,7 @@ class PopularDatasetService {
   ///   - [Exception] if Kaggle credentials are missing
   ///   - [Exception] with API error details if the request fails
   Future<List<PopularDataset>> fetchPopularTechnologyDatasets({
-    int limit = 10,
+    int limit = 50,
     String sortBy = 'hottest',
   }) async {
     if (baseUrl.isEmpty) {
