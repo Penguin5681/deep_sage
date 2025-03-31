@@ -1,5 +1,6 @@
 import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/caching_services/popular_dataset_caching_service.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/popular_dataset_card.dart';
 import 'package:flutter/gestures.dart';
@@ -114,9 +115,27 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
   /// Calls the [PopularDatasetService] to fetch data from the backend and
   /// updates the UI accordingly.
   Future<void> _fetchPopularDatasets() async {
+    final cacheService = PopularDatasetCachingService();
+    final cacheKey = 'health';
+
+    final cachedData = cacheService.getCachedDatasets(cacheKey);
+    if (cachedData != null) {
+      if (mounted) {
+        setState(() {
+          popularDatasets = cachedData;
+          isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final service = PopularDatasetService();
-      final datasets = await service.fetchPopularHealthcareDatasets();
+      final datasets = await service.fetchPopularFinanceDatasets();
+
+      // Cache the fetched data
+      cacheService.cacheDatasets(cacheKey, datasets);
+
       if (mounted) {
         setState(() {
           popularDatasets = datasets;

@@ -1,3 +1,4 @@
+import 'package:deep_sage/core/services/caching_services/popular_dataset_caching_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
@@ -134,18 +135,44 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
     }
   }
 
-  /// Fetches the popular finance datasets from the service.
+  /// Asynchronously fetches popular finance datasets, leveraging caching for efficiency.
   ///
-  /// This method uses `PopularDatasetService` to fetch a list of popular
-  /// finance datasets. It updates the `popularDatasets` and `isLoading` states
-  /// based on the result of the fetch.
+  /// This method attempts to retrieve datasets from the cache first. If cached data is
+  /// found, it updates the UI state with this data and exits early. If not found, it
+  /// fetches the data from the `PopularDatasetService`, caches the retrieved data, and
+  /// then updates the UI state.
   ///
-  /// If an error occurs during the fetch, it updates the `isLoading` state
-  /// and prints an error message to the console.
+  /// State Updates:
+  /// - `popularDatasets`: Updated with the fetched or cached dataset list.
+  /// - `isLoading`: Set to `false` after data is fetched or loaded from cache, indicating
+  ///   that data loading is complete.
+  ///
+  /// Error Handling:
+  /// - If an error occurs during the fetch, it logs an error message to the console
+  ///   and sets `isLoading` to `false`.
+  ///
+  // For CategoryFinances
   Future<void> _fetchPopularDatasets() async {
+    final cacheService = PopularDatasetCachingService();
+    final cacheKey = 'finance';
+
+    final cachedData = cacheService.getCachedDatasets(cacheKey);
+    if (cachedData != null) {
+      if (mounted) {
+        setState(() {
+          popularDatasets = cachedData;
+          isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final service = PopularDatasetService();
       final datasets = await service.fetchPopularFinanceDatasets();
+
+      cacheService.cacheDatasets(cacheKey, datasets);
+
       if (mounted) {
         setState(() {
           popularDatasets = datasets;
