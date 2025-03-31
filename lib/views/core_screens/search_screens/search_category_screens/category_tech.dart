@@ -4,6 +4,7 @@ import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/services/caching_services/popular_dataset_caching_service.dart';
 import '../../../../widgets/popular_dataset_card.dart';
 
 class CategoryTechnology extends StatefulWidget {
@@ -123,9 +124,26 @@ class _CategoryTechnologyState extends State<CategoryTechnology>
   /// sets `isLoading` to `false`. It also handles errors by logging them
   /// and updating the state accordingly.
   Future<void> _fetchPopularDatasets() async {
+    final cacheService = PopularDatasetCachingService();
+    final cacheKey = 'tech';
+
+    final cachedData = cacheService.getCachedDatasets(cacheKey);
+    if (cachedData != null) {
+      if (mounted) {
+        setState(() {
+          popularDatasets = cachedData;
+          isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final service = PopularDatasetService();
-      final datasets = await service.fetchPopularTechnologyDatasets();
+      final datasets = await service.fetchPopularFinanceDatasets();
+
+      cacheService.cacheDatasets(cacheKey, datasets);
+
       if (mounted) {
         setState(() {
           popularDatasets = datasets;
