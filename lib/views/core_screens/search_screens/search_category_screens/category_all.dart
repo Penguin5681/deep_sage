@@ -1,5 +1,6 @@
 import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/caching_services/popular_dataset_caching_service.dart';
 import 'package:deep_sage/core/services/download_overlay_service.dart';
 import 'package:deep_sage/widgets/dataset_card.dart';
 import 'package:deep_sage/widgets/kaggle_credentials_prompt.dart';
@@ -116,24 +117,51 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
     }
   }
 
+  /// Fetches popular datasets either from cache or network.
+  ///
+  /// This method first attempts to retrieve the datasets from the cache.
+  /// If not available in the cache, it fetches them from the network, caches them,
+  /// and then updates the UI with the retrieved data.
   Future<void> fetchPopularDatasets() async {
+    final cacheService = PopularDatasetCachingService();
+    final cacheKey = 'all_$_currentSortParam';
+
+    final cachedData = cacheService.getCachedDatasets(cacheKey);
+
+    if (cachedData != null) {
+      if (mounted) {
+        setState(() {
+          popularDatasets = cachedData
+              .map((dataset) => {
+                    'title': dataset.title,
+                    'addedTime': dataset.addedTime,
+                    'fileType': dataset.fileType,
+                    'fileSize': dataset.fileSize,
+                    'id': dataset.id,
+                  })
+              .toList();
+        });
+      }
+      return;
+    }
+
     final service = PopularDatasetService();
     try {
       final datasets = await service.fetchPopularDatasets(sortBy: _currentSortParam);
+
+      cacheService.cacheDatasets(cacheKey, datasets);
+
       if (mounted) {
         setState(() {
-          popularDatasets =
-              datasets
-                  .map(
-                    (dataset) => {
-                      'title': dataset.title,
-                      'addedTime': dataset.addedTime,
-                      'fileType': dataset.fileType,
-                      'fileSize': dataset.fileSize,
-                      'id': dataset.id,
-                    },
-                  )
-                  .toList();
+          popularDatasets = datasets
+              .map((dataset) => {
+                    'title': dataset.title,
+                    'addedTime': dataset.addedTime,
+                    'fileType': dataset.fileType,
+                    'fileSize': dataset.fileSize,
+                    'id': dataset.id,
+                  })
+              .toList();
         });
       }
     } catch (e) {
@@ -141,6 +169,13 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
     }
   }
 
+  /// Checks if the user has provided Kaggle API credentials.
+  ///
+  /// This method checks the local storage (Hive) for stored user credentials.
+  /// If credentials are found and valid, it updates the UI state to indicate that
+  /// Kaggle credentials are loaded and proceeds to fetch popular datasets.
+  /// If credentials are not found, it displays a dialog prompt to collect them.
+  /// Handles errors during the authentication process and displays an error dialog if necessary.
   Future<void> checkKaggleAuthentication() async {
     try {
       final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
@@ -203,6 +238,10 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
     }
   }
 
+  /// Refreshes the dataset list by changing the sort parameter.
+  ///
+  /// This method cycles through the available sort parameters and then fetches
+  /// the datasets based on the new sort order.
   Future<void> refreshDatasets() async {
     setState(() {
       _currentSortIndex = (_currentSortIndex + 1) % _sortParams.length;
