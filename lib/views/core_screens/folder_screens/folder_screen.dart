@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:deep_sage/views/core_screens/folder_screens/folder_all.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_recent.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_starred.dart';
@@ -6,6 +8,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 
 import 'package:path/path.dart' as path;
+
+import '../../../widgets/hover_underline_text.dart';
 
 /// StatefulWidget that represents the folder screen.
 ///
@@ -47,6 +51,7 @@ class _FolderScreenState extends State<FolderScreen>
     super.dispose();
   }
 
+  /// Loads the root directory path from hive and updates the UI
   /// Loads the root directory information from Hive storage.
   Future<void> _loadRootDirectory() async {
     // Retrieve the Hive box name from the environment variables.
@@ -61,6 +66,21 @@ class _FolderScreenState extends State<FolderScreen>
       });
     } else {
       debugPrint('Root not found');
+    }
+  }
+
+  /// Open file explorer based on platform
+  void _openFileExplorer(String path) async {
+    try {
+      if (Platform.isWindows) {
+        await Process.run('explorer.exe', [path]);
+      } else if (Platform.isMacOS) {
+        await Process.run('open', [path]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', [path]);
+      }
+    } catch (e) {
+      debugPrint('Error opening file explorer: $e');
     }
   }
 
@@ -84,9 +104,19 @@ class _FolderScreenState extends State<FolderScreen>
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 35.0),
-            child: Text(
-              path.basename(rootDirectoryName),
-              style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: InkWell(
+                onTap: () {
+                  if (rootDirectoryName.isNotEmpty) {
+                    _openFileExplorer(rootDirectoryName);
+                  }
+                },
+                child: HoverUnderlineText(
+                  text: path.basename(rootDirectoryName),
+                  style: TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16.0),
