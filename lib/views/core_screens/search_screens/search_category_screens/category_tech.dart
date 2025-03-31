@@ -140,7 +140,7 @@ class _CategoryTechnologyState extends State<CategoryTechnology>
 
     try {
       final service = PopularDatasetService();
-      final datasets = await service.fetchPopularFinanceDatasets();
+      final datasets = await service.fetchPopularTechnologyDatasets();
 
       cacheService.cacheDatasets(cacheKey, datasets);
 
