@@ -131,7 +131,7 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
 
     try {
       final service = PopularDatasetService();
-      final datasets = await service.fetchPopularFinanceDatasets();
+      final datasets = await service.fetchPopularHealthcareDatasets();
 
       // Cache the fetched data
       cacheService.cacheDatasets(cacheKey, datasets);
