@@ -1240,6 +1240,8 @@ class _FolderAllState extends State<FolderAll> {
       }
     }
 
+    recentImports.removeWhere((import) => import.filePath == file.filePath);
+
     final newImport = RecentImportsModel(
       fileName: file.fileName,
       fileType: file.fileType,
@@ -1255,7 +1257,6 @@ class _FolderAllState extends State<FolderAll> {
     }
 
     await recentImportsBox.put('recentImports', recentImports);
-
     await recentImportsBox.put('currentDatasetName', file.fileName);
     await recentImportsBox.put('currentDatasetPath', file.filePath);
     await recentImportsBox.put('currentDatasetType', file.fileType);
@@ -1960,7 +1961,7 @@ class _FolderAllState extends State<FolderAll> {
             if (!await destDir.exists()) {
               await destDir.create(recursive: true);
               debugPrint('Created destination directory: $selectedRootDirectoryPath');
-            }
+              }
 
             List<String> newPaths = await FileTransferUtil.moveFiles(
               sourcePaths: sourcePaths,

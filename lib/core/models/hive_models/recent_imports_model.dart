@@ -18,7 +18,7 @@ class RecentImportsModel {
 
   /// The timestamp when the file was imported.
   @HiveField(2)
-  final DateTime importTime;
+  late final DateTime importTime;
 
   /// The size of the imported file, formatted as a string.
   @HiveField(3)

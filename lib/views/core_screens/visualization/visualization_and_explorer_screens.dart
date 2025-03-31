@@ -52,11 +52,17 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   List<StreamSubscription<FileSystemEvent>> fileWatchers = [];
   Set<String> watchedFiles = {};
 
+  final TextEditingController recentImportsSearchController = TextEditingController();
+  List<RecentImportsModel> filteredRecentImports = [];
+
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 3, vsync: this);
     tabControllerIndex = 0;
+
+    recentImportsSearchController.addListener(_filterRecentImports);
+    _loadRecentImports();
 
     _loadLastSelectedDataset();
 
@@ -88,6 +94,88 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
       recentImportsBox.delete('currentDatasetPath');
       recentImportsBox.delete('currentDatasetType');
     }
+  }
+
+  void _loadRecentImports() {
+    var recentImportsData = recentImportsBox.get('recentImports');
+    List<RecentImportsModel> imports = [];
+
+    if (recentImportsData != null) {
+      if (recentImportsData is List) {
+        imports = recentImportsData.cast<RecentImportsModel>();
+      } else if (recentImportsData is RecentImportsModel) {
+        imports = [recentImportsData];
+      }
+    }
+
+    setState(() {
+      filteredRecentImports = List.from(imports);
+    });
+  }
+
+  void _filterRecentImports() {
+    final query = recentImportsSearchController.text.toLowerCase();
+
+    var recentImportsData = recentImportsBox.get('recentImports');
+    List<RecentImportsModel> imports = [];
+
+    if (recentImportsData != null) {
+      if (recentImportsData is List) {
+        imports = recentImportsData.cast<RecentImportsModel>();
+      } else if (recentImportsData is RecentImportsModel) {
+        imports = [recentImportsData];
+      }
+    }
+
+    setState(() {
+      if (query.isEmpty) {
+        filteredRecentImports = List.from(imports);
+      } else {
+        filteredRecentImports = imports.where((import) {
+          return import.fileName.toLowerCase().contains(query) ||
+              import.fileType.toLowerCase().contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  Widget _buildRecentImportsSearchBar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: 300,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12.0),
+        color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+          width: 1.0,
+        ),
+      ),
+      child: TextField(
+        controller: recentImportsSearchController,
+        style: TextStyle(
+          fontSize: 14,
+          color: isDarkMode ? Colors.white : Colors.black87,
+        ),
+        decoration: InputDecoration(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          hintText: "Search recent imports",
+          hintStyle: TextStyle(
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+            size: 20,
+          ),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
+      ),
+    );
   }
 
   /// [_handleDatasetSelectionChange] is a callback function triggered when [selectedDatasetNotifier] changes.
@@ -380,50 +468,55 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
       children: [
         Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text(
-            'Recent Imports',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDarkMode ? Colors.white : Colors.black87,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Imports',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              InkWell(
+                onTap: _showClearConfirmationDialog,
+                borderRadius: BorderRadius.circular(8.0),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8.0),
+                    color: isDarkMode
+                        ? Colors.grey[800]!.withValues(alpha: 0.3)
+                        : Colors.grey[200]!.withValues(alpha: 0.5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        size: 18,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Clear',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         Padding(
-          padding: EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
-          child: InkWell(
-            onTap: _showClearConfirmationDialog,
-            borderRadius: BorderRadius.circular(8.0),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color:
-                    isDarkMode
-                        ? Colors.grey[800]!.withValues(alpha: 0.3)
-                        : Colors.grey[200]!.withValues(alpha: 0.5),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.delete_outline,
-                    color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Clear All',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: _buildRecentImportsSearchBar(),
         ),
         Divider(height: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
         Expanded(
@@ -441,30 +534,42 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                 }
               }
 
-              recentImports =
-                  recentImports
-                      .where(
-                        (import) => import.filePath != null && File(import.filePath!).existsSync(),
-                      )
-                      .toList();
+              // Filter by search term
+              final query = recentImportsSearchController.text.toLowerCase();
+              if (query.isNotEmpty) {
+                recentImports = recentImports.where((import) {
+                  return import.fileName.toLowerCase().contains(query) ||
+                      import.fileType.toLowerCase().contains(query);
+                }).toList();
+              }
+
+              // Filter out non-existent files
+              recentImports = recentImports
+                  .where((import) =>
+                      import.filePath != null &&
+                      File(import.filePath!).existsSync())
+                  .toList();
 
               if (recentImports.isEmpty) {
+                // Show empty state
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.history,
+                        query.isNotEmpty ? Icons.search_off : Icons.history,
                         size: 48,
                         color: isDarkMode ? Colors.grey[700] : Colors.grey[400],
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'No recent imports',
+                        query.isNotEmpty ? 'No matching results' : 'No recent imports',
                         style: TextStyle(color: isDarkMode ? Colors.grey[500] : Colors.grey[600]),
                       ),
                       Text(
-                        'Import datasets to see them here',
+                        query.isNotEmpty
+                            ? 'Try a different search term'
+                            : 'Import datasets to see them here',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDarkMode ? Colors.grey[600] : Colors.grey[500],
