@@ -160,4 +160,9 @@ class AppIcons {
 
   /// Text Icon
   static const String textIcon = 'assets/icons/colorful/text-format.png';
+
+  static const String explorerDark = 'assets/icons/dark/explorer.png';
+  static const String explorerLight = 'assets/icons/light/explorer.png';
+  static const String explorerOutlinedDark = 'assets/icons/dark/explorer_outlined.png';
+  static const String explorerOutlinedLight = 'assets/icons/light/explorer_outlined.png';
 }

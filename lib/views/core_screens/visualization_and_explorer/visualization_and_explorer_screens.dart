@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:deep_sage/views/core_screens/visualization/tabs/data_cleaning_tab.dart';
-import 'package:deep_sage/views/core_screens/visualization/tabs/raw_data_tab.dart';
-import 'package:deep_sage/views/core_screens/visualization/tabs/visualize_tab.dart';
+import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/data_cleaning_tab.dart';
+import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/raw_data_tab.dart';
+import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/visualize_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -58,7 +58,7 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 3, vsync: this);
+    tabController = TabController(length: 2, vsync: this);
     tabControllerIndex = 0;
 
     recentImportsSearchController.addListener(_filterRecentImports);
@@ -344,7 +344,6 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
             child: _buildRecentImportsSidebar(isDarkMode),
           ),
 
-          // these are the 3 tabs that i m showing
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,7 +364,6 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                   tabs: const [
                     Tab(text: 'Raw Data'),
                     Tab(text: 'Data cleaning'),
-                    Tab(text: 'Visualize'),
                   ],
                   onTap: ((index) {
                     setState(() {
@@ -383,7 +381,6 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                         currentDatasetPath: currentDatasetPath,
                         currentDatasetType: currentDatasetType,
                       ),
-                      VisualizeTab(),
                     ],
                   ),
                 ),
@@ -430,7 +427,7 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   ///
   /// This method constructs the user interface, which includes a sidebar for recent
   /// imports and a main content area with tabs for raw data, data cleaning, and
-  /// visualization. It dynamically adjusts the appearance based on the current theme
+  /// visualization_and_explorer. It dynamically adjusts the appearance based on the current theme
   /// (light or dark mode).
   ///
   /// The UI is structured as follows:
@@ -440,7 +437,7 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   /// - **Main Content Area**: Contains a tabbed interface with three tabs:
   ///   - **Raw Data**: Displays the raw, unprocessed data of the selected dataset.
   ///   - **Data Cleaning**: Provides tools and options to clean and preprocess the data.
-  ///   - **Visualize**: Offers visualization tools to create charts and graphs from the data.
+  ///   - **Visualize**: Offers visualization_and_explorer tools to create charts and graphs from the data.
   ///
   /// Each tab is implemented as a separate widget ([RawDataTab], [DataCleaningTab],
   /// [VisualizeTab]) and is managed by a [TabBar] and [TabBarView]. The selected dataset
