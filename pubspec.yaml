@@ -1,6 +1,5 @@
 name: deep_sage
-description: "DeepSage – An AI-powered data analysis and visualization_and_explorer tool for uncovering deep insights."
-publish_to: 'none'
+description: "DeepSage – An AI-powered data analysis and visualization explorer tool for uncovering deep insights."
 version: 1.0.0+1
 
 environment:
