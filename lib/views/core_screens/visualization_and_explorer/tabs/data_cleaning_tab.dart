@@ -1,6 +1,9 @@
 import 'package:deep_sage/core/services/core_services/data_cleaning_services/data_cleaning_preview_service.dart';
 import 'package:deep_sage/core/services/core_services/data_cleaning_services/data_cleaning_service.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert';
 
 import '../../../../core/services/core_services/data_preview_service.dart';
 import '../../../../core/services/core_services/data_cleaning_services/missing_value_service.dart';
@@ -135,8 +138,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// Defaults to true, meaning the preview is enabled.
   bool _enableDatasetPreview = true;
 
-  /// Flag indicating if progress visualization (e.g., progress bars) should be displayed during operations.
-  /// Defaults to true, meaning progress visualization is enabled.
+  /// Flag indicating if progress visualization_and_explorer (e.g., progress bars) should be displayed during operations.
+  /// Defaults to true, meaning progress visualization_and_explorer is enabled.
   bool _enableProgressVisualization = true;
 
   /// Flag to enable or disable the generation of a detailed report after data cleaning.
@@ -198,6 +201,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// Holds the preview data that shows before/after comparison of cleaning operations.
   /// Contains separate 'before' and 'after' datasets along with metadata about changes.
   Map<String, dynamic>? _previewData;
+
+  /// Flag to determine if case-sensitive matching should be used for duplicates
+  bool _caseSensitiveMatching = false;
+
+  /// Set of columns selected for duplicate detection
+  Set<String> _duplicateColumns = {};
+
+  /// Flag indicating if duplicate preview is being loaded
+  bool _isLoadingDuplicatePreview = false;
+
+  /// Data containing preview of duplicates
+  Map<String, dynamic>? _duplicatePreviewData;
 
   @override
   void initState() {
@@ -2391,12 +2406,21 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   ///
   /// Returns a [Widget] containing the complete duplicate removal configuration UI.
   Widget _buildDuplicateRemovalContent() {
+    // Get columns from data preview if available
+    List<String> availableColumns = [];
+    if (_dataPreview != null && _dataPreview!['columns'] != null) {
+      availableColumns = List<String>.from(_dataPreview!['columns']);
+    }
+
+    // Selected columns for duplicate detection
+    Set<String> duplicateColumns = {};
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Enable duplicate removal'),
+          title: const Text('Remove Duplicate Rows'),
+          subtitle: const Text('Find and remove duplicate records in your dataset'),
           value: _enableDuplicateRemoval,
           onChanged: (value) {
             setState(() {
@@ -2406,51 +2430,421 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         ),
         if (_enableDuplicateRemoval) ...[
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+
+          // Column selection for duplicate detection
+          if (availableColumns.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text('Select columns to check for duplicates:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: availableColumns.map((column) {
+                  return FilterChip(
+                    label: Text(column),
+                    selected: duplicateColumns.contains(column),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          duplicateColumns.add(column);
+                        } else {
+                          duplicateColumns.remove(column);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Column subset for checking duplicates:',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Select columns from dataset (will be available after integration)',
-                  style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
-                ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.select_all, size: 18),
+                    label: const Text('Select All'),
+                    onPressed: () {
+                      setState(() {
+                        duplicateColumns = Set.from(availableColumns);
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.clear_all, size: 18),
+                    label: const Text('Clear'),
+                    onPressed: () {
+                      setState(() {
+                        duplicateColumns.clear();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ] else if (widget.currentDatasetPath != null) ...[
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(
+                child: Text('Load the dataset preview to select columns for duplicate detection'),
+              ),
+            ),
+          ],
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Text('Duplicate handling options:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'Keep strategy',
+              ),
+              value: _duplicateKeepStrategy,
+              items: const [
+                DropdownMenuItem(value: 'First occurrence', child: Text('Keep first occurrence')),
+                DropdownMenuItem(value: 'Last occurrence', child: Text('Keep last occurrence')),
+                DropdownMenuItem(value: 'None', child: Text('Remove all duplicates')),
               ],
+              onChanged: (value) {
+                setState(() {
+                  _duplicateKeepStrategy = value!;
+                });
+              },
             ),
           ),
+
           const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            decoration: InputDecoration(
-              labelText: 'Keep strategy',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Advanced options',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text('Case-sensitive matching'),
+                      subtitle: const Text('Match exact letter case'),
+                      dense: true,
+                      value: _caseSensitiveMatching,
+                      onChanged: (value) {
+                        setState(() {
+                          _caseSensitiveMatching = value;
+                        });
+                      },
+                    ),
+                    SwitchListTile(
+                      title: const Text('Trim whitespace'),
+                      subtitle: const Text('Ignore leading/trailing spaces'),
+                      dense: true,
+                      value: _trimWhitespace,
+                      onChanged: (value) {
+                        setState(() {
+                          _trimWhitespace = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-            value: _duplicateKeepStrategy,
-            items: const [
-              DropdownMenuItem(value: 'First occurrence', child: Text('Keep first occurrence')),
-              DropdownMenuItem(value: 'Last occurrence', child: Text('Keep last occurrence')),
-              DropdownMenuItem(value: 'Remove all', child: Text('Remove all occurrences')),
-            ],
-            onChanged: (newValue) {
-              setState(() {
-                _duplicateKeepStrategy = newValue!;
-              });
-            },
+          ),
+
+          // Preview duplicates button
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.preview_outlined),
+              label: const Text('Preview Duplicates'),
+              onPressed: widget.currentDatasetPath != null && duplicateColumns.isNotEmpty
+                  ? _previewDuplicates
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
+              ),
+            ),
           ),
         ],
       ],
+    );
+  }
+
+  /// Previews duplicates in the dataset using the configured options.
+  Future<void> _previewDuplicates() async {
+    if (widget.currentDatasetPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No dataset selected')),
+      );
+      return;
+    }
+
+    if (_duplicateColumns.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one column to check for duplicates')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoadingDuplicatePreview = true;
+    });
+
+    try {
+      // Call the backend API to preview duplicates
+      final response = await http.post(
+        Uri.parse('${dotenv.env['DEV_BASE_URL']}/api/duplicates/preview'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'file_path': widget.currentDatasetPath,
+          'columns': _duplicateColumns.toList(),
+          'case_sensitive': _caseSensitiveMatching,
+          'trim_whitespace': _trimWhitespace,
+          'limit': 20, // Limit preview to 20 duplicate groups
+          'max_sample_size': 50000, // Sample size for large files
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _duplicatePreviewData = data;
+        });
+
+        _showDuplicatePreviewDialog();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error previewing duplicates: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error previewing duplicates: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoadingDuplicatePreview = false;
+      });
+    }
+  }
+
+  /// Shows a dialog displaying the duplicate preview results.
+  void _showDuplicatePreviewDialog() {
+    if (_duplicatePreviewData == null) return;
+
+    final duplicateCount = _duplicatePreviewData!['duplicate_count'] ?? 0;
+    final duplicateGroups = _duplicatePreviewData!['duplicate_groups'] ?? 0;
+    final samples = List<Map<String, dynamic>>.from(_duplicatePreviewData!['samples'] ?? []);
+    final columnsAnalyzed = List<String>.from(_duplicatePreviewData!['columns_analyzed'] ?? []);
+    final fileInfo = Map<String, dynamic>.from(_duplicatePreviewData!['file_info'] ?? {});
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.find_replace, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('Duplicate Detection Results'),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: samples.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.green,
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No duplicates found!',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView(
+                    shrinkWrap: true,
+                    children: [
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Summary',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  )),
+                              const SizedBox(height: 8),
+                              Text('Found $duplicateCount duplicate records in $duplicateGroups groups'),
+                              Text('Columns analyzed: ${columnsAnalyzed.join(", ")}'),
+                              Text('Total rows in file: ${fileInfo['total_rows'] ?? "unknown"}'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Sample Duplicate Groups:',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          )),
+                      const SizedBox(height: 8),
+                      ...samples.map((group) {
+                        final groupId = group['group_id'];
+                        final count = group['count'];
+                        final rows = List<Map<String, dynamic>>.from(group['rows']);
+                        final keyValues = Map<String, dynamic>.from(group['key_values'] ?? {});
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Group ${groupId + 1}',
+                                      style: Theme.of(context).textTheme.titleSmall,
+                                    ),
+                                    const Spacer(),
+                                    Badge(
+                                      label: Text('$count duplicates'),
+                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        'Matching on: ${keyValues.entries.map((e) => "${e.key}=${e.value}").join(", ")}',
+                                        style: TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          color: Theme.of(context).colorScheme.secondary,
+                                        ),
+                                      ),
+                                    ),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: DataTable(
+                                        columnSpacing: 16,
+                                        headingRowHeight: 40,
+                                        dataRowMaxHeight: double.infinity,
+                                        dataRowMinHeight: 48,
+                                        headingRowColor: WidgetStateProperty.all(
+                                          Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                        ),
+                                        columns: rows.first.keys.map((key) {
+                                          return DataColumn(
+                                            label: Tooltip(
+                                              message: key,
+                                              child: Text(
+                                                key,
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        rows: rows.map((row) {
+                                          return DataRow(
+                                            cells: row.keys.map((key) {
+                                              final isKeyColumn = keyValues.containsKey(key);
+                                              final cellValue = row[key]?.toString() ?? 'null';
+
+                                              return DataCell(
+                                                Container(
+                                                  constraints: const BoxConstraints(maxWidth: 200),
+                                                  child: Text(
+                                                    cellValue,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: isKeyColumn
+                                                        ? TextStyle(
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Theme.of(context).colorScheme.primary,
+                                                          )
+                                                        : null,
+                                                  ),
+                                                ),
+                                                onTap: () {
+                                                  if (cellValue.length > 20) {
+                                                    showDialog(
+                                                      context: context,
+                                                      builder: (ctx) => AlertDialog(
+                                                        title: Text(key),
+                                                        content: Text(cellValue),
+                                                        actions: [
+                                                          TextButton(
+                                                            child: const Text('Close'),
+                                                            onPressed: () => Navigator.of(ctx).pop(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                              );
+                                            }).toList(),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+          contentPadding: const EdgeInsets.all(16),
+          scrollable: true,
+        );
+      },
     );
   }
 
@@ -2827,7 +3221,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// - Parallel processing: Enable concurrent processing of operations (uses more memory)
   /// - In-place processing: Modify original dataset without creating a copy
   /// - Dataset preview: Show before/after comparison when applying operations
-  /// - Progress visualization: Display processing status and estimated time remaining
+  /// - Progress visualization_and_explorer: Display processing status and estimated time remaining
   /// - Report generation: Create a detailed report of all cleaning operations
   ///
   /// These global settings affect how all data cleaning operations are performed.
@@ -2881,7 +3275,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               const Divider(height: 1, indent: 16, endIndent: 16),
               SwitchListTile(
                 dense: true,
-                title: const Text('Enable progress visualization'),
+                title: const Text('Enable progress visualization_and_explorer'),
                 subtitle: const Text('Show processing status and time estimates'),
                 value: _enableProgressVisualization,
                 onChanged: (value) {
@@ -2987,7 +3381,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// - Numeric type conversion: Detecting and converting text that should be numeric
   /// - Date format detection: Identifying various date formats and standardizing them
   ///
-  /// Proper data typing is crucial for meaningful analysis and visualization,
+  /// Proper data typing is crucial for meaningful analysis and visualization_and_explorer,
   /// as operations like calculations and time-series analysis require appropriate types.
   ///
   /// Returns a [ListView] containing cleaning cards with their respective content widgets.
@@ -3104,7 +3498,7 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   ///   including parallel processing, in-place modifications, and reporting
   ///
   /// These settings apply across all cleaning operations and help users optimize
-  /// for their specific needs regarding performance, memory usage, and visualization.
+  /// for their specific needs regarding performance, memory usage, and visualization_and_explorer.
   ///
   /// Returns a [ListView] containing cleaning cards with their respective content widgets.
   Widget _buildSettingsTab() {

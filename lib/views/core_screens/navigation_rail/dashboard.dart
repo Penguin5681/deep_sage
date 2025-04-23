@@ -1286,7 +1286,7 @@ class _DashboardState extends State<Dashboard> {
           ),
           SizedBox(height: 16),
           Text(
-            'Upload or import your datasets to get started with analysis and visualization',
+            'Upload or import your datasets to get started with analysis and visualization_and_explorer',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,

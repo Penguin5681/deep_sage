@@ -6,7 +6,8 @@ import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
-import 'package:deep_sage/views/core_screens/visualization/visualization_and_explorer_screens.dart';
+import 'package:deep_sage/views/core_screens/visualization_and_explorer/visualization_and_explorer_screens.dart';
+import 'package:deep_sage/views/core_screens/visualization_and_explorer/visualization_screen.dart';
 import 'package:deep_sage/widgets/dev_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -548,7 +549,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return [
       TemplateItem(
         name: "Data Exploration",
-        description: "Start with basic data analysis and visualization",
+        description: "Start with basic data analysis and visualization_and_explorer",
         icon: Icons.bar_chart,
         color: Colors.blue,
       ),
@@ -681,7 +682,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// - Dashboard: Home screen with overview and recent items
   /// - Search: For finding datasets and content
   /// - Folders: File system navigation
-  /// - Visualizations: Data visualization tools
+  /// - Visualizations: Data visualization_and_explorer tools
   /// - Reports: Reporting interface
   /// - Settings: Application configuration
   ///
@@ -699,7 +700,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       SearchScreen(),
       FolderScreen(onNavigate: navigateToIndex),
       VisualizationAndExplorerScreens(),
-      const Center(child: Text('Reports')),
+      VisualizationScreen(),
       SettingsScreen(),
     ];
     return ShortcutService(
@@ -822,6 +823,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 NavigationRailDestination(
                   icon: getIconForTheme(
+                    lightIcon: AppIcons.explorerOutlinedDark,
+                    darkIcon: AppIcons.explorerOutlinedLight,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    lightIcon: AppIcons.explorerDark,
+                    darkIcon: AppIcons.explorerLight,
+                    size: 18,
+                  ),
+                  label: Text('Explorer'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
                     lightIcon: AppIcons.chartOutlinedLight,
                     darkIcon: AppIcons.chartOutlinedDark,
                     size: 18,
@@ -832,21 +847,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     darkIcon: AppIcons.chartDark,
                     size: 18,
                   ),
-                  label: Text('Visualizations'),
-                ),
-                NavigationRailDestination(
-                  icon: getIconForTheme(
-                    lightIcon: AppIcons.reportOutlinedLight,
-                    darkIcon: AppIcons.reportOutlinedDark,
-                    size: 18,
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 4),
-                  selectedIcon: getIconForTheme(
-                    lightIcon: AppIcons.reportLight,
-                    darkIcon: AppIcons.reportDark,
-                    size: 18,
-                  ),
-                  label: Text('Reports'),
+                  label: Text('Visualization'),
                 ),
                 NavigationRailDestination(
                   icon: getIconForTheme(
