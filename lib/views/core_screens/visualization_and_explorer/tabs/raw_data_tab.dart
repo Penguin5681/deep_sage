@@ -1210,7 +1210,7 @@ class _RawDataTabState extends State<RawDataTab>
     );
   }
 
-  /// Builds a quality score visualization with a linear progress indicator.
+  /// Builds a quality score visualization_and_explorer with a linear progress indicator.
   ///
   /// [label] The name of the quality metric.
   /// [score] The numerical score value (0-100).
@@ -1240,7 +1240,7 @@ class _RawDataTabState extends State<RawDataTab>
     );
   }
 
-  /// Builds a visualization of column type distribution.
+  /// Builds a visualization_and_explorer of column type distribution.
   ///
   /// [columnTypes] Map containing counts of different column types.
   Widget _buildColumnTypeDistribution(Map<String, dynamic> columnTypes) {
