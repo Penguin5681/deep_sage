@@ -4,6 +4,7 @@ import 'package:deep_sage/core/config/helpers/app_icons.dart';
 import 'package:deep_sage/core/services/keyboard/shortcut_service.dart';
 import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
+import 'package:deep_sage/views/core_screens/machine_learning/machine_learning_screen.dart';
 import 'package:deep_sage/views/core_screens/search_screens/search_screen.dart';
 import 'package:deep_sage/views/core_screens/settings_screen.dart';
 import 'package:deep_sage/views/core_screens/visualization_and_explorer/visualization_and_explorer_screens.dart';
@@ -701,6 +702,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       FolderScreen(onNavigate: navigateToIndex),
       VisualizationAndExplorerScreens(),
       VisualizationScreen(),
+      MachineLearningScreen(),
       SettingsScreen(),
     ];
     return ShortcutService(
@@ -848,6 +850,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     size: 18,
                   ),
                   label: Text('Visualization'),
+                ),
+                NavigationRailDestination(
+                  icon: getIconForTheme(
+                    darkIcon: AppIcons.machineLearningOutlinedLight,
+                    lightIcon: AppIcons.machineLearningOutlinedDark,
+                    size: 18,
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  selectedIcon: getIconForTheme(
+                    darkIcon: AppIcons.machineLearningLight,
+                    lightIcon: AppIcons.machineLearningDark,
+                    size: 18,
+                  ),
+                  label: Text('Machine Learning'),
                 ),
                 NavigationRailDestination(
                   icon: getIconForTheme(
