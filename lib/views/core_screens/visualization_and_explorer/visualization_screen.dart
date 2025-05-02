@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 
-class VisualizationScreen extends StatelessWidget {
+import '../../../widgets/overlay_widgets/bar_chart_option_overlay.dart';
+import '../../../widgets/overlay_widgets/line_chart_option_overlay.dart';
+import '../../../widgets/overlay_widgets/pie_chart_option_overlay.dart';
+
+class VisualizationScreen extends StatefulWidget {
   const VisualizationScreen({super.key});
+
+  @override
+  State<VisualizationScreen> createState() => _VisualizationScreenState();
+}
+
+class _VisualizationScreenState extends State<VisualizationScreen> {
+  String _selectedChartLibrary = 'FL Chart'; // Default value
 
   @override
   Widget build(BuildContext context) {
@@ -32,36 +43,95 @@ class VisualizationScreen extends StatelessWidget {
             Text(
               'Select a chart type and customize your visualization.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: subTextColor,      
-                fontSize: 16,        
+                color: subTextColor,
+                fontSize: 16,
               ),
             ),
             const SizedBox(height: 24),
 
-            // Chart Type heading
-            Text(
-              'Chart Type',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: textColor,
-                fontSize: 18,
-              ),
+            // Chart Library Selection Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Chart Type heading
+                Text(
+                  'Chart Type',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    fontSize: 18,
+                  ),
+                ),
+                // Dropdown for Chart Library
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  decoration: BoxDecoration(
+                    color: theme.inputDecorationTheme.fillColor ?? theme.cardColor,
+                    borderRadius: BorderRadius.circular(8.0),
+                    border: Border.all(
+                      color: theme.dividerColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _selectedChartLibrary,
+                      icon: Icon(Icons.arrow_drop_down, color: textColor),
+                      dropdownColor: theme.cardColor,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedChartLibrary = newValue!;
+                          // You can add logic here to react to the change
+                          debugPrint('Selected chart library: $_selectedChartLibrary');
+                        });
+                      },
+                      items: <String>['FL Chart', 'Matplotlib']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
-            // Chart Type cards in a row
             Row(
               children: [
-                // Line Chart
                 Expanded(
                   child: ChartTypeCard(
                     icon: Icons.show_chart,
                     iconColor: textColor,
                     title: 'Line Chart',
                     description: 'Track changes over time or compare trends.',
-                    onTap: () {
-                      // Handle Line Chart selection
-                    },
+                   onTap: () {
+                     showModalBottomSheet(
+                       context: context,
+                       isScrollControlled: true,
+                       backgroundColor: Colors.transparent,
+                       builder: (context) => DraggableScrollableSheet(
+                         initialChildSize: 0.9,
+                         minChildSize: 0.5,
+                         maxChildSize: 0.95,
+                         builder: (_, controller) => Container(
+                           decoration: BoxDecoration(
+                             color: theme.scaffoldBackgroundColor,
+                             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                           ),
+                           child: LineChartOptionsOverlay(
+                             onOptionsChanged: (options) {
+                               // Store or use the updated options
+                               debugPrint('Chart options updated: $options');
+                             },
+                           ),
+                         ),
+                       ),
+                     );
+                   },
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -74,7 +144,28 @@ class VisualizationScreen extends StatelessWidget {
                     title: 'Bar Chart',
                     description: 'Compare values across categories.',
                     onTap: () {
-                      // Handle Bar Chart selection
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => DraggableScrollableSheet(
+                          initialChildSize: 0.9,
+                          minChildSize: 0.5,
+                          maxChildSize: 0.95,
+                          builder: (_, controller) => Container(
+                            decoration: BoxDecoration(
+                              color: theme.scaffoldBackgroundColor,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            ),
+                            child: BarChartOptionsOverlay(
+                              onOptionsChanged: (options) {
+                                // Store or use the updated options
+                                debugPrint('Bar chart options updated: $options');
+                              },
+                            ),
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -88,24 +179,31 @@ class VisualizationScreen extends StatelessWidget {
                     title: 'Pie Chart',
                     description: 'Show proportions and percentages.',
                     onTap: () {
-                      // Handle Pie Chart selection
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => DraggableScrollableSheet(
+                          initialChildSize: 0.9,
+                          minChildSize: 0.5,
+                          maxChildSize: 0.95,
+                          builder: (_, controller) => Container(
+                            decoration: BoxDecoration(
+                              color: theme.scaffoldBackgroundColor,
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            ),
+                            child: PieChartOptionsOverlay(
+                              onOptionsChanged: (options) {
+                                debugPrint('Pie chart options updated: $options');
+                              },
+                            ),
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
                 const SizedBox(width: 16),
-
-                // Scatter Chart
-                Expanded(
-                  child: ChartTypeCard(
-                    icon: Icons.scatter_plot,
-                    iconColor: textColor,
-                    title: 'Scatter Chart',
-                    description: 'Vizualize relationships between variables.',
-                    onTap: () {
-                      // Handle Scatter Chart selection
-                    },
-                  ),
-                ),
                 // const SizedBox(width: 16),
               ],
             ),
@@ -178,7 +276,10 @@ class ChartTypeCard extends StatelessWidget {
 
             // Button
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                // Handle button press
+                onTap();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: buttonBg,
                 foregroundColor: buttonFg,
