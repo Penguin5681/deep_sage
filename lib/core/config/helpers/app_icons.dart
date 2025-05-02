@@ -19,12 +19,10 @@ class AppIcons {
   static const String chartDark = '$darkModeBasePath/chart.png';
 
   /// Outlined chart icon for light mode
-  static const String chartOutlinedLight =
-      '$lightModeBasePath/chart_outlined.png';
+  static const String chartOutlinedLight = '$lightModeBasePath/chart_outlined.png';
 
   /// Outlined chart icon for dark mode
-  static const String chartOutlinedDark =
-      '$darkModeBasePath/chart_outlined.png';
+  static const String chartOutlinedDark = '$darkModeBasePath/chart_outlined.png';
 
   /// Folder icon for light mode
   static const String folderLight = '$lightModeBasePath/folder.png';
@@ -33,12 +31,10 @@ class AppIcons {
   static const String folderDark = '$darkModeBasePath/folder.png';
 
   /// Outlined folder icon for light mode
-  static const String folderOutlinedLight =
-      '$lightModeBasePath/folder_outlined.png';
+  static const String folderOutlinedLight = '$lightModeBasePath/folder_outlined.png';
 
   /// Outlined folder icon for dark mode
-  static const String folderOutlinedDark =
-      '$darkModeBasePath/folder_outlined.png';
+  static const String folderOutlinedDark = '$darkModeBasePath/folder_outlined.png';
 
   /// Home icon for light mode
   static const String homeLight = '$lightModeBasePath/home.png';
@@ -47,8 +43,7 @@ class AppIcons {
   static const String homeDark = '$darkModeBasePath/home.png';
 
   /// Outlined home icon for light mode
-  static const String homeOutlinedLight =
-      '$lightModeBasePath/home_outlined.png';
+  static const String homeOutlinedLight = '$lightModeBasePath/home_outlined.png';
 
   /// Outlined home icon for dark mode
   static const String homeOutlinedDark = '$darkModeBasePath/home_outlined.png';
@@ -60,12 +55,10 @@ class AppIcons {
   static const String reportDark = '$darkModeBasePath/report.png';
 
   /// Outlined report icon for light mode
-  static const String reportOutlinedLight =
-      '$lightModeBasePath/report_outlined.png';
+  static const String reportOutlinedLight = '$lightModeBasePath/report_outlined.png';
 
   /// Outlined report icon for dark mode
-  static const String reportOutlinedDark =
-      '$darkModeBasePath/report_outlined.png';
+  static const String reportOutlinedDark = '$darkModeBasePath/report_outlined.png';
 
   /// Search icon for light mode
   static const String searchLight = '$lightModeBasePath/search.png';
@@ -74,12 +67,10 @@ class AppIcons {
   static const String searchDark = '$darkModeBasePath/search.png';
 
   /// Outlined search icon for light mode
-  static const String searchOutlinedLight =
-      '$lightModeBasePath/search_outlined.png';
+  static const String searchOutlinedLight = '$lightModeBasePath/search_outlined.png';
 
   /// Outlined search icon for dark mode
-  static const String searchOutlinedDark =
-      '$darkModeBasePath/search_outlined.png';
+  static const String searchOutlinedDark = '$darkModeBasePath/search_outlined.png';
 
   /// Settings icon for light mode
   static const String settingsLight = '$lightModeBasePath/settings.png';
@@ -88,12 +79,10 @@ class AppIcons {
   static const String settingsDark = '$darkModeBasePath/settings.png';
 
   /// Outlined settings icon for light mode
-  static const String settingsOutlinedLight =
-      '$lightModeBasePath/settings_outlined.png';
+  static const String settingsOutlinedLight = '$lightModeBasePath/settings_outlined.png';
 
   /// Outlined settings icon for dark mode
-  static const String settingsOutlinedDark =
-      '$darkModeBasePath/settings_outlined.png';
+  static const String settingsOutlinedDark = '$darkModeBasePath/settings_outlined.png';
 
   /// Plus icon for light mode
   static const String plusLight = '$darkModeBasePath/plus.png';
@@ -161,8 +150,27 @@ class AppIcons {
   /// Text Icon
   static const String textIcon = 'assets/icons/colorful/text-format.png';
 
+  /// Explorer icon for dark mode
   static const String explorerDark = 'assets/icons/dark/explorer.png';
+
+  /// Explorer icon for light mode
   static const String explorerLight = 'assets/icons/light/explorer.png';
+
+  /// Outlined explorer icon for dark mode
   static const String explorerOutlinedDark = 'assets/icons/dark/explorer_outlined.png';
+
+  /// Outlined explorer icon for light mode
   static const String explorerOutlinedLight = 'assets/icons/light/explorer_outlined.png';
+
+  /// Machine learning icon for light mode
+  static const String machineLearningLight = 'assets/icons/light/brain.png';
+
+  /// Machine learning icon for dark mode
+  static const String machineLearningDark = 'assets/icons/dark/brain.png';
+
+  /// Outlined machine learning icon for light mode
+  static const String machineLearningOutlinedLight = 'assets/icons/light/brain_outlined.png';
+
+  /// Outlined machine learning icon for dark mode
+  static const String machineLearningOutlinedDark = 'assets/icons/dark/brain_outlined.png';
 }
