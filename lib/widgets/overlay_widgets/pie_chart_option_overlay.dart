@@ -206,6 +206,7 @@ class _PieChartOptionsOverlayState extends State<PieChartOptionsOverlay> {
           ),
 
           // Apply Button
+          // In _PieChartOptionsOverlayState class, modify the "Generate Chart" button:
           Padding(
             padding: const EdgeInsets.only(top: 16.0),
             child: SizedBox(
@@ -213,6 +214,7 @@ class _PieChartOptionsOverlayState extends State<PieChartOptionsOverlay> {
               height: 48,
               child: ElevatedButton(
                 onPressed: () {
+                  // Pass back the options when Generate Chart is clicked
                   Navigator.of(context).pop(options);
                 },
                 style: ElevatedButton.styleFrom(
