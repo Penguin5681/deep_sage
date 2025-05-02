@@ -50,6 +50,7 @@ dev_dependencies:
   build_runner: ^2.4.15
 flutter:
   assets:
+    - assets/ico_files/
     - assets/icons/
     - assets/icons/light/
     - assets/icons/brand/
