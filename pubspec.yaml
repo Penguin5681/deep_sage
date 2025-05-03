@@ -41,6 +41,8 @@ dependencies:
   showcaseview: ^4.0.1
   flutter_phoenix: ^1.1.1
   flutter_colorpicker: ^1.1.0
+  flutter_launcher_icons: ^0.14.3
+  fl_chart: ^0.71.0
   
 
 dev_dependencies:
@@ -49,6 +51,15 @@ dev_dependencies:
 
   flutter_lints: ^5.0.0
   build_runner: ^2.4.15
+
+flutter_launcher_icons:
+  windows:
+    generate: true
+    image_path: "assets/ico_files/deep_sage_icon-removebg_linux.png"
+  linux:
+    generate: true
+    image_path: "assets/ico_files/deep_sage_icon-removebg_linux.png"
+
 flutter:
   assets:
     - assets/ico_files/

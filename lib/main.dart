@@ -28,13 +28,14 @@ Future main() async {
   Hive.init(appSupportDirectory.path);
   Hive.registerAdapter(UserApiAdapter());
   Hive.registerAdapter(RecentImportsModelAdapter());
+  Hive.registerAdapter(ColorAdapter());
 
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
   await Hive.openBox(dotenv.env['USER_HIVE_BOX']!);
   await Hive.openBox(dotenv.env['RECENT_IMPORTS_HISTORY']!);
   await Hive.openBox('starred_datasets');
   await Hive.openBox('user_preferences');
-
+  await Hive.openBox(dotenv.env['CHART_STATE_BOX'] ?? 'chart_state');
   // await CacheService().initCacheBox();
 
   final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
