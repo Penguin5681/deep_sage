@@ -5,14 +5,21 @@ class InteractivePieChartWrapper extends StatefulWidget {
   final Widget child;
   final bool isImage;
 
-  const InteractivePieChartWrapper({super.key, required this.child, required this.isImage});
+  const InteractivePieChartWrapper({
+    super.key,
+    required this.child,
+    required this.isImage,
+  });
 
   @override
-  State<InteractivePieChartWrapper> createState() => _InteractivePieChartWrapperState();
+  State<InteractivePieChartWrapper> createState() =>
+      _InteractivePieChartWrapperState();
 }
 
-class _InteractivePieChartWrapperState extends State<InteractivePieChartWrapper> {
-  final TransformationController _transformationController = TransformationController();
+class _InteractivePieChartWrapperState
+    extends State<InteractivePieChartWrapper> {
+  final TransformationController _transformationController =
+      TransformationController();
   double _rotation = 0.0;
   bool _isFullScreen = false;
 
@@ -86,7 +93,8 @@ class _InteractivePieChartWrapperState extends State<InteractivePieChartWrapper>
             onPressed: () {
               final zoom = _transformationController.value.getMaxScaleOnAxis();
               if (zoom < 4.0) {
-                _transformationController.value = Matrix4.identity()..scale(zoom + 0.5);
+                _transformationController.value =
+                    Matrix4.identity()..scale(zoom + 0.5);
               }
             },
             tooltip: 'Zoom In',
@@ -96,7 +104,8 @@ class _InteractivePieChartWrapperState extends State<InteractivePieChartWrapper>
             onPressed: () {
               final zoom = _transformationController.value.getMaxScaleOnAxis();
               if (zoom > 4.0) {
-                _transformationController.value = Matrix4.identity()..scale(max(0.5, zoom - 0.5));
+                _transformationController.value =
+                    Matrix4.identity()..scale(max(0.5, zoom - 0.5));
               }
             },
             tooltip: 'Zoom Out',
@@ -131,7 +140,10 @@ class _InteractivePieChartWrapperState extends State<InteractivePieChartWrapper>
     return Column(
       children: [
         Expanded(
-          child: GestureDetector(onDoubleTap: _enterFullScreen, child: _buildInteractiveChart()),
+          child: GestureDetector(
+            onDoubleTap: _enterFullScreen,
+            child: _buildInteractiveChart(),
+          ),
         ),
         if (!_isFullScreen)
           Container(

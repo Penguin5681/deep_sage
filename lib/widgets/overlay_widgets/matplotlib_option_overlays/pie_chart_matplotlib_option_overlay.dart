@@ -11,10 +11,12 @@ class PieChartMatplotlibOptionsOverlay extends StatefulWidget {
   });
 
   @override
-  State<PieChartMatplotlibOptionsOverlay> createState() => _PieChartMatplotlibOptionsOverlayState();
+  State<PieChartMatplotlibOptionsOverlay> createState() =>
+      _PieChartMatplotlibOptionsOverlayState();
 }
 
-class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOptionsOverlay> {
+class _PieChartMatplotlibOptionsOverlayState
+    extends State<PieChartMatplotlibOptionsOverlay> {
   late final TextEditingController _titleController;
   late final TextEditingController _subtitleController;
 
@@ -54,7 +56,14 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
   bool _transparentBackground = false;
 
   // Mock data for dropdowns
-  final List<String> _mockColumns = ['name', 'category', 'revenue', 'sales', 'profit', 'region'];
+  final List<String> _mockColumns = [
+    'name',
+    'category',
+    'revenue',
+    'sales',
+    'profit',
+    'region',
+  ];
 
   @override
   void initState() {
@@ -63,8 +72,10 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
     _subtitleController = TextEditingController(text: '');
 
     // Set default columns
-    _selectedCategoryColumn = _mockColumns.isNotEmpty ? _mockColumns.first : null;
-    _selectedValueColumn = _mockColumns.length > 1 ? _mockColumns[1] : _selectedCategoryColumn;
+    _selectedCategoryColumn =
+        _mockColumns.isNotEmpty ? _mockColumns.first : null;
+    _selectedValueColumn =
+        _mockColumns.length > 1 ? _mockColumns[1] : _selectedCategoryColumn;
 
     // Initialize with provided options if available
     if (widget.initialOptions != null) {
@@ -77,7 +88,8 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
 
     _titleController.text = options['title'] ?? 'Pie Chart';
     _subtitleController.text = options['subtitle'] ?? '';
-    _selectedCategoryColumn = options['categoryColumn'] ?? _selectedCategoryColumn;
+    _selectedCategoryColumn =
+        options['categoryColumn'] ?? _selectedCategoryColumn;
     _selectedValueColumn = options['valueColumn'] ?? _selectedValueColumn;
 
     _enableFiltering = options['enableFiltering'] ?? false;
@@ -152,14 +164,20 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        title: Text('Matplotlib Pie Chart Options', style: TextStyle(color: textColor)),
+        title: Text(
+          'Matplotlib Pie Chart Options',
+          style: TextStyle(color: textColor),
+        ),
         leading: IconButton(
           icon: Icon(Icons.close, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           TextButton(
-            child: Text('Apply', style: TextStyle(color: theme.colorScheme.primary)),
+            child: Text(
+              'Apply',
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
             onPressed: () {
               debugPrint('${_getUpdatedOptions()}');
               widget.onOptionsChanged(_getUpdatedOptions());
@@ -229,9 +247,7 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: Divider(color: theme.dividerColor),
-          ),
+          Expanded(child: Divider(color: theme.dividerColor)),
         ],
       ),
     );
@@ -300,7 +316,11 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
                 label: 'Filter Type',
                 value: _filterType,
                 items: const ['topN', 'valueRange', 'specificValues'],
-                itemLabels: const ['Top N Items', 'Value Range', 'Specific Values'],
+                itemLabels: const [
+                  'Top N Items',
+                  'Value Range',
+                  'Specific Values',
+                ],
                 onChanged: (value) {
                   setState(() {
                     _filterType = value;
@@ -540,8 +560,18 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
             _buildDropdown(
               label: 'Sort By',
               value: _sortingOption,
-              items: const ['descending', 'ascending', 'alphabetical', 'original'],
-              itemLabels: const ['Descending Value', 'Ascending Value', 'Alphabetical', 'Original Order'],
+              items: const [
+                'descending',
+                'ascending',
+                'alphabetical',
+                'original',
+              ],
+              itemLabels: const [
+                'Descending Value',
+                'Ascending Value',
+                'Alphabetical',
+                'Original Order',
+              ],
               onChanged: (value) {
                 setState(() {
                   _sortingOption = value;
@@ -645,10 +675,7 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14),
-        ),
+        Text(label, style: const TextStyle(fontSize: 14)),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
@@ -665,7 +692,9 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
                 items.length,
                 (index) => DropdownMenuItem(
                   value: items[index],
-                  child: Text(itemLabels != null ? itemLabels[index] : items[index]),
+                  child: Text(
+                    itemLabels != null ? itemLabels[index] : items[index],
+                  ),
                 ),
               ),
               onChanged: (newValue) {
@@ -696,7 +725,10 @@ class _PieChartMatplotlibOptionsOverlayState extends State<PieChartMatplotlibOpt
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: const TextStyle(fontSize: 14)),
-            Text(valueLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            Text(
+              valueLabel,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         Slider(
