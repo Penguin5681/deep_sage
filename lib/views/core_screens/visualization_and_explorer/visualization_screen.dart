@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:deep_sage/core/services/caching_services/chart_rendering_service.dart';
 import 'package:deep_sage/views/core_screens/visualization_and_explorer/pie_chart_visualization/dynamic_pie_chart.dart';
 import 'package:deep_sage/widgets/overlay_widgets/matplotlib_option_overlays/pie_chart_matplotlib_option_overlay.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../../core/services/core_services/visualization_service.dart';
-import '../../../widgets/interactive_pie_chart_wrapper.dart';
 import '../../../widgets/overlay_widgets/fl_chart_option_overlays/bar_chart_option_overlay.dart';
 import '../../../widgets/overlay_widgets/fl_chart_option_overlays/line_chart_option_overlay.dart';
 import '../../../widgets/overlay_widgets/fl_chart_option_overlays/pie_chart_option_overlay.dart';
@@ -41,6 +41,8 @@ class _VisualizationScreenState extends State<VisualizationScreen>
 
   final Box recentImportsBox = Hive.box(dotenv.env['RECENT_IMPORTS_HISTORY']!);
 
+  final ChartRenderingService _chartRenderingService = ChartRenderingService();
+
   void loadDatasetMetadata() {
     currentDatasetPath = recentImportsBox.get('currentDatasetPath');
     currentDatasetType = recentImportsBox.get('currentDatasetType');
@@ -62,13 +64,41 @@ class _VisualizationScreenState extends State<VisualizationScreen>
     loadDatasetMetadata();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _restoreChartState());
+
+    if (_isDatasetSelected) {
+      _chartRenderingService.startRenderingService(currentDatasetPath!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _chartRenderingService.stopRenderingService();
+    super.dispose();
   }
 
   void _showPieChart(Map<String, dynamic> options) {
-    if (currentDatasetPath == null || currentDatasetPath!.isEmpty) {
+    bool isNewChartRequest =
+        _currentChartType != 'pie' || _currentChart == null;
+
+    if ((currentDatasetPath == null || currentDatasetPath!.isEmpty) &&
+        isNewChartRequest) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please import a dataset first')),
       );
+      return;
+    }
+
+    final preRenderedChart = _chartRenderingService.getPreRenderedChart(
+      options,
+    );
+
+    if (preRenderedChart != null) {
+      setState(() {
+        _currentChart = preRenderedChart;
+        _currentChartOptions = options;
+        _currentChartType = 'pie';
+      });
+      _saveChartState();
       return;
     }
 
@@ -95,72 +125,80 @@ class _VisualizationScreenState extends State<VisualizationScreen>
             child: Text('Dataset file not found. Please import a new dataset.'),
           );
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dataset file not found')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Dataset file not found')));
         return;
       }
 
       if (_selectedChartLibrary == 'Matplotlib') {
-        _visualizationService.generatePieChart(file, options).then((imagePath) {
-          setState(() {
-            _generatedChartImagePath = imagePath;
-            _currentChart = Image.network(
-              imagePath,
-              fit: BoxFit.contain,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
+        _visualizationService
+            .generatePieChart(file, options)
+            .then((imagePath) {
+              setState(() {
+                _generatedChartImagePath = imagePath;
+                _currentChart = Image.network(
+                  imagePath,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value:
+                            loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error, size: 50),
+                          const SizedBox(height: 16),
+                          Text('Error loading chart: $error'),
+                        ],
+                      ),
+                    );
+                  },
                 );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Center(
+                _currentChartOptions = options;
+                _currentChartType = 'pie';
+                _isGeneratingChart = false;
+              });
+
+              _saveChartState();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Chart generated successfully')),
+              );
+            })
+            .catchError((error) {
+              setState(() {
+                _isGeneratingChart = false;
+                _currentChart = Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error, size: 50),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 50,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 16),
-                      Text('Error loading chart: $error'),
+                      Text('Failed to generate chart: ${error.toString()}'),
                     ],
                   ),
                 );
-              },
-            );
-            _currentChartOptions = options;
-            _currentChartType = 'pie';
-            _isGeneratingChart = false;
-          });
+              });
 
-          _saveChartState();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Chart generated successfully')),
-          );
-        }).catchError((error) {
-          setState(() {
-            _isGeneratingChart = false;
-            _currentChart = Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, size: 50, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Failed to generate chart: ${error.toString()}'),
-                ],
-              ),
-            );
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${error.toString()}')),
-          );
-        });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: ${error.toString()}')),
+              );
+            });
       } else {
         setState(() {
           _currentChart = DynamicPieChart(
@@ -184,7 +222,9 @@ class _VisualizationScreenState extends State<VisualizationScreen>
 
   void _saveChartState() {
     if (_currentChartType != null && _currentChartOptions != null) {
-      final serializableOptions = Map<String, dynamic>.from(_currentChartOptions!);
+      final serializableOptions = Map<String, dynamic>.from(
+        _currentChartOptions!,
+      );
 
       serializableOptions.forEach((key, value) {
         if (value is Color) {
@@ -264,7 +304,10 @@ class _VisualizationScreenState extends State<VisualizationScreen>
             // Description
             Text(
               'Select a chart type and customize your visualization.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: subTextColor, fontSize: 16),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: subTextColor,
+                fontSize: 16,
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -285,7 +328,8 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12.0),
                   decoration: BoxDecoration(
-                    color: theme.inputDecorationTheme.fillColor ?? theme.cardColor,
+                    color:
+                        theme.inputDecorationTheme.fillColor ?? theme.cardColor,
                     borderRadius: BorderRadius.circular(8.0),
                     border: Border.all(color: theme.dividerColor, width: 1),
                   ),
@@ -294,19 +338,27 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                       value: _selectedChartLibrary,
                       icon: Icon(Icons.arrow_drop_down, color: textColor),
                       dropdownColor: theme.cardColor,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                      ),
                       onChanged: (String? newValue) {
                         setState(() {
                           _selectedChartLibrary = newValue!;
                           // You can add logic here to react to the change
-                          debugPrint('Selected chart library: $_selectedChartLibrary');
+                          debugPrint(
+                            'Selected chart library: $_selectedChartLibrary',
+                          );
                         });
                       },
                       items:
-                          <String>['FL Chart', 'Matplotlib'].map<DropdownMenuItem<String>>((
-                            String value,
-                          ) {
-                            return DropdownMenuItem<String>(value: value, child: Text(value));
+                          <String>[
+                            'FL Chart',
+                            'Matplotlib',
+                          ].map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
                           }).toList(),
                     ),
                   ),
@@ -344,7 +396,9 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                     child: LineChartOptionsOverlay(
                                       onOptionsChanged: (options) {
                                         // Store or use the updated options
-                                        debugPrint('Chart options updated: $options');
+                                        debugPrint(
+                                          'Chart options updated: $options',
+                                        );
                                       },
                                     ),
                                   ),
@@ -383,7 +437,9 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                     child: BarChartOptionsOverlay(
                                       onOptionsChanged: (options) {
                                         // Store or use the updated options
-                                        debugPrint('Bar chart options updated: $options');
+                                        debugPrint(
+                                          'Bar chart options updated: $options',
+                                        );
                                       },
                                     ),
                                   ),
@@ -422,7 +478,8 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                     child:
                                         _selectedChartLibrary == "FL Chart"
                                             ? PieChartOptionsOverlay(
-                                              initialOptions: _pieChartOptions ?? {},
+                                              initialOptions:
+                                                  _pieChartOptions ?? {},
                                               onOptionsChanged: (options) {
                                                 setState(() {
                                                   _pieChartOptions = options;
@@ -430,10 +487,12 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                               },
                                             )
                                             : PieChartMatplotlibOptionsOverlay(
-                                              initialOptions: _currentChartOptions,
+                                              initialOptions:
+                                                  _currentChartOptions,
                                               onOptionsChanged: (options) {
                                                 setState(() {
-                                                  _currentChartOptions = options;
+                                                  _currentChartOptions =
+                                                      options;
                                                 });
                                               },
                                             ),
@@ -462,28 +521,39 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                     Expanded(
                       child: Card(
                         elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: Padding(padding: const EdgeInsets.all(16.0), child: _currentChart!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: _currentChart!,
+                        ),
                       ),
                     ),
                     // Chart controls (right side)
                     Expanded(
                       child: Card(
                         elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: _currentChartType == 'pie' && _currentChartOptions != null
-                            ? PieChartControlPanel(
-                                currentOptions: _currentChartOptions!,
-                                onOptionsChanged: (updatedOptions) {
-                                  setState(() {
-                                    _currentChartOptions = updatedOptions;
-                                  });
-                                  _showPieChart(updatedOptions);
-                                },
-                              )
-                            : const Center(
-                                child: Text('Select a chart type to see controls'),
-                              ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child:
+                            _currentChartType == 'pie' &&
+                                    _currentChartOptions != null
+                                ? PieChartControlPanel(
+                                  currentOptions: _currentChartOptions!,
+                                  onOptionsChanged: (updatedOptions) {
+                                    setState(() {
+                                      _currentChartOptions = updatedOptions;
+                                    });
+                                    _showPieChart(updatedOptions);
+                                  },
+                                )
+                                : const Center(
+                                  child: Text(
+                                    'Select a chart type to see controls',
+                                  ),
+                                ),
                       ),
                     ),
                   ],
@@ -565,8 +635,13 @@ class ChartTypeCard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: buttonBg,
                 foregroundColor: buttonFg,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 minimumSize: const Size(80, 36),
               ),
               child: const Text('Select'),

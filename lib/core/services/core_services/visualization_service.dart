@@ -26,7 +26,10 @@ class VisualizationService {
 
       final input = file.openRead();
       final fields =
-          await input.transform(utf8.decoder).transform(const CsvToListConverter()).toList();
+          await input
+              .transform(utf8.decoder)
+              .transform(const CsvToListConverter())
+              .toList();
 
       if (fields.isEmpty) {
         throw Exception('Empty CSV file');
@@ -43,9 +46,15 @@ class VisualizationService {
         columnSamples[columnName] = [];
 
         // Get up to 5 sample values for each column
-        for (int rowIndex = 1; rowIndex < fields.length && rowIndex < 6; rowIndex++) {
+        for (
+          int rowIndex = 1;
+          rowIndex < fields.length && rowIndex < 6;
+          rowIndex++
+        ) {
           if (colIndex < fields[rowIndex].length) {
-            columnSamples[columnName]!.add(fields[rowIndex][colIndex].toString());
+            columnSamples[columnName]!.add(
+              fields[rowIndex][colIndex].toString(),
+            );
           }
         }
       }
@@ -57,7 +66,10 @@ class VisualizationService {
     }
   }
 
-  Future<String> generatePieChart(File csvFile, Map<String, dynamic> options) async {
+  Future<String> generatePieChart(
+    File csvFile,
+    Map<String, dynamic> options,
+  ) async {
     try {
       // Create multipart request
       final request = http.MultipartRequest(
@@ -82,7 +94,10 @@ class VisualizationService {
         'subtitle': options['subtitle'],
         'show_labels': options['showLabels'],
         'show_legend': options['legendPosition'] != 'none',
-        'legend_position': options['legendPosition'] == 'none' ? 'best' : options['legendPosition'],
+        'legend_position':
+            options['legendPosition'] == 'none'
+                ? 'best'
+                : options['legendPosition'],
         'show_percent': options['showPercentages'],
         'show_values': options['showValues'],
         'explode': options['enableExplode'],
@@ -90,7 +105,8 @@ class VisualizationService {
         'start_angle': options['startAngle'],
         'shadow': options['enableShadow'],
         'donut': options['isDonutChart'],
-        'donut_ratio': options['isDonutChart'] ? options['donutHoleSize'] : null,
+        'donut_ratio':
+            options['isDonutChart'] ? options['donutHoleSize'] : null,
         'sort': _mapSortingOption(options['sortingOption']),
         'top_n':
             options['enableFiltering'] && options['filterType'] == 'topN'
@@ -114,7 +130,9 @@ class VisualizationService {
       // Add config JSON
       request.fields['config'] = jsonEncode(apiConfig);
 
-      debugPrint('Sending pie chart request with config: ${jsonEncode(apiConfig)}');
+      debugPrint(
+        'Sending pie chart request with config: ${jsonEncode(apiConfig)}',
+      );
 
       // Send request
       final response = await request.send();
@@ -128,7 +146,9 @@ class VisualizationService {
       if (response.statusCode == 200) {
         return '$baseUrl${jsonResponse['generated_pie_chart']}';
       } else {
-        throw Exception('Failed to generate pie chart: ${jsonResponse['error']}');
+        throw Exception(
+          'Failed to generate pie chart: ${jsonResponse['error']}',
+        );
       }
     } catch (e) {
       debugPrint('Error sending request: $e');

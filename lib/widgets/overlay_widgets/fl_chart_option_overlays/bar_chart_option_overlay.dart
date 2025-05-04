@@ -43,7 +43,6 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
       'groupsSpace': 16.0,
       'barsSpace': 4.0,
       'alignment': 0, // 0: start, 1: center, 2: end
-
       // Axes Settings
       'minY': 0.0,
       'maxY': 100.0,
@@ -114,14 +113,48 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                     'Bar Style',
                     'barStyle',
                     [
-                      _buildColorPicker('Bar Color', 'barColor', options['barColor']),
-                      _buildSwitch('Use Gradient', 'barGradient', options['barGradient']),
-                      _buildSlider('Bar Width', 'barWidth', options['barWidth'], 4.0, 30.0),
-                      _buildSlider('Corner Radius', 'borderRadius', options['borderRadius'], 0.0, 12.0),
-                      _buildSwitch('Show Border', 'showBorder', options['showBorder']),
+                      _buildColorPicker(
+                        'Bar Color',
+                        'barColor',
+                        options['barColor'],
+                      ),
+                      _buildSwitch(
+                        'Use Gradient',
+                        'barGradient',
+                        options['barGradient'],
+                      ),
+                      _buildSlider(
+                        'Bar Width',
+                        'barWidth',
+                        options['barWidth'],
+                        4.0,
+                        30.0,
+                      ),
+                      _buildSlider(
+                        'Corner Radius',
+                        'borderRadius',
+                        options['borderRadius'],
+                        0.0,
+                        12.0,
+                      ),
+                      _buildSwitch(
+                        'Show Border',
+                        'showBorder',
+                        options['showBorder'],
+                      ),
                       if (options['showBorder']) ...[
-                        _buildColorPicker('Border Color', 'borderColor', options['borderColor']),
-                        _buildSlider('Border Width', 'borderWidth', options['borderWidth'], 0.5, 3.0),
+                        _buildColorPicker(
+                          'Border Color',
+                          'borderColor',
+                          options['borderColor'],
+                        ),
+                        _buildSlider(
+                          'Border Width',
+                          'borderWidth',
+                          options['borderWidth'],
+                          0.5,
+                          3.0,
+                        ),
                       ],
                     ],
                     theme,
@@ -133,8 +166,20 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                     'Group Settings',
                     'groupSettings',
                     [
-                      _buildSlider('Groups Spacing', 'groupsSpace', options['groupsSpace'], 4.0, 40.0),
-                      _buildSlider('Bars Spacing', 'barsSpace', options['barsSpace'], 0.0, 16.0),
+                      _buildSlider(
+                        'Groups Spacing',
+                        'groupsSpace',
+                        options['groupsSpace'],
+                        4.0,
+                        40.0,
+                      ),
+                      _buildSlider(
+                        'Bars Spacing',
+                        'barsSpace',
+                        options['barsSpace'],
+                        0.0,
+                        16.0,
+                      ),
                       _buildDropdown(
                         'Bar Alignment',
                         'alignment',
@@ -156,9 +201,27 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                     'Axes Settings',
                     'axes',
                     [
-                      _buildRangeInput('Y-Axis Min', 'minY', options['minY'], theme, textColor),
-                      _buildRangeInput('Y-Axis Max', 'maxY', options['maxY'], theme, textColor),
-                      _buildRangeInput('Baseline Y', 'baselineY', options['baselineY'], theme, textColor),
+                      _buildRangeInput(
+                        'Y-Axis Min',
+                        'minY',
+                        options['minY'],
+                        theme,
+                        textColor,
+                      ),
+                      _buildRangeInput(
+                        'Y-Axis Max',
+                        'maxY',
+                        options['maxY'],
+                        theme,
+                        textColor,
+                      ),
+                      _buildRangeInput(
+                        'Baseline Y',
+                        'baselineY',
+                        options['baselineY'],
+                        theme,
+                        textColor,
+                      ),
                     ],
                     theme,
                     textColor,
@@ -169,9 +232,21 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                     'Visual Elements',
                     'visual',
                     [
-                      _buildColorPicker('Background Color', 'backgroundColor', options['backgroundColor']),
-                      _buildSwitch('Show Grid Lines', 'showGrid', options['showGrid']),
-                      _buildSwitch('Show Chart Border', 'showBorderData', options['showBorderData']),
+                      _buildColorPicker(
+                        'Background Color',
+                        'backgroundColor',
+                        options['backgroundColor'],
+                      ),
+                      _buildSwitch(
+                        'Show Grid Lines',
+                        'showGrid',
+                        options['showGrid'],
+                      ),
+                      _buildSwitch(
+                        'Show Chart Border',
+                        'showBorderData',
+                        options['showBorderData'],
+                      ),
                     ],
                     theme,
                     textColor,
@@ -182,10 +257,22 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                     'Interaction',
                     'interaction',
                     [
-                      _buildSwitch('Enable Touch', 'enableTouch', options['enableTouch']),
+                      _buildSwitch(
+                        'Enable Touch',
+                        'enableTouch',
+                        options['enableTouch'],
+                      ),
                       if (options['enableTouch']) ...[
-                        _buildSwitch('Show Tooltips', 'showTooltip', options['showTooltip']),
-                        _buildSwitch('Allow Background Bar Touch', 'allowBackgroundBarTouch', options['allowBackgroundBarTouch']),
+                        _buildSwitch(
+                          'Show Tooltips',
+                          'showTooltip',
+                          options['showTooltip'],
+                        ),
+                        _buildSwitch(
+                          'Allow Background Bar Touch',
+                          'allowBackgroundBarTouch',
+                          options['allowBackgroundBarTouch'],
+                        ),
                       ],
                     ],
                     theme,
@@ -207,9 +294,12 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                   Navigator.of(context).pop(options);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isLight ? Colors.blueGrey[700] : Colors.blueGrey[900],
+                  backgroundColor:
+                      isLight ? Colors.blueGrey[700] : Colors.blueGrey[900],
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 3,
                 ),
                 child: const Row(
@@ -252,7 +342,8 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
             borderRadius: BorderRadius.circular(8),
             onTap: () {
               setState(() {
-                _expandedSections[sectionKey] = !(_expandedSections[sectionKey] ?? false);
+                _expandedSections[sectionKey] =
+                    !(_expandedSections[sectionKey] ?? false);
               });
             },
             child: Padding(
@@ -279,7 +370,10 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
           ),
           if (_expandedSections[sectionKey] ?? false)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: children,
@@ -290,16 +384,19 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
     );
   }
 
-  Widget _buildSlider(String label, String optionKey, double value, double min, double max) {
+  Widget _buildSlider(
+    String label,
+    String optionKey,
+    double value,
+    double min,
+    double max,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label),
-            Text(value.toStringAsFixed(1)),
-          ],
+          children: [Text(label), Text(value.toStringAsFixed(1))],
         ),
         Slider(
           value: value,
@@ -369,11 +466,17 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                             color: color,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected ? Colors.white : Colors.transparent,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : Colors.transparent,
                               width: 2,
                             ),
                           ),
-                          child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                          child:
+                              isSelected
+                                  ? const Icon(Icons.check, color: Colors.white)
+                                  : null,
                         ),
                       );
                     },
@@ -387,10 +490,14 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                   icon: const Icon(Icons.color_lens, size: 16),
                   label: const Text('Custom'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 0,
+                    ),
                     minimumSize: const Size(0, 40),
                   ),
-                  onPressed: () => _showCustomColorPicker(context, optionKey, value),
+                  onPressed:
+                      () => _showCustomColorPicker(context, optionKey, value),
                 ),
               ),
             ],
@@ -422,7 +529,11 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
     );
   }
 
-  void _showCustomColorPicker(BuildContext context, String optionKey, Color initialColor) {
+  void _showCustomColorPicker(
+    BuildContext context,
+    String optionKey,
+    Color initialColor,
+  ) {
     Color pickerColor = initialColor;
 
     showDialog(
@@ -441,7 +552,9 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
               displayThumbColor: true,
               portraitOnly: true,
               hexInputBar: true,
-              pickerAreaBorderRadius: const BorderRadius.all(Radius.circular(10)),
+              pickerAreaBorderRadius: const BorderRadius.all(
+                Radius.circular(10),
+              ),
             ),
           ),
           actions: <Widget>[
@@ -464,17 +577,20 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
     );
   }
 
-  Widget _buildRangeInput(String label, String optionKey, double value, ThemeData theme, Color textColor) {
+  Widget _buildRangeInput(
+    String label,
+    String optionKey,
+    double value,
+    ThemeData theme,
+    Color textColor,
+  ) {
     final controller = TextEditingController(text: value.toString());
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
-            child: Text(label),
-          ),
+          Expanded(flex: 2, child: Text(label)),
           Expanded(
             flex: 3,
             child: TextField(
@@ -482,7 +598,10 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -505,7 +624,7 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
     String optionKey,
     int value,
     List<Map<String, dynamic>> options,
-    ThemeData theme
+    ThemeData theme,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -523,12 +642,13 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<int>(
                 value: value,
-                items: options.map((option) {
-                  return DropdownMenuItem<int>(
-                    value: option['value'] as int,
-                    child: Text(option['label'] as String),
-                  );
-                }).toList(),
+                items:
+                    options.map((option) {
+                      return DropdownMenuItem<int>(
+                        value: option['value'] as int,
+                        child: Text(option['label'] as String),
+                      );
+                    }).toList(),
                 onChanged: (newValue) {
                   if (newValue != null) {
                     _updateOption(optionKey, newValue);

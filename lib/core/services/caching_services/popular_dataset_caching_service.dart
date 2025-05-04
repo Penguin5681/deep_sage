@@ -7,7 +7,8 @@ import 'package:deep_sage/core/config/api_config/popular_datasets.dart';
 /// the app is terminated.
 class PopularDatasetCachingService {
   // Singleton instance
-  static final PopularDatasetCachingService _instance = PopularDatasetCachingService._internal();
+  static final PopularDatasetCachingService _instance =
+      PopularDatasetCachingService._internal();
 
   // Factory constructor to return the singleton instance
   factory PopularDatasetCachingService() => _instance;
