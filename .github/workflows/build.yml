@@ -20,6 +20,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
+
+      - name: Restore secrets and config files
+        run: |
+          echo "${{ secrets.ENV_CONTENT }}" > .env
+          mkdir -p assets
+          echo "${{ secrets.CLIENT_SECRET_BASE64 }}" | base64 -d > assets/client_secret.json
+          echo "${{ secrets.DEEPSAGE_KEY_BASE64 }}" | base64 -d > assets/deepsage-452909-06ec904ead63.json
+
       - name: Get packages
         run: flutter pub get
 
@@ -42,6 +50,14 @@ jobs:
         uses: subosito/flutter-action@v2.14.0
         with:
           channel: stable
+
+      - name: Restore secrets and config files
+        shell: bash
+        run: |
+          echo "${{ secrets.ENV_CONTENT }}" > .env
+          mkdir -p assets
+          echo "${{ secrets.CLIENT_SECRET_BASE64 }}" | base64 -d > assets/client_secret.json
+          echo "${{ secrets.DEEPSAGE_KEY_BASE64 }}" | base64 -d > assets/deepsage-452909-06ec904ead63.json
 
       - name: Get packages
         run: flutter pub get

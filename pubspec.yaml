@@ -70,7 +70,7 @@ flutter:
     - assets/icons/colorful/
     - assets/larry/larry.png
     - .env
-    - assets/deepsage-452909-06ec904ead63.json
+    - assets/deepsage-service-key.json
     - assets/client_secret.json
     - assets/fallback/fallback_user_image.png
   fonts:
