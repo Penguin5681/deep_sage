@@ -24,7 +24,8 @@ class DataCleaningTab extends StatefulWidget {
   State<DataCleaningTab> createState() => _DataCleaningTabState();
 }
 
-class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProviderStateMixin {
+class _DataCleaningTabState extends State<DataCleaningTab>
+    with SingleTickerProviderStateMixin {
   /// Method for handling null values. Defaults to 'nan' (Not a Number).
   String _nullMethod = 'nan';
 
@@ -32,7 +33,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   final TextEditingController _numericFillController = TextEditingController();
 
   /// Controller for the text field used to fill null values for categorical columns.
-  final TextEditingController _categoricalFillController = TextEditingController();
+  final TextEditingController _categoricalFillController =
+      TextEditingController();
 
   /// Default date value to fill in date-related null values. Defaults to the current date and time.
   DateTime _dateFillValue = DateTime.now();
@@ -125,7 +127,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   double _similarityThreshold = 0.85;
 
   /// Controller for the text field used to define custom value mappings.
-  final TextEditingController _customMappingController = TextEditingController();
+  final TextEditingController _customMappingController =
+      TextEditingController();
 
   /// Flag to enable or disable parallel processing globally. Defaults to false.
   bool _enableParallelGlobalProcessing = false;
@@ -258,7 +261,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     });
 
     try {
-      final metadata = await _dataCleaningService.getMetadata(widget.currentDatasetPath!);
+      final metadata = await _dataCleaningService.getMetadata(
+        widget.currentDatasetPath!,
+      );
       setState(() {
         _missingValueStats = metadata;
         _isLoadingMetadata = false;
@@ -268,9 +273,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         _isLoadingMetadata = false;
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error fetching missing value stats: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching missing value stats: $e')),
+      );
     }
   }
 
@@ -325,7 +330,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         ),
 
         /// Builds the bottom actions for applying cleaning operations.
-        Padding(padding: const EdgeInsets.only(left: 18.0), child: _buildBottomActions()),
+        Padding(
+          padding: const EdgeInsets.only(left: 18.0),
+          child: _buildBottomActions(),
+        ),
       ],
     );
   }
@@ -339,13 +347,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Data Cleaning', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const Text(
+            'Data Cleaning',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           Text(
             'Make your data ready for analysis by fixing common problems',
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -383,7 +396,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.grey.shade800.withValues(alpha: 0.2) : Colors.grey.shade200,
+            color:
+                isDarkMode
+                    ? Colors.grey.shade800.withValues(alpha: 0.2)
+                    : Colors.grey.shade200,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.grey.shade400, width: 1),
           ),
@@ -393,7 +409,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               const SizedBox(width: 12),
               Text(
                 'No dataset selected. Please select a dataset from the sidebar.',
-                style: TextStyle(color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700),
+                style: TextStyle(
+                  color:
+                      isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+                ),
               ),
             ],
           ),
@@ -406,7 +425,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isDarkMode ? Colors.blue.shade900.withValues(alpha: 0.2) : Colors.blue.shade50,
+          color:
+              isDarkMode
+                  ? Colors.blue.shade900.withValues(alpha: 0.2)
+                  : Colors.blue.shade50,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.blue.shade400, width: 1),
         ),
@@ -426,7 +448,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                     'Working with: ${widget.currentDataset}',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.blue.shade200 : Colors.blue.shade800,
+                      color:
+                          isDarkMode
+                              ? Colors.blue.shade200
+                              : Colors.blue.shade800,
                     ),
                   ),
                   if (widget.currentDatasetPath != null)
@@ -434,7 +459,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                       _getDisplayPath(widget.currentDatasetPath!),
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700,
+                        color:
+                            isDarkMode
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade700,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -530,16 +558,25 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.2), width: 1),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           leading: Icon(icon, color: colorScheme.primary),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
           subtitle: Text(
             description,
-            style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.7)),
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
           initiallyExpanded: title == 'Null Value Handling',
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -573,7 +610,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           decoration: InputDecoration(
             labelText: 'Fill method',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
           value: _nullMethod,
           items: const [
@@ -602,8 +642,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   decoration: InputDecoration(
                     labelText: 'Numeric fill',
                     hintText: 'e.g., 0.0',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -615,8 +660,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   decoration: InputDecoration(
                     labelText: 'Categorical fill',
                     hintText: 'e.g., unknown',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ),
@@ -627,7 +677,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             'Date fill value',
             style: TextStyle(
               fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),
@@ -649,7 +701,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: Theme.of(context).colorScheme.outline),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -664,7 +718,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         ],
 
         const SizedBox(height: 16),
-        if (_missingValueStats.isNotEmpty && _missingValueStats.containsKey('columns'))
+        if (_missingValueStats.isNotEmpty &&
+            _missingValueStats.containsKey('columns'))
           _buildColumnSelectionSection(),
 
         const SizedBox(height: 16),
@@ -709,7 +764,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 ? 0
                 : double.tryParse(_numericFillController.text) ?? 0,
         'categorical':
-            _categoricalFillController.text.isEmpty ? 'unknown' : _categoricalFillController.text,
+            _categoricalFillController.text.isEmpty
+                ? 'unknown'
+                : _categoricalFillController.text,
         'datetime': _dateFillValue.toIso8601String(),
       };
     }
@@ -723,7 +780,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         filePath: widget.currentDatasetPath!,
         method: _nullMethod,
         customValues: customValues,
-        selectedColumns: _selectedColumns.isEmpty ? null : _selectedColumns.toList(),
+        selectedColumns:
+            _selectedColumns.isEmpty ? null : _selectedColumns.toList(),
       );
 
       // Store the cleaned file path for potential future operations
@@ -733,9 +791,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       await _loadDataPreview(cleanedPath);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Successfully cleaned missing values')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Successfully cleaned missing values')),
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -812,7 +870,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       return const Center(child: Text('No missing value statistics available'));
     }
 
-    final columns = List<Map<String, dynamic>>.from(_missingValueStats['columns'] ?? []);
+    final columns = List<Map<String, dynamic>>.from(
+      _missingValueStats['columns'] ?? [],
+    );
     final columnsWithMissingValues =
         columns.where((col) => (col['missing_values'] ?? 0) > 0).toList();
 
@@ -849,7 +909,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
             borderRadius: BorderRadius.circular(8),
           ),
           child: SingleChildScrollView(
@@ -869,7 +931,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   columnsWithMissingValues.map((col) {
                     final totalRows = _missingValueStats['num_rows'] ?? 1;
                     final missingCount = col['missing_values'] ?? 0;
-                    final percentMissing = (missingCount / totalRows * 100).toStringAsFixed(1);
+                    final percentMissing = (missingCount / totalRows * 100)
+                        .toStringAsFixed(1);
 
                     return DataRow(
                       cells: [
@@ -900,7 +963,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   ///
   /// Returns a [Widget] (Column) containing the column selection interface.
   Widget _buildColumnSelectionSection() {
-    final columns = List<Map<String, dynamic>>.from(_missingValueStats['columns'] ?? []);
+    final columns = List<Map<String, dynamic>>.from(
+      _missingValueStats['columns'] ?? [],
+    );
     final columnsWithMissingValues =
         columns.where((col) => (col['missing_values'] ?? 0) > 0).toList();
 
@@ -946,7 +1011,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               onPressed: () {
                 setState(() {
                   _selectedColumns = Set<String>.from(
-                    columnsWithMissingValues.map((col) => col['name'] as String),
+                    columnsWithMissingValues.map(
+                      (col) => col['name'] as String,
+                    ),
                   );
                 });
               },
@@ -1116,8 +1183,12 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         if (_enableTextCleaning) ...[
           Card(
             elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Column(
               children: [
                 CheckboxListTile(
@@ -1161,8 +1232,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             decoration: InputDecoration(
               labelText: 'Custom regex pattern',
               hintText: 'e.g., [^a-zA-Z0-9]',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
               helperText: 'Advanced: Define a custom pattern for text cleaning',
             ),
           ),
@@ -1261,7 +1337,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     }
 
     if (_enableOutlierHandling) {
-      operations.add('Handle Outliers: $_outlierDetectionMethod method, $_outlierAction');
+      operations.add(
+        'Handle Outliers: $_outlierDetectionMethod method, $_outlierAction',
+      );
     }
 
     if (_enableColumnStandardization) {
@@ -1316,11 +1394,15 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           child: DataTable(
             columnSpacing: 16,
             headingRowColor: WidgetStateProperty.all(
-              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             ),
             columns: [
               DataColumn(label: Text(isBefore ? 'id' : 'id')),
-              DataColumn(label: Text(isBefore ? 'product name' : 'product_name')),
+              DataColumn(
+                label: Text(isBefore ? 'product name' : 'product_name'),
+              ),
               DataColumn(label: Text(isBefore ? 'price' : 'price')),
               DataColumn(label: Text(isBefore ? 'discount %' : 'discount_pct')),
               DataColumn(label: Text(isBefore ? 'date added' : 'date_added')),
@@ -1431,9 +1513,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     }
 
     if (_selectedColumns.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select at least one column to clean')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select at least one column to clean'),
+        ),
+      );
       return;
     }
 
@@ -1445,7 +1529,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 ? 0
                 : double.tryParse(_numericFillController.text) ?? 0,
         'categorical':
-            _categoricalFillController.text.isEmpty ? 'unknown' : _categoricalFillController.text,
+            _categoricalFillController.text.isEmpty
+                ? 'unknown'
+                : _categoricalFillController.text,
         'datetime': _dateFillValue.toIso8601String(),
       };
     }
@@ -1455,7 +1541,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
     });
 
     try {
-      final previewService = DataCleaningPreviewService(baseUrl: 'http://localhost:5000');
+      final previewService = DataCleaningPreviewService(
+        baseUrl: 'http://localhost:5000',
+      );
 
       final previewData = await previewService.previewMissingValueCleaning(
         filePath: widget.currentDatasetPath!,
@@ -1509,14 +1597,20 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   void _showDataPreviewDialog() {
     if (_previewData == null) return;
 
-    final beforeRows = List<Map<String, dynamic>>.from(_previewData!['before'] ?? []);
-    final afterRows = List<Map<String, dynamic>>.from(_previewData!['after'] ?? []);
+    final beforeRows = List<Map<String, dynamic>>.from(
+      _previewData!['before'] ?? [],
+    );
+    final afterRows = List<Map<String, dynamic>>.from(
+      _previewData!['after'] ?? [],
+    );
     final affectedRows = _previewData!['affected_rows'] ?? 0;
     final sampledRows = _previewData!['sampled_rows'] ?? 0;
     final message = _previewData!['message'] ?? '';
 
     if (beforeRows.isEmpty || afterRows.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
@@ -1540,7 +1634,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       } else {
         affectedColumns = Set.from(allColumns);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No changes were detected in the data preview')),
+          const SnackBar(
+            content: Text('No changes were detected in the data preview'),
+          ),
         );
       }
     }
@@ -1571,7 +1667,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                       children: [
                         const Text(
                           'Data Cleaning Preview',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
@@ -1608,12 +1707,15 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
@@ -1635,7 +1737,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                                   fontWeight: FontWeight.bold,
                                   color:
                                       affectedRows > 0
-                                          ? Theme.of(context).colorScheme.primary
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary
                                           : Theme.of(context).colorScheme.error,
                                 ),
                               ),
@@ -1647,7 +1751,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                             LinearProgressIndicator(
                               value: affectedRows / sampledRows,
                               backgroundColor:
-                                  Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                               color: Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(height: 4),
@@ -1655,7 +1761,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                               'Showing $sampledRows sample rows (${(affectedRows / sampledRows * 100).toStringAsFixed(1)}% affected)',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -1682,9 +1791,15 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                                 .map(
                                   (op) => Chip(
                                     label: Text(op),
-                                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                    backgroundColor:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.primaryContainer,
                                     labelStyle: TextStyle(
-                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimaryContainer,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -1713,9 +1828,14 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                                   (col) => Chip(
                                     label: Text(col),
                                     backgroundColor:
-                                        Theme.of(context).colorScheme.tertiaryContainer,
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.tertiaryContainer,
                                     labelStyle: TextStyle(
-                                      color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onTertiaryContainer,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -1729,8 +1849,16 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                     Expanded(
                       child:
                           splitView
-                              ? _buildSplitView(beforeRows, afterRows, affectedColumns.toList())
-                              : _buildUnifiedView(beforeRows, afterRows, affectedColumns.toList()),
+                              ? _buildSplitView(
+                                beforeRows,
+                                afterRows,
+                                affectedColumns.toList(),
+                              )
+                              : _buildUnifiedView(
+                                beforeRows,
+                                afterRows,
+                                affectedColumns.toList(),
+                              ),
                     ),
 
                     // Bottom actions
@@ -1791,9 +1919,14 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
                     topRight: Radius.circular(8),
@@ -1834,9 +1967,14 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
                     topRight: Radius.circular(8),
@@ -1854,7 +1992,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                       'After',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
                       ),
                     ),
                   ],
@@ -1901,7 +2040,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(8),
               topRight: Radius.circular(8),
@@ -1965,7 +2106,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(8),
           bottomRight: Radius.circular(8),
@@ -1977,14 +2120,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(
-              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             ),
             columnSpacing: 16,
             dataRowMinHeight: 36,
             dataRowMaxHeight: 56,
             border: TableBorder(
               horizontalInside: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             columns:
@@ -2020,7 +2167,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
 
                       return DataCell(
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                            horizontal: 8,
+                          ),
                           // Apply highlighting background for changed cells
                           decoration:
                               isChanged
@@ -2028,7 +2178,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                                     color:
                                         (isBefore
                                             ? Colors.red.withValues(alpha: 0.1)
-                                            : Colors.green.withValues(alpha: 0.1)),
+                                            : Colors.green.withValues(
+                                              alpha: 0.1,
+                                            )),
                                     borderRadius: BorderRadius.circular(4),
                                   )
                                   : null,
@@ -2037,13 +2189,20 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                             children: [
                               // Show an arrow indicator for new values
                               if (isChanged && !isBefore)
-                                Icon(Icons.arrow_right_alt, size: 16, color: Colors.green.shade700),
+                                Icon(
+                                  Icons.arrow_right_alt,
+                                  size: 16,
+                                  color: Colors.green.shade700,
+                                ),
                               Flexible(
                                 child: Text(
                                   displayValue,
                                   style: TextStyle(
                                     // Make changed values bold
-                                    fontWeight: isChanged ? FontWeight.bold : FontWeight.normal,
+                                    fontWeight:
+                                        isChanged
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                     // Use red for removed values, green for new values
                                     color:
                                         isChanged
@@ -2053,7 +2212,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                                             : null,
                                     // Apply strikethrough to old values being replaced
                                     decoration:
-                                        isChanged && isBefore ? TextDecoration.lineThrough : null,
+                                        isChanged && isBefore
+                                            ? TextDecoration.lineThrough
+                                            : null,
                                   ),
                                 ),
                               ),
@@ -2089,7 +2250,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+        ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(8),
           bottomRight: Radius.circular(8),
@@ -2101,14 +2264,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           scrollDirection: Axis.horizontal,
           child: DataTable(
             headingRowColor: WidgetStateProperty.all(
-              Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             ),
             columnSpacing: 16,
             dataRowMinHeight: 36,
             dataRowMaxHeight: 56,
             border: TableBorder(
               horizontalInside: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.2),
               ),
             ),
             columns: [
@@ -2131,7 +2298,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               // Determine if this row has any changes
               bool hasChanges = false;
               for (final column in columns) {
-                if (beforeRows[rowIndex][column] != afterRows[rowIndex][column]) {
+                if (beforeRows[rowIndex][column] !=
+                    afterRows[rowIndex][column]) {
                   hasChanges = true;
                   break;
                 }
@@ -2141,7 +2309,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 color:
                     hasChanges
                         ? WidgetStateProperty.all(
-                          Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.1),
+                          Theme.of(context).colorScheme.tertiaryContainer
+                              .withValues(alpha: 0.1),
                         )
                         : null,
                 cells: [
@@ -2150,7 +2319,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   // Status cell
                   DataCell(
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color:
                             hasChanges
@@ -2162,8 +2334,12 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                         hasChanges ? 'Changed' : 'Unchanged',
                         style: TextStyle(
                           fontSize: 12,
-                          color: hasChanges ? Colors.amber.shade900 : Colors.grey.shade700,
-                          fontWeight: hasChanges ? FontWeight.bold : FontWeight.normal,
+                          color:
+                              hasChanges
+                                  ? Colors.amber.shade900
+                                  : Colors.grey.shade700,
+                          fontWeight:
+                              hasChanges ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -2197,7 +2373,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.remove, size: 12, color: Colors.red.shade700),
+                                  Icon(
+                                    Icons.remove,
+                                    size: 12,
+                                    color: Colors.red.shade700,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     beforeDisplay,
@@ -2211,7 +2391,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(Icons.add, size: 12, color: Colors.green.shade700),
+                                  Icon(
+                                    Icons.add,
+                                    size: 12,
+                                    color: Colors.green.shade700,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     afterDisplay,
@@ -2274,7 +2458,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   }) {
     final TextStyle? baseStyle =
         isDuplicate && !isBefore
-            ? const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough)
+            ? const TextStyle(
+              color: Colors.red,
+              decoration: TextDecoration.lineThrough,
+            )
             : null;
 
     return DataRow(
@@ -2287,12 +2474,24 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         DataCell(Text(productName, style: baseStyle)),
         DataCell(
           hasTextAsNumber && !isBefore
-              ? Text(price!, style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
+              ? Text(
+                price!,
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
               : Text(price ?? '', style: baseStyle),
         ),
         DataCell(
           hasNull && isBefore
-              ? Text('', style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic))
+              ? Text(
+                '',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
               : Text(discount ?? '', style: baseStyle),
         ),
         DataCell(Text(date, style: baseStyle)),
@@ -2334,8 +2533,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Detection method',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             value: _outlierDetectionMethod,
             items: const [
@@ -2354,11 +2558,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             decoration: InputDecoration(
               labelText: 'Threshold',
               hintText: 'e.g., 1.5 for IQR, 3.0 for Z-score',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             keyboardType: TextInputType.number,
-            controller: TextEditingController(text: _outlierThreshold.toString()),
+            controller: TextEditingController(
+              text: _outlierThreshold.toString(),
+            ),
             onChanged: (value) {
               setState(() {
                 _outlierThreshold = double.tryParse(value) ?? 1.5;
@@ -2369,12 +2580,20 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Action',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             value: _outlierAction,
             items: const [
-              DropdownMenuItem(value: 'Report only', child: Text('Report only')),
+              DropdownMenuItem(
+                value: 'Report only',
+                child: Text('Report only'),
+              ),
               DropdownMenuItem(value: 'Remove', child: Text('Remove')),
               DropdownMenuItem(value: 'Clip', child: Text('Clip values')),
               DropdownMenuItem(value: 'Winsorize', child: Text('Winsorize')),
@@ -2420,7 +2639,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         SwitchListTile(
           title: const Text('Remove Duplicate Rows'),
-          subtitle: const Text('Find and remove duplicate records in your dataset'),
+          subtitle: const Text(
+            'Find and remove duplicate records in your dataset',
+          ),
           value: _enableDuplicateRemoval,
           onChanged: (value) {
             setState(() {
@@ -2435,33 +2656,39 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           if (availableColumns.isNotEmpty) ...[
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text('Select columns to check for duplicates:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                'Select columns to check for duplicates:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Wrap(
                 spacing: 8.0,
                 runSpacing: 8.0,
-                children: availableColumns.map((column) {
-                  return FilterChip(
-                    label: Text(column),
-                    selected: duplicateColumns.contains(column),
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          duplicateColumns.add(column);
-                        } else {
-                          duplicateColumns.remove(column);
-                        }
-                      });
-                    },
-                  );
-                }).toList(),
+                children:
+                    availableColumns.map((column) {
+                      return FilterChip(
+                        label: Text(column),
+                        selected: duplicateColumns.contains(column),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              duplicateColumns.add(column);
+                            } else {
+                              duplicateColumns.remove(column);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -2495,27 +2722,38 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Center(
-                child: Text('Load the dataset preview to select columns for duplicate detection'),
+                child: Text(
+                  'Load the dataset preview to select columns for duplicate detection',
+                ),
               ),
             ),
           ],
 
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text('Duplicate handling options:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(
+              'Duplicate handling options:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Keep strategy',
-              ),
+              decoration: const InputDecoration(labelText: 'Keep strategy'),
               value: _duplicateKeepStrategy,
               items: const [
-                DropdownMenuItem(value: 'First occurrence', child: Text('Keep first occurrence')),
-                DropdownMenuItem(value: 'Last occurrence', child: Text('Keep last occurrence')),
-                DropdownMenuItem(value: 'None', child: Text('Remove all duplicates')),
+                DropdownMenuItem(
+                  value: 'First occurrence',
+                  child: Text('Keep first occurrence'),
+                ),
+                DropdownMenuItem(
+                  value: 'Last occurrence',
+                  child: Text('Keep last occurrence'),
+                ),
+                DropdownMenuItem(
+                  value: 'None',
+                  child: Text('Remove all duplicates'),
+                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -2534,8 +2772,10 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Advanced options',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Advanced options',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     SwitchListTile(
                       title: const Text('Case-sensitive matching'),
@@ -2572,9 +2812,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
             child: ElevatedButton.icon(
               icon: const Icon(Icons.preview_outlined),
               label: const Text('Preview Duplicates'),
-              onPressed: widget.currentDatasetPath != null && duplicateColumns.isNotEmpty
-                  ? _previewDuplicates
-                  : null,
+              onPressed:
+                  widget.currentDatasetPath != null &&
+                          duplicateColumns.isNotEmpty
+                      ? _previewDuplicates
+                      : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.secondary,
                 foregroundColor: Theme.of(context).colorScheme.onSecondary,
@@ -2589,15 +2831,19 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
   /// Previews duplicates in the dataset using the configured options.
   Future<void> _previewDuplicates() async {
     if (widget.currentDatasetPath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No dataset selected')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No dataset selected')));
       return;
     }
 
     if (_duplicateColumns.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one column to check for duplicates')),
+        const SnackBar(
+          content: Text(
+            'Please select at least one column to check for duplicates',
+          ),
+        ),
       );
       return;
     }
@@ -2631,7 +2877,11 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error previewing duplicates: ${response.statusCode}')),
+          SnackBar(
+            content: Text(
+              'Error previewing duplicates: ${response.statusCode}',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -2652,9 +2902,15 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
 
     final duplicateCount = _duplicatePreviewData!['duplicate_count'] ?? 0;
     final duplicateGroups = _duplicatePreviewData!['duplicate_groups'] ?? 0;
-    final samples = List<Map<String, dynamic>>.from(_duplicatePreviewData!['samples'] ?? []);
-    final columnsAnalyzed = List<String>.from(_duplicatePreviewData!['columns_analyzed'] ?? []);
-    final fileInfo = Map<String, dynamic>.from(_duplicatePreviewData!['file_info'] ?? {});
+    final samples = List<Map<String, dynamic>>.from(
+      _duplicatePreviewData!['samples'] ?? [],
+    );
+    final columnsAnalyzed = List<String>.from(
+      _duplicatePreviewData!['columns_analyzed'] ?? [],
+    );
+    final fileInfo = Map<String, dynamic>.from(
+      _duplicatePreviewData!['file_info'] ?? {},
+    );
 
     showDialog(
       context: context,
@@ -2662,178 +2918,249 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
         return AlertDialog(
           title: Row(
             children: [
-              Icon(Icons.find_replace, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.find_replace,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               Text('Duplicate Detection Results'),
             ],
           ),
           content: SizedBox(
             width: double.maxFinite,
-            child: samples.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.green,
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No duplicates found!',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : ListView(
-                    shrinkWrap: true,
-                    children: [
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Summary',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  )),
-                              const SizedBox(height: 8),
-                              Text('Found $duplicateCount duplicate records in $duplicateGroups groups'),
-                              Text('Columns analyzed: ${columnsAnalyzed.join(", ")}'),
-                              Text('Total rows in file: ${fileInfo['total_rows'] ?? "unknown"}'),
-                            ],
-                          ),
+            child:
+                samples.isEmpty
+                    ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.green,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No duplicates found!',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text('Sample Duplicate Groups:',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          )),
-                      const SizedBox(height: 8),
-                      ...samples.map((group) {
-                        final groupId = group['group_id'];
-                        final count = group['count'];
-                        final rows = List<Map<String, dynamic>>.from(group['rows']);
-                        final keyValues = Map<String, dynamic>.from(group['key_values'] ?? {});
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'Group ${groupId + 1}',
-                                      style: Theme.of(context).textTheme.titleSmall,
-                                    ),
-                                    const Spacer(),
-                                    Badge(
-                                      label: Text('$count duplicates'),
-                                      backgroundColor: Theme.of(context).colorScheme.primary,
-                                    ),
-                                  ],
+                    )
+                    : ListView(
+                      shrinkWrap: true,
+                      children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Summary',
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text(
-                                        'Matching on: ${keyValues.entries.map((e) => "${e.key}=${e.value}").join(", ")}',
-                                        style: TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                          color: Theme.of(context).colorScheme.secondary,
-                                        ),
-                                      ),
-                                    ),
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      child: DataTable(
-                                        columnSpacing: 16,
-                                        headingRowHeight: 40,
-                                        dataRowMaxHeight: double.infinity,
-                                        dataRowMinHeight: 48,
-                                        headingRowColor: WidgetStateProperty.all(
-                                          Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                                        ),
-                                        columns: rows.first.keys.map((key) {
-                                          return DataColumn(
-                                            label: Tooltip(
-                                              message: key,
-                                              child: Text(
-                                                key,
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        rows: rows.map((row) {
-                                          return DataRow(
-                                            cells: row.keys.map((key) {
-                                              final isKeyColumn = keyValues.containsKey(key);
-                                              final cellValue = row[key]?.toString() ?? 'null';
-
-                                              return DataCell(
-                                                Container(
-                                                  constraints: const BoxConstraints(maxWidth: 200),
-                                                  child: Text(
-                                                    cellValue,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: isKeyColumn
-                                                        ? TextStyle(
-                                                            fontWeight: FontWeight.bold,
-                                                            color: Theme.of(context).colorScheme.primary,
-                                                          )
-                                                        : null,
-                                                  ),
-                                                ),
-                                                onTap: () {
-                                                  if (cellValue.length > 20) {
-                                                    showDialog(
-                                                      context: context,
-                                                      builder: (ctx) => AlertDialog(
-                                                        title: Text(key),
-                                                        content: Text(cellValue),
-                                                        actions: [
-                                                          TextButton(
-                                                            child: const Text('Close'),
-                                                            onPressed: () => Navigator.of(ctx).pop(),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  }
-                                                },
-                                              );
-                                            }).toList(),
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Found $duplicateCount duplicate records in $duplicateGroups groups',
                                 ),
-                              ),
-                            ],
+                                Text(
+                                  'Columns analyzed: ${columnsAnalyzed.join(", ")}',
+                                ),
+                                Text(
+                                  'Total rows in file: ${fileInfo['total_rows'] ?? "unknown"}',
+                                ),
+                              ],
+                            ),
                           ),
-                        );
-                      }),
-                    ],
-                  ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Sample Duplicate Groups:',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        ...samples.map((group) {
+                          final groupId = group['group_id'];
+                          final count = group['count'];
+                          final rows = List<Map<String, dynamic>>.from(
+                            group['rows'],
+                          );
+                          final keyValues = Map<String, dynamic>.from(
+                            group['key_values'] ?? {},
+                          );
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'Group ${groupId + 1}',
+                                        style:
+                                            Theme.of(
+                                              context,
+                                            ).textTheme.titleSmall,
+                                      ),
+                                      const Spacer(),
+                                      Badge(
+                                        label: Text('$count duplicates'),
+                                        backgroundColor:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          'Matching on: ${keyValues.entries.map((e) => "${e.key}=${e.value}").join(", ")}',
+                                          style: TextStyle(
+                                            fontStyle: FontStyle.italic,
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.secondary,
+                                          ),
+                                        ),
+                                      ),
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: DataTable(
+                                          columnSpacing: 16,
+                                          headingRowHeight: 40,
+                                          dataRowMaxHeight: double.infinity,
+                                          dataRowMinHeight: 48,
+                                          headingRowColor:
+                                              WidgetStateProperty.all(
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceContainerHighest
+                                                    .withValues(alpha: 0.5),
+                                              ),
+                                          columns:
+                                              rows.first.keys.map((key) {
+                                                return DataColumn(
+                                                  label: Tooltip(
+                                                    message: key,
+                                                    child: Text(
+                                                      key,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                          rows:
+                                              rows.map((row) {
+                                                return DataRow(
+                                                  cells:
+                                                      row.keys.map((key) {
+                                                        final isKeyColumn =
+                                                            keyValues
+                                                                .containsKey(
+                                                                  key,
+                                                                );
+                                                        final cellValue =
+                                                            row[key]
+                                                                ?.toString() ??
+                                                            'null';
+
+                                                        return DataCell(
+                                                          Container(
+                                                            constraints:
+                                                                const BoxConstraints(
+                                                                  maxWidth: 200,
+                                                                ),
+                                                            child: Text(
+                                                              cellValue,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                              style:
+                                                                  isKeyColumn
+                                                                      ? TextStyle(
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
+                                                                        color:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                      )
+                                                                      : null,
+                                                            ),
+                                                          ),
+                                                          onTap: () {
+                                                            if (cellValue
+                                                                    .length >
+                                                                20) {
+                                                              showDialog(
+                                                                context:
+                                                                    context,
+                                                                builder:
+                                                                    (
+                                                                      ctx,
+                                                                    ) => AlertDialog(
+                                                                      title:
+                                                                          Text(
+                                                                            key,
+                                                                          ),
+                                                                      content: Text(
+                                                                        cellValue,
+                                                                      ),
+                                                                      actions: [
+                                                                        TextButton(
+                                                                          child: const Text(
+                                                                            'Close',
+                                                                          ),
+                                                                          onPressed:
+                                                                              () =>
+                                                                                  Navigator.of(ctx).pop(),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                              );
+                                                            }
+                                                          },
+                                                        );
+                                                      }).toList(),
+                                                );
+                                              }).toList(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
           ),
           actions: [
             TextButton(
@@ -2882,14 +3209,25 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Encoding method',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             value: _encodingMethod,
             items: const [
-              DropdownMenuItem(value: 'One-hot', child: Text('One-hot encoding')),
+              DropdownMenuItem(
+                value: 'One-hot',
+                child: Text('One-hot encoding'),
+              ),
               DropdownMenuItem(value: 'Label', child: Text('Label encoding')),
-              DropdownMenuItem(value: 'Ordinal', child: Text('Ordinal encoding')),
+              DropdownMenuItem(
+                value: 'Ordinal',
+                child: Text('Ordinal encoding'),
+              ),
             ],
             onChanged: (newValue) {
               setState(() {
@@ -2903,12 +3241,20 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               decoration: InputDecoration(
                 labelText: 'Max categories (for one-hot)',
                 hintText: 'Limit for unique values to encode',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                helperText: 'Categories beyond this limit will be grouped as "other"',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                helperText:
+                    'Categories beyond this limit will be grouped as "other"',
               ),
               keyboardType: TextInputType.number,
-              controller: TextEditingController(text: _maxCategories.toString()),
+              controller: TextEditingController(
+                text: _maxCategories.toString(),
+              ),
               onChanged: (value) {
                 setState(() {
                   _maxCategories = int.tryParse(value) ?? 20;
@@ -2960,13 +3306,24 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Scaling method',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             value: _scalingMethod,
             items: const [
-              DropdownMenuItem(value: 'Standard', child: Text('Standard (z-score)')),
-              DropdownMenuItem(value: 'Min-Max', child: Text('Min-Max scaling')),
+              DropdownMenuItem(
+                value: 'Standard',
+                child: Text('Standard (z-score)'),
+              ),
+              DropdownMenuItem(
+                value: 'Min-Max',
+                child: Text('Min-Max scaling'),
+              ),
               DropdownMenuItem(value: 'Robust', child: Text('Robust scaling')),
               DropdownMenuItem(value: 'Log', child: Text('Log transformation')),
             ],
@@ -2984,11 +3341,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   child: TextField(
                     decoration: InputDecoration(
                       labelText: 'Min range',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     keyboardType: TextInputType.number,
-                    controller: TextEditingController(text: _scalingMinRange.toString()),
+                    controller: TextEditingController(
+                      text: _scalingMinRange.toString(),
+                    ),
                     onChanged: (value) {
                       setState(() {
                         _scalingMinRange = double.tryParse(value) ?? 0.0;
@@ -3001,11 +3365,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   child: TextField(
                     decoration: InputDecoration(
                       labelText: 'Max range',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                     keyboardType: TextInputType.number,
-                    controller: TextEditingController(text: _scalingMaxRange.toString()),
+                    controller: TextEditingController(
+                      text: _scalingMaxRange.toString(),
+                    ),
                     onChanged: (value) {
                       setState(() {
                         _scalingMaxRange = double.tryParse(value) ?? 1.0;
@@ -3053,8 +3424,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Case style',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             value: _columnCaseStyle,
             items: const [
@@ -3077,8 +3453,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   decoration: InputDecoration(
                     labelText: 'Prefix',
                     hintText: 'e.g., data_',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   onChanged: (value) {
                     setState(() {});
@@ -3091,8 +3472,13 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
                   decoration: InputDecoration(
                     labelText: 'Suffix',
                     hintText: 'e.g., _col',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   onChanged: (value) {
                     setState(() {});
@@ -3153,14 +3539,28 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
           DropdownButtonFormField<String>(
             decoration: InputDecoration(
               labelText: 'Correction method',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             value: _valueCorrectionMethod,
             items: const [
-              DropdownMenuItem(value: 'Automatic clustering', child: Text('Automatic clustering')),
-              DropdownMenuItem(value: 'Frequency-based', child: Text('Frequency-based')),
-              DropdownMenuItem(value: 'Custom mapping', child: Text('Custom mapping')),
+              DropdownMenuItem(
+                value: 'Automatic clustering',
+                child: Text('Automatic clustering'),
+              ),
+              DropdownMenuItem(
+                value: 'Frequency-based',
+                child: Text('Frequency-based'),
+              ),
+              DropdownMenuItem(
+                value: 'Custom mapping',
+                child: Text('Custom mapping'),
+              ),
             ],
             onChanged: (newValue) {
               setState(() {
@@ -3202,10 +3602,17 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               controller: _customMappingController,
               decoration: InputDecoration(
                 labelText: 'Custom mapping (JSON format)',
-                hintText: '{"original1": "corrected1", "original2": "corrected2"}',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                helperText: 'Define mapping from original values to corrected values',
+                hintText:
+                    '{"original1": "corrected1", "original2": "corrected2"}',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                helperText:
+                    'Define mapping from original values to corrected values',
               ),
               maxLines: 5,
             ),
@@ -3233,14 +3640,18 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         Card(
           elevation: 0,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Column(
             children: [
               SwitchListTile(
                 dense: true,
                 title: const Text('Enable parallel processing'),
-                subtitle: const Text('Process operations concurrently (uses more memory)'),
+                subtitle: const Text(
+                  'Process operations concurrently (uses more memory)',
+                ),
                 value: _enableParallelGlobalProcessing,
                 onChanged: (value) {
                   setState(() {
@@ -3252,7 +3663,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               SwitchListTile(
                 dense: true,
                 title: const Text('Process data in-place'),
-                subtitle: const Text('Modify original dataset instead of creating a copy'),
+                subtitle: const Text(
+                  'Modify original dataset instead of creating a copy',
+                ),
                 value: _enableInPlaceProcessing,
                 onChanged: (value) {
                   setState(() {
@@ -3276,7 +3689,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               SwitchListTile(
                 dense: true,
                 title: const Text('Enable progress visualization_and_explorer'),
-                subtitle: const Text('Show processing status and time estimates'),
+                subtitle: const Text(
+                  'Show processing status and time estimates',
+                ),
                 value: _enableProgressVisualization,
                 onChanged: (value) {
                   setState(() {
@@ -3288,7 +3703,9 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
               SwitchListTile(
                 dense: true,
                 title: const Text('Generate cleaning report'),
-                subtitle: const Text('Create detailed report of all operations'),
+                subtitle: const Text(
+                  'Create detailed report of all operations',
+                ),
                 value: _enableReportGeneration,
                 onChanged: (value) {
                   setState(() {
@@ -3391,7 +3808,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         _buildCleaningCard(
           title: 'Convert Text to Numbers',
-          description: 'Change text columns to numeric when they contain numbers',
+          description:
+              'Change text columns to numeric when they contain numbers',
           icon: Icons.onetwothree_outlined,
           content: _buildNumericTypeContent(),
         ),
@@ -3423,7 +3841,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         _buildCleaningCard(
           title: 'Clean Text',
-          description: 'Standardize text by removing spaces, changing case, etc.',
+          description:
+              'Standardize text by removing spaces, changing case, etc.',
           icon: Icons.text_format_outlined,
           content: _buildTextCleaningContent(),
         ),
@@ -3460,7 +3879,8 @@ class _DataCleaningTabState extends State<DataCleaningTab> with SingleTickerProv
       children: [
         _buildCleaningCard(
           title: 'Handle Unusual Values',
-          description: 'Detect and fix values that are much higher or lower than normal',
+          description:
+              'Detect and fix values that are much higher or lower than normal',
           icon: Icons.show_chart_outlined,
           content: _buildOutlierHandlingContent(),
         ),

@@ -121,7 +121,8 @@ class _PieChartControlPanelState extends State<PieChartControlPanel> {
 
   Widget _buildControlSection(String title, List<Widget> controls) {
     final theme = Theme.of(context);
-    final textColor = theme.brightness == Brightness.dark ? Colors.white : Colors.black;
+    final textColor =
+        theme.brightness == Brightness.dark ? Colors.white : Colors.black;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +141,13 @@ class _PieChartControlPanelState extends State<PieChartControlPanel> {
     );
   }
 
-  Widget _buildSliderControl(String label, String optionKey, double value, double min, double max) {
+  Widget _buildSliderControl(
+    String label,
+    String optionKey,
+    double value,
+    double min,
+    double max,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,7 +175,10 @@ class _PieChartControlPanelState extends State<PieChartControlPanel> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label),
-          Switch(value: value, onChanged: (newValue) => _updateOption(optionKey, newValue)),
+          Switch(
+            value: value,
+            onChanged: (newValue) => _updateOption(optionKey, newValue),
+          ),
         ],
       ),
     );

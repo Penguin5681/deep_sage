@@ -25,7 +25,8 @@ class CategoryHealth extends StatefulWidget {
 }
 
 /// The state for the [CategoryHealth] widget.
-class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProviderStateMixin {
+class _CategoryHealthState extends State<CategoryHealth>
+    with SingleTickerProviderStateMixin {
   /// Animation controller for the featured section.
   ///
   /// Controls the visibility and animation of the featured datasets section.
@@ -178,7 +179,10 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
                 return SizeTransition(
                   sizeFactor: _featuredSectionAnimation,
                   axisAlignment: -1.0, // Align to the top
-                  child: FadeTransition(opacity: _featuredSectionAnimation, child: child),
+                  child: FadeTransition(
+                    opacity: _featuredSectionAnimation,
+                    child: child,
+                  ),
                 );
               },
               child: Container(
@@ -215,9 +219,13 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
                                     scrollController.animateTo(
                                       (scrollController.offset + offset).clamp(
                                         0.0,
-                                        scrollController.position.maxScrollExtent,
+                                        scrollController
+                                            .position
+                                            .maxScrollExtent,
                                       ),
-                                      duration: const Duration(milliseconds: 300),
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
                                       curve: Curves.easeOutCubic,
                                     );
                                   }
@@ -273,7 +281,8 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
                                     Icon(
                                       Icons.search_off_outlined,
                                       size: 48,
-                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                      color: colorScheme.onSurfaceVariant
+                                          .withValues(alpha: 0.5),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
@@ -333,7 +342,8 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
         lightIconPath: AppIcons.healthLight,
         darkIconPath: AppIcons.healthDark,
         labelText: 'Epidemiology & Public Health',
-        subLabelText: 'Disease tracking, vaccination, and population health data',
+        subLabelText:
+            'Disease tracking, vaccination, and population health data',
         buttonText: 'Search',
         onButtonClick: () => widget.onSearch('Epidemiology'),
       ),
@@ -342,7 +352,8 @@ class _CategoryHealthState extends State<CategoryHealth> with SingleTickerProvid
         lightIconPath: AppIcons.healthLight,
         darkIconPath: AppIcons.healthDark,
         labelText: 'Genomics & Bioinformatics',
-        subLabelText: 'DNA sequencing, genetic analysis, and bioinformatics data',
+        subLabelText:
+            'DNA sequencing, genetic analysis, and bioinformatics data',
         buttonText: 'Search',
         onButtonClick: () => widget.onSearch('Genomics'),
       ),

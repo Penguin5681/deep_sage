@@ -16,11 +16,9 @@ class DataCleaningPreviewService {
   ///
   /// [baseUrl] is the base URL of the API server.
   /// [httpClient] is an optional HTTP client for making requests.
-  DataCleaningPreviewService({
-    required String baseUrl,
-    http.Client? httpClient,
-  })  : _baseUrl = baseUrl,
-        _httpClient = httpClient ?? http.Client();
+  DataCleaningPreviewService({required String baseUrl, http.Client? httpClient})
+    : _baseUrl = baseUrl,
+      _httpClient = httpClient ?? http.Client();
 
   /// Previews the effect of cleaning missing values in a dataset.
   ///
@@ -46,7 +44,10 @@ class DataCleaningPreviewService {
       // If specific columns are selected, create one operation per column
       if (selectedColumns != null && selectedColumns.isNotEmpty) {
         for (String column in selectedColumns) {
-          final Map<String, dynamic> operation = {'column': column, 'method': method};
+          final Map<String, dynamic> operation = {
+            'column': column,
+            'method': method,
+          };
 
           // Add custom values if provided
           if (method == 'custom' && customValues != null) {
@@ -78,7 +79,9 @@ class DataCleaningPreviewService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
-        throw Exception('Failed to get preview: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Failed to get preview: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error previewing missing value cleaning: $e');
@@ -114,7 +117,9 @@ class DataCleaningPreviewService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
-        throw Exception('Failed to get preview: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Failed to get preview: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('Error previewing cleaning operations: $e');

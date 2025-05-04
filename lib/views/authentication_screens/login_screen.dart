@@ -38,7 +38,10 @@ class LoginScreen extends StatelessWidget {
         const end = Offset.zero;
         const curve = Curves.ease;
 
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
         return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
@@ -82,7 +85,10 @@ class LoginScreen extends StatelessWidget {
           );
           if (response.session != null) {
             final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
-            await userBox.put('userSessionToken', response.session!.accessToken);
+            await userBox.put(
+              'userSessionToken',
+              response.session!.accessToken,
+            );
             await userBox.put('loginMethod', 'email');
           }
 
@@ -91,15 +97,26 @@ class LoginScreen extends StatelessWidget {
             Overlay.of(context),
             CustomSnackBar.success(message: 'Welcome to DeepSage'),
           );
-          Navigator.of(context).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
+          Navigator.of(
+            context,
+          ).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
         } catch (e) {
           debugPrint('$e');
-          showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Error Occurred: $e'));
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.error(message: 'Error Occurred: $e'),
+          );
         }
       } else if (!isEmail()) {
-        showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Invalid Email'));
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Invalid Email'),
+        );
       } else if (!isThePasswordLengthOk()) {
-        showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Password too short'));
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Password too short'),
+        );
       } else {
         showTopSnackBar(
           Overlay.of(context),
@@ -136,7 +153,9 @@ class LoginScreen extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 450),
             child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              behavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
@@ -148,7 +167,10 @@ class LoginScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.w900,
-                        color: isDarkTheme ? Colors.white : const Color(0xFF2C5364),
+                        color:
+                            isDarkTheme
+                                ? Colors.white
+                                : const Color(0xFF2C5364),
                         letterSpacing: 4.0,
                       ),
                     ),
@@ -217,7 +239,9 @@ class LoginScreen extends StatelessWidget {
                                 'Forgot password?',
                                 style: TextStyle(
                                   color:
-                                      isDarkTheme ? Colors.lightBlueAccent : const Color(0xFF2C5364),
+                                      isDarkTheme
+                                          ? Colors.lightBlueAccent
+                                          : const Color(0xFF2C5364),
                                 ),
                               ),
                             ),
@@ -241,7 +265,10 @@ class LoginScreen extends StatelessWidget {
                                 backgroundColor: Color(0xff3fb2e7),
                                 text: 'Login',
                                 onPressed: () async {
-                                  await signIn(emailController.text, passwordController.text);
+                                  await signIn(
+                                    emailController.text,
+                                    passwordController.text,
+                                  );
                                 },
                                 estimatedTime: const Duration(seconds: 5),
                                 elevation: 0,
@@ -255,23 +282,34 @@ class LoginScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: isDarkTheme ? Colors.grey[600] : Colors.green,
+                                  color:
+                                      isDarkTheme
+                                          ? Colors.grey[600]
+                                          : Colors.green,
                                   thickness: 1,
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: Text(
                                   'or continue with',
                                   style: TextStyle(
-                                    color: isDarkTheme ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkTheme
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 16,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: isDarkTheme ? Colors.grey[600] : Colors.green,
+                                  color:
+                                      isDarkTheme
+                                          ? Colors.grey[600]
+                                          : Colors.green,
                                   thickness: 1,
                                 ),
                               ),
@@ -283,9 +321,13 @@ class LoginScreen extends StatelessWidget {
                           Center(
                             child: GoogleButton(
                               onSignInSuccess: () {
-                                Navigator.of(
-                                  context,
-                                ).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
+                                Navigator.of(context).pushReplacement(
+                                  createScreenRoute(
+                                    DashboardScreen(),
+                                    -1.0,
+                                    0.0,
+                                  ),
+                                );
                               },
                             ),
                           ),
@@ -298,20 +340,30 @@ class LoginScreen extends StatelessWidget {
                               Text(
                                 'Don\'t have an account? ',
                                 style: TextStyle(
-                                  color: isDarkTheme ? Colors.grey[400] : Colors.grey[700],
+                                  color:
+                                      isDarkTheme
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
                                 ),
                               ),
                               MouseRegion(
                                 cursor: SystemMouseCursors.click,
                                 child: GestureDetector(
                                   onTap: () {
-                                    Navigator.of(
-                                      context,
-                                    ).pushReplacement(createScreenRoute(SignupScreen(), 1.0, 0.0));
+                                    Navigator.of(context).pushReplacement(
+                                      createScreenRoute(
+                                        SignupScreen(),
+                                        1.0,
+                                        0.0,
+                                      ),
+                                    );
                                   },
                                   child: Text(
                                     'Sign Up',
-                                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),

@@ -35,7 +35,9 @@ class MissingValuesService {
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Failed to load missing value stats: ${response.statusCode}');
+        throw Exception(
+          'Failed to load missing value stats: ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('Error fetching missing value stats: $e');
@@ -78,7 +80,10 @@ class MissingValuesService {
 
       for (var column in columns) {
         if (column['missing_values'] > 0) {
-          final Map<String, dynamic> operation = {'column': column['name'], 'method': method};
+          final Map<String, dynamic> operation = {
+            'column': column['name'],
+            'method': method,
+          };
 
           // Add custom values with proper formatting if needed
           if (method == 'custom' && customValues != null) {
@@ -95,7 +100,10 @@ class MissingValuesService {
     } else {
       // Apply only to selected columns
       for (var column in selectedColumns) {
-        final Map<String, dynamic> operation = {'column': column, 'method': method};
+        final Map<String, dynamic> operation = {
+          'column': column,
+          'method': method,
+        };
 
         // Add custom values with proper formatting if needed
         if (method == 'custom' && customValues != null) {
@@ -117,7 +125,10 @@ class MissingValuesService {
 
     final Uri uri = Uri.parse('$baseUrl/api/data-cleaning/clean');
 
-    final requestBody = {'file_path': filePath, 'cleaning_operations': cleaningOperations};
+    final requestBody = {
+      'file_path': filePath,
+      'cleaning_operations': cleaningOperations,
+    };
 
     try {
       final response = await http.post(
@@ -130,7 +141,9 @@ class MissingValuesService {
         final data = json.decode(response.body);
         return data['cleaned_path'];
       } else {
-        throw Exception('Failed to clean missing values: ${response.statusCode}');
+        throw Exception(
+          'Failed to clean missing values: ${response.statusCode}',
+        );
       }
     } catch (e) {
       debugPrint('Error cleaning missing values: $e');

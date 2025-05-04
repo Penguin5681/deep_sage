@@ -55,7 +55,11 @@ class DatasetCard extends StatelessWidget {
     required this.onButtonClick,
   });
 
-  Widget getIconForTheme({required String lightIcon, required String darkIcon, double size = 24}) {
+  Widget getIconForTheme({
+    required String lightIcon,
+    required String darkIcon,
+    double size = 24,
+  }) {
     return Builder(
       /// Returns an icon widget based on the current theme.
       ///
@@ -65,10 +69,13 @@ class DatasetCard extends StatelessWidget {
       /// [lightIcon]: The path to the icon to display in light mode.
       /// [darkIcon]: The path to the icon to display in dark mode.
       /// [size]: The size of the icon. Defaults to 24.
-
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+        return Image.asset(
+          isDarkMode ? darkIcon : lightIcon,
+          width: size,
+          height: size,
+        );
       },
     );
   }
@@ -78,7 +85,8 @@ class DatasetCard extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final width = MediaQuery.of(context).size.width;
     // Adaptive width calculation - smaller on small screens
-    final cardWidth = width < 600 ? min(width * 0.75, 280.0) : min(width * 0.25, 320.0);
+    final cardWidth =
+        width < 600 ? min(width * 0.75, 280.0) : min(width * 0.25, 320.0);
 
     return Container(
       width: cardWidth,
@@ -154,8 +162,14 @@ class DatasetCard extends StatelessWidget {
                           end: Alignment.bottomRight,
                           colors:
                               isDarkMode
-                                  ? [Colors.blue.shade800, Colors.purple.shade900]
-                                  : [Colors.blue.shade400, Colors.purple.shade500],
+                                  ? [
+                                    Colors.blue.shade800,
+                                    Colors.purple.shade900,
+                                  ]
+                                  : [
+                                    Colors.blue.shade400,
+                                    Colors.purple.shade500,
+                                  ],
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -212,7 +226,10 @@ class DatasetCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: subLabelSize,
-                    color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade700,
+                    color:
+                        isDarkMode
+                            ? Colors.grey.shade300
+                            : Colors.grey.shade700,
                   ),
                 ),
                 const Spacer(),
@@ -221,17 +238,28 @@ class DatasetCard extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: onButtonClick,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.transparent,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ).copyWith(
-                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      backgroundColor: WidgetStateProperty.resolveWith((
+                        states,
+                      ) {
                         if (states.contains(WidgetState.pressed)) {
-                          return isDarkMode ? Colors.blue.shade900 : Colors.blue.shade700;
+                          return isDarkMode
+                              ? Colors.blue.shade900
+                              : Colors.blue.shade700;
                         }
-                        return isDarkMode ? Colors.blue.shade700 : Colors.blue.shade600;
+                        return isDarkMode
+                            ? Colors.blue.shade700
+                            : Colors.blue.shade600;
                       }),
                       overlayColor: WidgetStateProperty.all(
                         isDarkMode
