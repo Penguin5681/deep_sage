@@ -1,13 +1,17 @@
 import 'dart:io';
 
 import 'package:deep_sage/views/core_screens/visualization_and_explorer/pie_chart_visualization/dynamic_pie_chart.dart';
+import 'package:deep_sage/widgets/overlay_widgets/matplotlib_option_overlays/pie_chart_matplotlib_option_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import '../../../widgets/overlay_widgets/bar_chart_option_overlay.dart';
-import '../../../widgets/overlay_widgets/line_chart_option_overlay.dart';
-import '../../../widgets/overlay_widgets/pie_chart_option_overlay.dart';
+import '../../../core/services/core_services/visualization_service.dart';
+import '../../../widgets/interactive_pie_chart_wrapper.dart';
+import '../../../widgets/overlay_widgets/fl_chart_option_overlays/bar_chart_option_overlay.dart';
+import '../../../widgets/overlay_widgets/fl_chart_option_overlays/line_chart_option_overlay.dart';
+import '../../../widgets/overlay_widgets/fl_chart_option_overlays/pie_chart_option_overlay.dart';
+import '../../../widgets/pie_chart_control_panel.dart';
 
 class VisualizationScreen extends StatefulWidget {
   const VisualizationScreen({super.key});
@@ -28,6 +32,10 @@ class _VisualizationScreenState extends State<VisualizationScreen>
   Map<String, dynamic>? _currentChartOptions;
   String? _currentChartType;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  final VisualizationService _visualizationService = VisualizationService();
+  String? _generatedChartImagePath;
+  bool _isGeneratingChart = false;
 
   Map<String, dynamic>? _pieChartOptions;
 
@@ -59,12 +67,13 @@ class _VisualizationScreenState extends State<VisualizationScreen>
   void _showPieChart(Map<String, dynamic> options) {
     if (currentDatasetPath == null || currentDatasetPath!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please import a dataset first'))
+        const SnackBar(content: Text('Please import a dataset first')),
       );
       return;
     }
 
     setState(() {
+      _isGeneratingChart = true;
       _currentChart = const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -81,31 +90,95 @@ class _VisualizationScreenState extends State<VisualizationScreen>
     file.exists().then((exists) {
       if (!exists) {
         setState(() {
+          _isGeneratingChart = false;
           _currentChart = const Center(
             child: Text('Dataset file not found. Please import a new dataset.'),
           );
         });
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dataset file not found'))
+          const SnackBar(content: Text('Dataset file not found')),
         );
         return;
       }
 
-      setState(() {
-        _currentChart = DynamicPieChart(
-          filePath: currentDatasetPath!,
-          chartOptions: options,
-          key: ValueKey(DateTime.now().millisecondsSinceEpoch),
+      if (_selectedChartLibrary == 'Matplotlib') {
+        _visualizationService.generatePieChart(file, options).then((imagePath) {
+          setState(() {
+            _generatedChartImagePath = imagePath;
+            _currentChart = Image.network(
+              imagePath,
+              fit: BoxFit.contain,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error, size: 50),
+                      const SizedBox(height: 16),
+                      Text('Error loading chart: $error'),
+                    ],
+                  ),
+                );
+              },
+            );
+            _currentChartOptions = options;
+            _currentChartType = 'pie';
+            _isGeneratingChart = false;
+          });
+
+          _saveChartState();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chart generated successfully')),
+          );
+        }).catchError((error) {
+          setState(() {
+            _isGeneratingChart = false;
+            _currentChart = Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Failed to generate chart: ${error.toString()}'),
+                ],
+              ),
+            );
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${error.toString()}')),
+          );
+        });
+      } else {
+        setState(() {
+          _currentChart = DynamicPieChart(
+            filePath: currentDatasetPath!,
+            chartOptions: options,
+            key: ValueKey(DateTime.now().millisecondsSinceEpoch),
+          );
+          _currentChartOptions = options;
+          _currentChartType = 'pie';
+          _isGeneratingChart = false;
+        });
+
+        _saveChartState();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chart generated successfully')),
         );
-        _currentChartOptions = options;
-        _currentChartType = 'pie';
-      });
-
-      _saveChartState();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chart generated successfully'))
-      );
+      }
     });
   }
 
@@ -132,13 +205,19 @@ class _VisualizationScreenState extends State<VisualizationScreen>
     final savedOptions = chartStateBox.get('chartOptions');
     final savedDatasetPath = chartStateBox.get('datasetPath');
 
-    if (savedChartType == 'pie' && savedOptions != null &&
-        savedDatasetPath != null && savedDatasetPath == currentDatasetPath) {
-
+    if (savedChartType == 'pie' &&
+        savedOptions != null &&
+        savedDatasetPath != null &&
+        savedDatasetPath == currentDatasetPath) {
       final restoredOptions = Map<String, dynamic>.from(savedOptions);
 
-      final colorKeys = ['centerSpaceColor', 'sectionColor', 'sectionBorderColor',
-                         'titleColor', 'tooltipBgColor'];
+      final colorKeys = [
+        'centerSpaceColor',
+        'sectionColor',
+        'sectionBorderColor',
+        'titleColor',
+        'tooltipBgColor',
+      ];
 
       for (var key in colorKeys) {
         if (restoredOptions.containsKey(key) && restoredOptions[key] is int) {
@@ -322,7 +401,6 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                     iconColor: textColor,
                     title: 'Pie Chart',
                     description: 'Show proportions and percentages.',
-                    // In VisualizationScreen, modify the Pie Chart card onTap handler:
                     onTap: () {
                       showModalBottomSheet(
                         context: context,
@@ -341,20 +419,28 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                         top: Radius.circular(16),
                                       ),
                                     ),
-                                    child: PieChartOptionsOverlay(
-                                      initialOptions: _pieChartOptions ?? {},
-                                      onOptionsChanged: (options) {
-                                        setState(() {
-                                          _pieChartOptions = options;
-                                        });
-                                      },
-                                    ),
+                                    child:
+                                        _selectedChartLibrary == "FL Chart"
+                                            ? PieChartOptionsOverlay(
+                                              initialOptions: _pieChartOptions ?? {},
+                                              onOptionsChanged: (options) {
+                                                setState(() {
+                                                  _pieChartOptions = options;
+                                                });
+                                              },
+                                            )
+                                            : PieChartMatplotlibOptionsOverlay(
+                                              initialOptions: _currentChartOptions,
+                                              onOptionsChanged: (options) {
+                                                setState(() {
+                                                  _currentChartOptions = options;
+                                                });
+                                              },
+                                            ),
                                   ),
                             ),
                       ).then((result) {
-                        // This runs when the modal is closed
                         if (result != null && result is Map<String, dynamic>) {
-                          // Generate chart only when options are returned from the modal
                           _showPieChart(result);
                         }
                       });
@@ -372,6 +458,7 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Chart display (left side)
                     Expanded(
                       child: Card(
                         elevation: 2,
@@ -379,7 +466,26 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                         child: Padding(padding: const EdgeInsets.all(16.0), child: _currentChart!),
                       ),
                     ),
-                    Expanded(child: Container()),
+                    // Chart controls (right side)
+                    Expanded(
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: _currentChartType == 'pie' && _currentChartOptions != null
+                            ? PieChartControlPanel(
+                                currentOptions: _currentChartOptions!,
+                                onOptionsChanged: (updatedOptions) {
+                                  setState(() {
+                                    _currentChartOptions = updatedOptions;
+                                  });
+                                  _showPieChart(updatedOptions);
+                                },
+                              )
+                            : const Center(
+                                child: Text('Select a chart type to see controls'),
+                              ),
+                      ),
+                    ),
                   ],
                 ),
               ),
