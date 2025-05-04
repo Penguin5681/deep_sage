@@ -20,6 +20,7 @@ migrate_working_dir/
 
 .env
 assets/deepsage-452909-06ec904ead63.json
+assets/client_secret.json
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
