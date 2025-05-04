@@ -35,7 +35,10 @@ class SignupScreen extends StatelessWidget {
         const end = Offset.zero;
         const curve = Curves.ease;
 
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
         return SlideTransition(position: animation.drive(tween), child: child);
       },
     );
@@ -47,7 +50,8 @@ class SignupScreen extends StatelessWidget {
     final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
-    final TextEditingController confirmPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController =
+        TextEditingController();
     final TextEditingController nameController = TextEditingController();
     final supabaseAuthInstance = Supabase.instance.client;
 
@@ -96,18 +100,29 @@ class SignupScreen extends StatelessWidget {
           } else {
             final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
             if (response.session != null) {
-              await userBox.put('userSessionToken', response.session!.accessToken);
+              await userBox.put(
+                'userSessionToken',
+                response.session!.accessToken,
+              );
               await userBox.put('loginMethod', 'email');
             }
 
             if (!context.mounted) return;
-            Navigator.of(context).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
+            Navigator.of(
+              context,
+            ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
           }
         } catch (e) {
-          showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Sign Up Error: $e'));
+          showTopSnackBar(
+            Overlay.of(context),
+            CustomSnackBar.error(message: 'Sign Up Error: $e'),
+          );
         }
       } else if (!isEmail()) {
-        showTopSnackBar(Overlay.of(context), CustomSnackBar.error(message: 'Invalid Email'));
+        showTopSnackBar(
+          Overlay.of(context),
+          CustomSnackBar.error(message: 'Invalid Email'),
+        );
       } else if (doesPasswordMatch()) {
         showTopSnackBar(
           Overlay.of(context),
@@ -154,7 +169,9 @@ class SignupScreen extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 450),
             child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              behavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
               child: SingleChildScrollView(
                 physics: BouncingScrollPhysics(),
                 padding: const EdgeInsets.all(32.0),
@@ -167,7 +184,10 @@ class SignupScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.w900,
-                        color: isDarkTheme ? Colors.white : const Color(0xFF2C5364),
+                        color:
+                            isDarkTheme
+                                ? Colors.white
+                                : const Color(0xFF2C5364),
                         letterSpacing: 4.0,
                       ),
                     ),
@@ -279,23 +299,34 @@ class SignupScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: isDarkTheme ? Colors.grey[600] : Colors.green,
+                                  color:
+                                      isDarkTheme
+                                          ? Colors.grey[600]
+                                          : Colors.green,
                                   thickness: 1,
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: Text(
                                   'or continue with',
                                   style: TextStyle(
-                                    color: isDarkTheme ? Colors.grey[400] : Colors.grey[600],
+                                    color:
+                                        isDarkTheme
+                                            ? Colors.grey[400]
+                                            : Colors.grey[600],
                                     fontSize: 16,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: isDarkTheme ? Colors.grey[600] : Colors.green,
+                                  color:
+                                      isDarkTheme
+                                          ? Colors.grey[600]
+                                          : Colors.green,
                                   thickness: 1,
                                 ),
                               ),
@@ -307,9 +338,13 @@ class SignupScreen extends StatelessWidget {
                           Center(
                             child: GoogleButton(
                               onSignInSuccess: () {
-                                Navigator.of(
-                                  context,
-                                ).pushReplacement(createScreenRoute(DashboardScreen(), -1.0, 0.0));
+                                Navigator.of(context).pushReplacement(
+                                  createScreenRoute(
+                                    DashboardScreen(),
+                                    -1.0,
+                                    0.0,
+                                  ),
+                                );
                               },
                             ),
                           ),
@@ -322,16 +357,23 @@ class SignupScreen extends StatelessWidget {
                               Text(
                                 'Already have an account? ',
                                 style: TextStyle(
-                                  color: isDarkTheme ? Colors.grey[400] : Colors.grey[700],
+                                  color:
+                                      isDarkTheme
+                                          ? Colors.grey[400]
+                                          : Colors.grey[700],
                                 ),
                               ),
                               MouseRegion(
                                 cursor: SystemMouseCursors.click,
                                 child: GestureDetector(
                                   onTap: () {
-                                    Navigator.of(
-                                      context,
-                                    ).pushReplacement(createScreenRoute(LoginScreen(), -1.0, 0.0));
+                                    Navigator.of(context).pushReplacement(
+                                      createScreenRoute(
+                                        LoginScreen(),
+                                        -1.0,
+                                        0.0,
+                                      ),
+                                    );
                                   },
                                   child: Text(
                                     'Sign In',

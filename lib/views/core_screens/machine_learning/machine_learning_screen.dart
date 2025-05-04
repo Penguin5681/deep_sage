@@ -22,10 +22,11 @@ class _MachineLearningScreenState extends State<MachineLearningScreen> {
     currentDatasetType = recentImportsBox.get('currentDatasetType');
     currentDatasetName = recentImportsBox.get('currentDatasetName');
 
-    _isDatasetSelected = currentDatasetPath != null &&
-                        currentDatasetPath!.isNotEmpty &&
-                        currentDatasetName != null &&
-                        currentDatasetName!.isNotEmpty;
+    _isDatasetSelected =
+        currentDatasetPath != null &&
+        currentDatasetPath!.isNotEmpty &&
+        currentDatasetName != null &&
+        currentDatasetName!.isNotEmpty;
   }
 
   void _showDatasetSelectionOverlay() {
@@ -42,13 +43,19 @@ class _MachineLearningScreenState extends State<MachineLearningScreen> {
               if (_isDatasetSelected) ...[
                 Text('Currently selected dataset:'),
                 SizedBox(height: 8),
-                Text('$currentDatasetName',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  '$currentDatasetName',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 Text('Type: $currentDatasetType'),
                 SizedBox(height: 16),
-                Text('Would you like to continue with this dataset or import a new one?')
+                Text(
+                  'Would you like to continue with this dataset or import a new one?',
+                ),
               ] else
-                Text('No dataset is currently selected. Would you like to import one?'),
+                Text(
+                  'No dataset is currently selected. Would you like to import one?',
+                ),
             ],
           ),
           actions: [
@@ -66,7 +73,9 @@ class _MachineLearningScreenState extends State<MachineLearningScreen> {
                 Navigator.of(context).pop();
                 // TODO: open a file picker here
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Import functionality to be implemented')),
+                  SnackBar(
+                    content: Text('Import functionality to be implemented'),
+                  ),
                 );
               },
               child: Text('Import New Dataset'),
@@ -81,7 +90,9 @@ class _MachineLearningScreenState extends State<MachineLearningScreen> {
   void initState() {
     super.initState();
     loadDatasetMetadata();
-    debugPrint('Current Dataset: \n$currentDatasetName\n$currentDatasetType\n$currentDatasetPath\n');
+    debugPrint(
+      'Current Dataset: \n$currentDatasetName\n$currentDatasetType\n$currentDatasetPath\n',
+    );
 
     // Show the overlay after the build is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,29 +104,33 @@ class _MachineLearningScreenState extends State<MachineLearningScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: _isDatasetSelected
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Working with dataset: $currentDatasetName',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'Machine learning options will appear here',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  ElevatedButton(
-                    onPressed: _showDatasetSelectionOverlay,
-                    child: Text('Change Dataset'),
-                  ),
-                ],
-              )
-            : Text(
-                'No dataset selected',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
+        child:
+            _isDatasetSelected
+                ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Working with dataset: $currentDatasetName',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Machine learning options will appear here',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: _showDatasetSelectionOverlay,
+                      child: Text('Change Dataset'),
+                    ),
+                  ],
+                )
+                : Text(
+                  'No dataset selected',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
       ),
     );
   }

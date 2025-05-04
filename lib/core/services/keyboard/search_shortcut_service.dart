@@ -27,9 +27,10 @@ class SearchShortcutService extends StatelessWidget {
 
     // Register Ctrl+F shortcut for search
     shortcuts[LogicalKeySet(
-      LogicalKeyboardKey.control,
-      LogicalKeyboardKey.keyF,
-    )] = const SearchIntent();
+          LogicalKeyboardKey.control,
+          LogicalKeyboardKey.keyF,
+        )] =
+        const SearchIntent();
 
     // Create and return the widget tree for handling shortcuts and actions.
     return Shortcuts(

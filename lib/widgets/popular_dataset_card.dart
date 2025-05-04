@@ -37,8 +37,7 @@ class PopularDatasetCard extends StatefulWidget {
   });
 
   @override
-  State<PopularDatasetCard> createState() =>
-      _PopularDatasetCardState();
+  State<PopularDatasetCard> createState() => _PopularDatasetCardState();
 }
 
 class _PopularDatasetCardState extends State<PopularDatasetCard> {
@@ -91,41 +90,48 @@ class _PopularDatasetCardState extends State<PopularDatasetCard> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isHovered
-              ? (isDarkMode
-                  ? [
-                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
-                    ]
-                  : [
-                      colorScheme.surface,
-                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-                    ])
-              : (isDarkMode
-                  ? [
-                      colorScheme.surface.withValues(alpha: 0.3),
-                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    ]
-                  : [
-                      colorScheme.surface,
-                      colorScheme.surface,
-                    ]),
+            colors:
+                isHovered
+                    ? (isDarkMode
+                        ? [
+                          colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.6,
+                          ),
+                          colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.8,
+                          ),
+                        ]
+                        : [
+                          colorScheme.surface,
+                          colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.7,
+                          ),
+                        ])
+                    : (isDarkMode
+                        ? [
+                          colorScheme.surface.withValues(alpha: 0.3),
+                          colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.3,
+                          ),
+                        ]
+                        : [colorScheme.surface, colorScheme.surface]),
           ),
-          boxShadow: isHovered
-            ? [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                )
-              ],
+          boxShadow:
+              isHovered
+                  ? [
+                    BoxShadow(
+                      color: colorScheme.shadow.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                  : [
+                    BoxShadow(
+                      color: colorScheme.shadow.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -139,14 +145,12 @@ class _PopularDatasetCardState extends State<PopularDatasetCard> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: fileTypeColor.withValues(alpha: isDarkMode ? 0.2 : 0.1),
+                      color: fileTypeColor.withValues(
+                        alpha: isDarkMode ? 0.2 : 0.1,
+                      ),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
-                      fileTypeIcon,
-                      color: fileTypeColor,
-                      size: 22,
-                    ),
+                    child: Icon(fileTypeIcon, color: fileTypeColor, size: 22),
                   ),
                   const SizedBox(width: 16),
 
@@ -226,10 +230,11 @@ class _PopularDatasetCardState extends State<PopularDatasetCard> {
                             datasetId: widget.datasetId,
                           );
                           if (!context.mounted) return;
-                          final overlayService = Provider.of<DownloadOverlayService>(
-                            context,
-                            listen: false,
-                          );
+                          final overlayService =
+                              Provider.of<DownloadOverlayService>(
+                                context,
+                                listen: false,
+                              );
                           overlayService.showDownloadOverlay();
                         },
                         icon: const Icon(Icons.download, size: 18),

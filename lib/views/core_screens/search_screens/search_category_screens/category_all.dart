@@ -23,7 +23,8 @@ class CategoryAll extends StatefulWidget {
   State<CategoryAll> createState() => _CategoryAllState();
 }
 
-class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStateMixin {
+class _CategoryAllState extends State<CategoryAll>
+    with SingleTickerProviderStateMixin {
   // Animation controllers
   late AnimationController _featuredSectionController;
   late Animation<double> _featuredSectionAnimation;
@@ -33,13 +34,20 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
   final ScrollController scrollController = ScrollController();
 
   // Sort parameters
-  final List<String> _sortParams = ['hottest', 'votes', 'updated', 'active', 'published'];
+  final List<String> _sortParams = [
+    'hottest',
+    'votes',
+    'updated',
+    'active',
+    'published',
+  ];
   int _currentSortIndex = 0;
 
   String get _currentSortParam => _sortParams[_currentSortIndex];
 
   // Scroll tracking variables
-  final double _scrollThreshold = 50.0; // Increased threshold for better usability
+  final double _scrollThreshold =
+      50.0; // Increased threshold for better usability
   bool _isScrollingDown = false;
   double _lastScrollPosition = 0;
 
@@ -131,15 +139,18 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
     if (cachedData != null) {
       if (mounted) {
         setState(() {
-          popularDatasets = cachedData
-              .map((dataset) => {
-                    'title': dataset.title,
-                    'addedTime': dataset.addedTime,
-                    'fileType': dataset.fileType,
-                    'fileSize': dataset.fileSize,
-                    'id': dataset.id,
-                  })
-              .toList();
+          popularDatasets =
+              cachedData
+                  .map(
+                    (dataset) => {
+                      'title': dataset.title,
+                      'addedTime': dataset.addedTime,
+                      'fileType': dataset.fileType,
+                      'fileSize': dataset.fileSize,
+                      'id': dataset.id,
+                    },
+                  )
+                  .toList();
         });
       }
       return;
@@ -147,21 +158,26 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
 
     final service = PopularDatasetService();
     try {
-      final datasets = await service.fetchPopularDatasets(sortBy: _currentSortParam);
+      final datasets = await service.fetchPopularDatasets(
+        sortBy: _currentSortParam,
+      );
 
       cacheService.cacheDatasets(cacheKey, datasets);
 
       if (mounted) {
         setState(() {
-          popularDatasets = datasets
-              .map((dataset) => {
-                    'title': dataset.title,
-                    'addedTime': dataset.addedTime,
-                    'fileType': dataset.fileType,
-                    'fileSize': dataset.fileSize,
-                    'id': dataset.id,
-                  })
-              .toList();
+          popularDatasets =
+              datasets
+                  .map(
+                    (dataset) => {
+                      'title': dataset.title,
+                      'addedTime': dataset.addedTime,
+                      'fileType': dataset.fileType,
+                      'fileSize': dataset.fileSize,
+                      'id': dataset.id,
+                    },
+                  )
+                  .toList();
         });
       }
     } catch (e) {
@@ -205,7 +221,9 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
             barrierDismissible: false,
             builder: (BuildContext context) {
               return Dialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.0),
+                ),
                 child: KaggleCredentialsPrompt(
                   onCredentialsAdded: () {
                     setState(() {
@@ -228,9 +246,14 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
           builder:
               (context) => AlertDialog(
                 title: const Text('Error'),
-                content: const Text('Failed to check credentials. Please try again.'),
+                content: const Text(
+                  'Failed to check credentials. Please try again.',
+                ),
                 actions: [
-                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('OK'),
+                  ),
                 ],
               ),
         );
@@ -276,7 +299,10 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
                 return SizeTransition(
                   sizeFactor: _featuredSectionAnimation,
                   axisAlignment: -1.0, // Align to the top
-                  child: FadeTransition(opacity: _featuredSectionAnimation, child: child),
+                  child: FadeTransition(
+                    opacity: _featuredSectionAnimation,
+                    child: child,
+                  ),
                 );
               },
               child: Container(
@@ -313,9 +339,13 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
                                     scrollController.animateTo(
                                       (scrollController.offset + offset).clamp(
                                         0.0,
-                                        scrollController.position.maxScrollExtent,
+                                        scrollController
+                                            .position
+                                            .maxScrollExtent,
                                       ),
-                                      duration: const Duration(milliseconds: 300),
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
                                       curve: Curves.easeOutCubic,
                                     );
                                   }
@@ -405,9 +435,10 @@ class _CategoryAllState extends State<CategoryAll> with SingleTickerProviderStat
                                     Icon(
                                       Icons.search_off_outlined,
                                       size: 48,
-                                      color: colorScheme.onSurfaceVariant.withValues(
-                                        alpha: 0.5,
-                                      ), // Updated from withValues
+                                      color: colorScheme.onSurfaceVariant
+                                          .withValues(
+                                            alpha: 0.5,
+                                          ), // Updated from withValues
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
@@ -513,7 +544,10 @@ class FileListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final downloadService = Provider.of<DownloadService>(context, listen: false);
+    final downloadService = Provider.of<DownloadService>(
+      context,
+      listen: false,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
@@ -523,7 +557,12 @@ class FileListItem extends StatelessWidget {
           Icon(icon, color: textTheme.bodyLarge?.color, size: 24),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(title, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            child: Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -559,11 +598,20 @@ class FileListItem extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(Icons.file_download_outlined, color: textTheme.bodyLarge?.color),
+            icon: Icon(
+              Icons.file_download_outlined,
+              color: textTheme.bodyLarge?.color,
+            ),
             onPressed: () async {
-              await downloadService.downloadDataset(source: 'kaggle', datasetId: datasetId);
+              await downloadService.downloadDataset(
+                source: 'kaggle',
+                datasetId: datasetId,
+              );
               if (!context.mounted) return;
-              final overlayService = Provider.of<DownloadOverlayService>(context, listen: false);
+              final overlayService = Provider.of<DownloadOverlayService>(
+                context,
+                listen: false,
+              );
               overlayService.showDownloadOverlay();
             },
           ),
