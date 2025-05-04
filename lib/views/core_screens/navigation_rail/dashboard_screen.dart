@@ -37,7 +37,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// Fallback user avatar image to display when no profile image is available.
   /// This asset is used as the default profile picture.
-  final Image fallbackUserAvatar = Image.asset('assets/fallback/fallback_user_image.png');
+  final Image fallbackUserAvatar = Image.asset(
+    'assets/fallback/fallback_user_image.png',
+  );
 
   /// Checks if the current user signed in with Google authentication.
   ///
@@ -118,11 +120,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ///
   /// Returns: A widget that displays the appropriate icon for the current theme.
 
-  Widget getIconForTheme({required String lightIcon, required String darkIcon, double size = 24}) {
+  Widget getIconForTheme({
+    required String lightIcon,
+    required String darkIcon,
+    double size = 24,
+  }) {
     return Builder(
       builder: (context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Image.asset(isDarkMode ? darkIcon : lightIcon, width: size, height: size);
+        return Image.asset(
+          isDarkMode ? darkIcon : lightIcon,
+          width: size,
+          height: size,
+        );
       },
     );
   }
@@ -231,10 +241,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 48,
                 height: 48,
                 color: Colors.grey[300],
-                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               );
             } else if (snapshot.hasData) {
-              return ClipOval(child: SizedBox(width: 48, height: 48, child: snapshot.data!));
+              return ClipOval(
+                child: SizedBox(width: 48, height: 48, child: snapshot.data!),
+              );
             } else {
               return _buildFallbackImage();
             }
@@ -263,7 +277,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ///  * [buildProfileImage], which uses this method as a fallback
   ///  * [fallbackUserAvatar], the default image asset used
   Widget _buildFallbackImage() {
-    return ClipOval(child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar));
+    return ClipOval(
+      child: SizedBox(width: 48, height: 48, child: fallbackUserAvatar),
+    );
   }
 
   /// Displays a dialog that shows a gallery of available project templates.
@@ -290,7 +306,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation1, animation2) => Container(),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutQuint);
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutQuint,
+        );
 
         return ScaleTransition(
           scale: Tween<double>(begin: 0.8, end: 1.0).animate(curvedAnimation),
@@ -298,7 +317,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             opacity: curvedAnimation,
             child: Dialog(
               backgroundColor: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: 900, maxHeight: 600),
                 child: Padding(
@@ -311,7 +332,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Text(
                             "Templates Gallery",
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           IconButton(
                             icon: Icon(Icons.close),
@@ -323,7 +347,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       SizedBox(height: 16),
                       Text(
                         "Start a new project with one of our pre-built templates",
-                        style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+                        style: TextStyle(
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        ),
                       ),
                       SizedBox(height: 24),
                       Expanded(child: _buildTemplateCategories(context)),
@@ -362,7 +389,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           TabBar(
             isScrollable: true,
             labelColor: Theme.of(context).colorScheme.primary,
-            unselectedLabelColor: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+            unselectedLabelColor:
+                isDarkMode ? Colors.grey[400] : Colors.grey[700],
             indicatorSize: TabBarIndicatorSize.label,
             tabs: [
               Tab(text: "Analytics"),
@@ -398,7 +426,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ///   - [context]: The build context, used for theming and widget building.
   ///   - [templates]: A list of [TemplateItem] representing the templates to display.
   ///
-  Widget _buildTemplateGrid(BuildContext context, List<TemplateItem> templates) {
+  Widget _buildTemplateGrid(
+    BuildContext context,
+    List<TemplateItem> templates,
+  ) {
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
@@ -443,9 +474,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: InkWell(
             onTap: () {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text("Selected template: ${template.name}")));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Selected template: ${template.name}")),
+              );
             },
             borderRadius: BorderRadius.circular(12),
             splashColor: template.color.withValues(alpha: 0.1),
@@ -490,16 +521,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
                     child: Container(
                       height: 120,
                       width: double.infinity,
-                      color: template.color.withValues(alpha: isHovered ? 0.3 : 0.2),
+                      color: template.color.withValues(
+                        alpha: isHovered ? 0.3 : 0.2,
+                      ),
                       child: Center(
                         child: AnimatedScale(
                           scale: isHovered ? 1.1 : 1.0,
                           duration: Duration(milliseconds: 200),
-                          child: Icon(template.icon, size: 48, color: template.color),
+                          child: Icon(
+                            template.icon,
+                            size: 48,
+                            color: template.color,
+                          ),
                         ),
                       ),
                     ),
@@ -523,7 +562,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           template.description,
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -550,7 +592,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return [
       TemplateItem(
         name: "Data Exploration",
-        description: "Start with basic data analysis and visualization_and_explorer",
+        description:
+            "Start with basic data analysis and visualization_and_explorer",
         icon: Icons.bar_chart,
         color: Colors.blue,
       ),
@@ -717,7 +760,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Theme.of(context).brightness == Brightness.dark
                       ? Color(0xFF2A2D37)
                       : Colors.grey[100],
-              selectedIconTheme: IconThemeData(color: Theme.of(context).colorScheme.primary),
+              selectedIconTheme: IconThemeData(
+                color: Theme.of(context).colorScheme.primary,
+              ),
               unselectedIconTheme: IconThemeData(
                 color:
                     Theme.of(context).brightness == Brightness.dark
@@ -737,8 +782,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               useIndicator: true,
               indicatorColor:
                   Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      ? Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2)
+                      : Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
               elevation: 1,
               trailing: Expanded(
                 child: Align(
@@ -769,7 +818,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         SizedBox(height: 40),
-                        MouseRegion(cursor: SystemMouseCursors.click, child: buildProfileImage()),
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: buildProfileImage(),
+                        ),
                       ],
                     ),
                   ),
@@ -886,7 +938,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Expanded(child: screens[selectedIndex]),
           ],
         ),
-        floatingActionButton: env == 'development' ? DevFAB(parentContext: context) : null,
+        floatingActionButton:
+            env == 'development' ? DevFAB(parentContext: context) : null,
       ),
     );
   }

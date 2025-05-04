@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 class SearchOverlay extends StatelessWidget {
   /// Text controller for the search field
   final TextEditingController textController;
-  
+
   /// Focus node for the search field
   final FocusNode focusNode;
-  
+
   /// Callback when the overlay should be closed
   final VoidCallback onClose;
 
@@ -64,7 +64,10 @@ class SearchOverlay extends StatelessWidget {
                         decoration: const InputDecoration(
                           hintText: 'Where would you like to go?',
                           hintStyle: TextStyle(color: Colors.grey),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           border: InputBorder.none,
                         ),
                         onSubmitted: (_) => onClose(),
@@ -88,7 +91,10 @@ class SearchOverlay extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.0,
+                        vertical: 4.0,
+                      ),
                       child: Text(
                         'PREVIOUS CHANNELS',
                         style: TextStyle(
@@ -99,10 +105,24 @@ class SearchOverlay extends StatelessWidget {
                       ),
                     ),
                     // Channel items from the screenshot
-                    _buildChannelItem(icon: '#', name: 'chodampatti', type: 'TEXT CHANNELS', server: 'Chusta Bhaat'),
-                    _buildChannelItem(icon: '🔊', name: 'no-gaali-galoj', server: 'Chusta Bhaat'),
-                    _buildChannelItem(icon: '#', name: 'code-paradise', type: '—TEXT CHANNELS—', server: 'Chill-Paradise'),
-                    
+                    _buildChannelItem(
+                      icon: '#',
+                      name: 'chodampatti',
+                      type: 'TEXT CHANNELS',
+                      server: 'Chusta Bhaat',
+                    ),
+                    _buildChannelItem(
+                      icon: '🔊',
+                      name: 'no-gaali-galoj',
+                      server: 'Chusta Bhaat',
+                    ),
+                    _buildChannelItem(
+                      icon: '#',
+                      name: 'code-paradise',
+                      type: '—TEXT CHANNELS—',
+                      server: 'Chill-Paradise',
+                    ),
+
                     // ProTip section
                     Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -112,10 +132,16 @@ class SearchOverlay extends StatelessWidget {
                           children: [
                             TextSpan(
                               text: 'PROTIP: ',
-                              style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             TextSpan(text: 'Start searches with '),
-                            TextSpan(text: '@  #  !  *', style: TextStyle(fontWeight: FontWeight.bold)),
+                            TextSpan(
+                              text: '@  #  !  *',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             TextSpan(text: ' to narrow down results. '),
                             TextSpan(
                               text: 'Learn more',
@@ -168,10 +194,7 @@ class SearchOverlay extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(color: Colors.white),
-                ),
+                Text(name, style: const TextStyle(color: Colors.white)),
                 if (type != null)
                   Text(
                     ' $type',
@@ -191,8 +214,6 @@ class SearchOverlay extends StatelessWidget {
   }
 }
 
-
-
 // import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart';
 
@@ -204,7 +225,7 @@ class SearchOverlay extends StatelessWidget {
 
 //   /// Text controller for the search field
 //   final TextEditingController textController = TextEditingController();
-  
+
 //   /// Focus node for the search field
 //   final FocusNode focusNode = FocusNode();
 
@@ -299,7 +320,7 @@ class SearchOverlay extends StatelessWidget {
 //   @override
 //   Widget build(BuildContext context) {
 //     final searchProvider = Provider.of<SearchProvider>(context, listen: false);
-    
+
 //     // Define shortcuts
 //     final Map<ShortcutActivator, Intent> shortcuts = {
 //       LogicalKeySet(
@@ -325,7 +346,7 @@ class SearchOverlay extends StatelessWidget {
 //             // Conditionally show the search overlay
 //             Consumer<SearchProvider>(
 //               builder: (context, provider, _) {
-//                 return provider.isSearchVisible 
+//                 return provider.isSearchVisible
 //                   ? SearchOverlay(provider: provider)
 //                   : const SizedBox.shrink();
 //               },
@@ -428,7 +449,7 @@ class SearchOverlay extends StatelessWidget {
 //                     ),
 //                     // Channel items
 //                     ...provider.recentChannels.map((item) => _buildChannelItem(item)),
-                    
+
 //                     // ProTip section
 //                     Padding(
 //                       padding: const EdgeInsets.all(8.0),

@@ -5,13 +5,17 @@ import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
-import 'package:googleapis/apigeeregistry/v1.dart';
-
 class DynamicPieChart extends StatefulWidget {
   final String filePath;
   final Map<String, dynamic> chartOptions;
+  final List<Map<String, dynamic>>? preProcessedData;
 
-  const DynamicPieChart({super.key, required this.filePath, required this.chartOptions});
+  const DynamicPieChart({
+    super.key,
+    required this.filePath,
+    required this.chartOptions,
+    this.preProcessedData,
+  });
 
   @override
   State<DynamicPieChart> createState() => _DynamicPieChartState();
@@ -33,7 +37,30 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
   @override
   void initState() {
     super.initState();
-    _loadCsvData();
+    if (widget.preProcessedData != null) {
+      _processPreProcessedData();
+    } else {
+      _loadCsvData();
+    }
+  }
+
+  void _processPreProcessedData() {
+    debugPrint('Using pre-processed pie chart data');
+    setState(() {
+      _isLoading = false;
+
+      _sectionData = {};
+      for (var section in widget.preProcessedData!) {
+        final category = section['category'] as String;
+        final value = section['value'] as double;
+        _sectionData![category] = value;
+      }
+
+      _totalValue = _sectionData!.values.fold(0, (sum, value) => sum + value);
+
+      _headers = null;
+      _data = null;
+    });
   }
 
   Future<void> _loadCsvData() async {
@@ -96,7 +123,10 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
   }
 
   String? _findNumericColumn() {
-    if (_headers == null || _headers!.isEmpty || _data == null || _data!.isEmpty) {
+    if (_headers == null ||
+        _headers!.isEmpty ||
+        _data == null ||
+        _data!.isEmpty) {
       return null;
     }
 
@@ -105,7 +135,8 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
       for (var row in _data!) {
         if (row.length > headerIndex) {
           final value = row[headerIndex];
-          if (value is num || (value != null && double.tryParse(value.toString()) != null)) {
+          if (value is num ||
+              (value != null && double.tryParse(value.toString()) != null)) {
             return header;
           }
         }
@@ -121,7 +152,14 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_data == null || _headers == null || _data!.isEmpty || _headers!.isEmpty) {
+    if (widget.preProcessedData != null) {
+      return Expanded(child: _buildPieChart());
+    }
+
+    if (_data == null ||
+        _headers == null ||
+        _data!.isEmpty ||
+        _headers!.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -130,7 +168,10 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
             const SizedBox(height: 16),
             const Text('Failed to load CSV data'),
             const SizedBox(height: 8),
-            ElevatedButton(onPressed: _loadCsvData, child: const Text('Try Again')),
+            ElevatedButton(
+              onPressed: _loadCsvData,
+              child: const Text('Try Again'),
+            ),
           ],
         ),
       );
@@ -193,7 +234,9 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
               'Filter Value:',
               _selectedFilterValue ?? 'Any',
               ['Any', ...getUniqueValues(_selectedFilterColumn!)],
-              (value) => setState(() => _selectedFilterValue = value == 'Any' ? null : value),
+              (value) => setState(
+                () => _selectedFilterValue = value == 'Any' ? null : value,
+              ),
             ),
           ),
         ],
@@ -218,7 +261,12 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
       children: [
         Text(label, style: const TextStyle(fontSize: 13)),
         DropdownButton(
-          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+          items:
+              items
+                  .map(
+                    (item) => DropdownMenuItem(value: item, child: Text(item)),
+                  )
+                  .toList(),
           value: value,
           isExpanded: true,
           onChanged: (newValue) {
@@ -232,161 +280,192 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
   }
 
   Widget _buildPieChart() {
-    if (_data == null || _headers == null || _data!.isEmpty || _headers!.isEmpty) {
-      return const Center(child: Text('No data available for chart generation'));
+    final Map<String, double> categoryValues = {};
+
+    if (widget.preProcessedData != null) {
+      debugPrint('Using pre-processed data for pie chart');
+
+      for (final section in widget.preProcessedData!) {
+        final label = section['label'] as String;
+        final value = section['value'] as double;
+        categoryValues[label] = value;
+      }
+    } else if (_data != null &&
+        _headers != null &&
+        _selectedCategoryColumn != null &&
+        _selectedValueColumn != null) {
+      final categoryIndex = _headers!.indexOf(_selectedCategoryColumn!);
+      final valueIndex = _headers!.indexOf(_selectedValueColumn!);
+
+      if (categoryIndex < 0 || valueIndex < 0) {
+        return Center(
+          child: Text(
+            'Invalid columns selected: $_selectedCategoryColumn, $_selectedValueColumn',
+          ),
+        );
+      }
+
+      var filteredData = _data!;
+      if (_selectedFilterColumn != null && _selectedFilterValue != null) {
+        final filterIndex = _headers!.indexOf(_selectedFilterColumn!);
+        if (filterIndex >= 0) {
+          filteredData =
+              _data!
+                  .where(
+                    (row) =>
+                        row.length > filterIndex &&
+                        row[filterIndex].toString() == _selectedFilterValue,
+                  )
+                  .toList();
+        }
+      }
+
+      if (filteredData.isEmpty) {
+        return const Center(
+          child: Text('No data available for the selected filters'),
+        );
+      }
+
+      for (var row in filteredData) {
+        if (row.length <= categoryIndex || row.length <= valueIndex) {
+          continue; // this line is skipping invalid rows
+        }
+
+        final category = row[categoryIndex]?.toString() ?? 'Unknown';
+        final rawValue = row[valueIndex];
+        double value = 0.0;
+
+        if (rawValue is num) {
+          value = rawValue.toDouble();
+        } else if (rawValue != null) {
+          value = double.tryParse(rawValue.toString()) ?? 0.0;
+        }
+
+        categoryValues[category] = (categoryValues[category] ?? 0) + value;
+      }
+      _sectionData = categoryValues;
+      _totalValue = categoryValues.values.fold(0, (sum, value) => sum + value);
+
+      if (categoryValues.isEmpty) {
+        return const Center(child: Text('No valid data to display in chart'));
+      }
+
+      try {
+        final sections = <PieChartSectionData>[];
+        final colors = [
+          Colors.blue,
+          Colors.red,
+          Colors.green,
+          Colors.orange,
+          Colors.purple,
+          Colors.cyan,
+          Colors.amber,
+          Colors.teal,
+          Colors.indigo,
+          Colors.pink,
+          Colors.lightBlue,
+          Colors.lime,
+        ];
+
+        final showTitles = widget.chartOptions['showTitles'] ?? true;
+        final sectionRadius = widget.chartOptions['sectionRadius'] ?? 100.0;
+        final titleSize = widget.chartOptions['titleSize'] ?? 15.0;
+        final titleColor = widget.chartOptions['titleColor'] ?? Colors.white;
+        final titlePositionOffset =
+            widget.chartOptions['titlePositionOffset'] ?? 0.6;
+        final defaultSectionColor =
+            widget.chartOptions['defaultSectionColor'] ?? Colors.blue;
+        final showSectionBorder =
+            widget.chartOptions['showSectionBorder'] ?? false;
+        final sectionBorderColor =
+            widget.chartOptions['sectionBorderColor'] ?? Colors.white;
+        final sectionBorderWidth =
+            widget.chartOptions['sectionBorderWidth'] ?? 1.0;
+        final useGradient = widget.chartOptions['useGradient'] ?? false;
+        final centerSpaceRadius =
+            widget.chartOptions['centerSpaceRadius'] ?? 40;
+        final centerSpaceColor =
+            widget.chartOptions['centerSpaceColor'] ?? Colors.transparent;
+        final sectionsSpace = widget.chartOptions['sectionsSpace'] ?? 2.0;
+        final startDegreeOffset =
+            widget.chartOptions['startDegreeOffset'] ?? 0.0;
+        final enableTouch = widget.chartOptions['enableTouch'] ?? true;
+
+        // anim settings
+        final animationDuration = Duration(
+          milliseconds:
+              (widget.chartOptions['animationDuration'] ?? 500).toInt(),
+        );
+        final animationCurve = _getAnimationCurve(
+          widget.chartOptions['animationCurve'] ?? 0,
+        );
+
+        // tooltip settings
+        final showTooltip = widget.chartOptions['showTooltip'] ?? true;
+
+        _sections = [];
+        int colorIndex = 0;
+        categoryValues.forEach((category, value) {
+          final color =
+              useGradient
+                  ? colors[colorIndex % colors.length]
+                  : (widget.chartOptions['sectionColor'] != null &&
+                      colorIndex == 0)
+                  ? widget.chartOptions['sectionColor']
+                  : colors[colorIndex % colors.length];
+          final section = PieChartSectionData(
+            color: color,
+            value: value,
+            title: showTitles ? '$category\n${value.toStringAsFixed(1)}' : '',
+            radius: sectionRadius,
+            titleStyle: TextStyle(
+              fontSize: titleSize,
+              fontWeight: FontWeight.bold,
+              color: titleColor,
+            ),
+            titlePositionPercentageOffset: titlePositionOffset,
+            borderSide:
+                showSectionBorder
+                    ? BorderSide(
+                      color: sectionBorderColor,
+                      width: sectionBorderWidth,
+                    )
+                    : BorderSide.none,
+          );
+
+          _sections.add(section);
+          colorIndex++;
+        });
+
+        // final animationDuration = Duration(milliseconds: )
+
+        return PieChart(
+          PieChartData(
+            sections: _sections,
+            centerSpaceRadius: centerSpaceRadius,
+            centerSpaceColor: centerSpaceColor,
+            sectionsSpace: sectionsSpace,
+            startDegreeOffset: startDegreeOffset,
+            pieTouchData: PieTouchData(
+              enabled: enableTouch,
+              touchCallback: showTooltip ? _handlePieTouch : null,
+            ),
+          ),
+          duration: animationDuration,
+          curve: animationCurve,
+        );
+      } catch (e) {
+        debugPrint('Error building pie chart: $e');
+        return Center(child: Text('Error building chart: ${e.toString()}'));
+      }
     }
 
     if (_selectedCategoryColumn == null || _selectedValueColumn == null) {
-      return const Center(child: Text('Please select category and value columns'));
-    }
-
-    final categoryIndex = _headers!.indexOf(_selectedCategoryColumn!);
-    final valueIndex = _headers!.indexOf(_selectedValueColumn!);
-
-    if (categoryIndex < 0 || valueIndex < 0) {
-      return Center(
-        child: Text('Invalid columns selected: $_selectedCategoryColumn, $_selectedValueColumn'),
+      return const Center(
+        child: Text('Please select category and value columns'),
       );
     }
-
-    var filteredData = _data!;
-    if (_selectedFilterColumn != null && _selectedFilterValue != null) {
-      final filterIndex = _headers!.indexOf(_selectedFilterColumn!);
-      if (filterIndex >= 0) {
-        filteredData =
-            _data!
-                .where(
-                  (row) =>
-                      row.length > filterIndex &&
-                      row[filterIndex].toString() == _selectedFilterValue,
-                )
-                .toList();
-      }
-    }
-
-    if (filteredData.isEmpty) {
-      return const Center(child: Text('No data available for the selected filters'));
-    }
-
-    final Map<String, double> categoryValues = {};
-    for (var row in filteredData) {
-      if (row.length <= categoryIndex || row.length <= valueIndex) {
-        continue; // this line is skipping invalid rows
-      }
-
-      final category = row[categoryIndex]?.toString() ?? 'Unknown';
-      final rawValue = row[valueIndex];
-      double value = 0.0;
-
-      if (rawValue is num) {
-        value = rawValue.toDouble();
-      } else if (rawValue != null) {
-        value = double.tryParse(rawValue.toString()) ?? 0.0;
-      }
-
-      categoryValues[category] = (categoryValues[category] ?? 0) + value;
-    }
-    _sectionData = categoryValues;
-    _totalValue = categoryValues.values.fold(0, (sum, value) => sum + value);
-
-    if (categoryValues.isEmpty) {
-      return const Center(child: Text('No valid data to display in chart'));
-    }
-
-    try {
-      final sections = <PieChartSectionData>[];
-      final colors = [
-        Colors.blue,
-        Colors.red,
-        Colors.green,
-        Colors.orange,
-        Colors.purple,
-        Colors.cyan,
-        Colors.amber,
-        Colors.teal,
-        Colors.indigo,
-        Colors.pink,
-        Colors.lightBlue,
-        Colors.lime,
-      ];
-
-      final showTitles = widget.chartOptions['showTitles'] ?? true;
-      final sectionRadius = widget.chartOptions['sectionRadius'] ?? 100.0;
-      final titleSize = widget.chartOptions['titleSize'] ?? 15.0;
-      final titleColor = widget.chartOptions['titleColor'] ?? Colors.white;
-      final titlePositionOffset = widget.chartOptions['titlePositionOffset'] ?? 0.6;
-      final defaultSectionColor = widget.chartOptions['defaultSectionColor'] ?? Colors.blue;
-      final showSectionBorder = widget.chartOptions['showSectionBorder'] ?? false;
-      final sectionBorderColor = widget.chartOptions['sectionBorderColor'] ?? Colors.white;
-      final sectionBorderWidth = widget.chartOptions['sectionBorderWidth'] ?? 1.0;
-      final useGradient = widget.chartOptions['useGradient'] ?? false;
-      final centerSpaceRadius = widget.chartOptions['centerSpaceRadius'] ?? 40;
-      final centerSpaceColor = widget.chartOptions['centerSpaceColor'] ?? Colors.transparent;
-      final sectionsSpace = widget.chartOptions['sectionsSpace'] ?? 2.0;
-      final startDegreeOffset = widget.chartOptions['startDegreeOffset'] ?? 0.0;
-      final enableTouch = widget.chartOptions['enableTouch'] ?? true;
-
-      // anim settings
-      final animationDuration = Duration(
-        milliseconds: (widget.chartOptions['animationDuration'] ?? 500).toInt(),
-      );
-      final animationCurve = _getAnimationCurve(widget.chartOptions['animationCurve'] ?? 0);
-
-      // tooltip settings
-      final showTooltip = widget.chartOptions['showTooltip'] ?? true;
-
-      _sections = [];
-      int colorIndex = 0;
-      categoryValues.forEach((category, value) {
-        final color = useGradient
-            ? colors[colorIndex % colors.length]
-            : (widget.chartOptions['sectionColor'] != null && colorIndex == 0)
-            ? widget.chartOptions['sectionColor']
-            : colors[colorIndex % colors.length];
-        final section = PieChartSectionData(
-          color: color,
-          value: value,
-          title: showTitles ? '$category\n${value.toStringAsFixed(1)}' : '',
-          radius: sectionRadius,
-          titleStyle: TextStyle(
-            fontSize: titleSize,
-            fontWeight: FontWeight.bold,
-            color: titleColor,
-          ),
-          titlePositionPercentageOffset: titlePositionOffset,
-          borderSide: showSectionBorder
-              ? BorderSide(
-            color: sectionBorderColor,
-            width: sectionBorderWidth,
-          )
-              : BorderSide.none,
-        );
-
-        _sections.add(section);
-        colorIndex++;
-      });
-
-      // final animationDuration = Duration(milliseconds: )
-
-      return PieChart(
-        PieChartData(
-          sections: _sections,
-          centerSpaceRadius: centerSpaceRadius,
-          centerSpaceColor: centerSpaceColor,
-          sectionsSpace: sectionsSpace,
-          startDegreeOffset: startDegreeOffset,
-          pieTouchData: PieTouchData(
-            enabled: enableTouch,
-            touchCallback: showTooltip ? _handlePieTouch : null,
-          ),
-        ),
-        duration: animationDuration,
-        curve: animationCurve,
-      );
-    } catch (e) {
-      debugPrint('Error building pie chart: $e');
-      return Center(child: Text('Error building chart: ${e.toString()}'));
-    }
+    return const Center(child: Text('No data available for chart generation'));
   }
 
   Curve _getAnimationCurve(int curveOption) {
@@ -419,14 +498,16 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
       for (int i = 0; i < _sections.length; i++) {
         _sections[i] = _sections[i].copyWith(
           radius: widget.chartOptions['sectionRadius'] ?? 100.0,
-          titlePositionPercentageOffset: widget.chartOptions['titlePositionOffset'] ?? 0.6,
+          titlePositionPercentageOffset:
+              widget.chartOptions['titlePositionOffset'] ?? 0.6,
         );
       }
 
       if (touchedIndex >= 0 && touchedIndex < _sections.length) {
         _sections[touchedIndex] = _sections[touchedIndex].copyWith(
           radius: (widget.chartOptions['sectionRadius'] ?? 100.0) * 1.1,
-          titlePositionPercentageOffset: (widget.chartOptions['titlePositionOffset'] ?? 0.6) * 0.9,
+          titlePositionPercentageOffset:
+              (widget.chartOptions['titlePositionOffset'] ?? 0.6) * 0.9,
         );
 
         _showTooltip(context, touchedIndex);
@@ -435,7 +516,9 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
   }
 
   void _showTooltip(BuildContext context, int sectionIndex) {
-    if (sectionIndex < 0 || _sectionData == null || sectionIndex >= _sectionData!.length) {
+    if (sectionIndex < 0 ||
+        _sectionData == null ||
+        sectionIndex >= _sectionData!.length) {
       return;
     }
 
@@ -449,7 +532,8 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
     final value = entry.value;
     final percentage = value / _totalValue * 100;
 
-    final tooltipBgColor = widget.chartOptions['tooltipBgColor'] ?? Colors.white;
+    final tooltipBgColor =
+        widget.chartOptions['tooltipBgColor'] ?? Colors.white;
     final tooltipRadius = widget.chartOptions['tooltipRadius'] ?? 8.0;
 
     final RenderBox box = context.findRenderObject() as RenderBox;
@@ -457,30 +541,34 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
 
     OverlayEntry? overlayEntry;
     overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: position.dy + 100,
-        left: position.dx + 100,
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(tooltipRadius),
-          color: tooltipBgColor,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  category,
-                  style: TextStyle(fontWeight: FontWeight.bold),
+      builder:
+          (context) => Positioned(
+            top: position.dy + 100,
+            left: position.dx + 100,
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(tooltipRadius),
+              color: tooltipBgColor,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
                 ),
-                Text('Value: ${value.toStringAsFixed(2)}'),
-                Text('Percentage: ${percentage.toStringAsFixed(1)}%')
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text('Value: ${value.toStringAsFixed(2)}'),
+                    Text('Percentage: ${percentage.toStringAsFixed(1)}%'),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
     );
 
     Overlay.of(context).insert(overlayEntry);

@@ -195,7 +195,10 @@ class _CategoryTechnologyState extends State<CategoryTechnology>
                 return SizeTransition(
                   sizeFactor: _featuredSectionAnimation,
                   axisAlignment: -1.0, // Align to the top
-                  child: FadeTransition(opacity: _featuredSectionAnimation, child: child),
+                  child: FadeTransition(
+                    opacity: _featuredSectionAnimation,
+                    child: child,
+                  ),
                 );
               },
               child: Container(
@@ -232,9 +235,13 @@ class _CategoryTechnologyState extends State<CategoryTechnology>
                                     scrollController.animateTo(
                                       (scrollController.offset + offset).clamp(
                                         0.0,
-                                        scrollController.position.maxScrollExtent,
+                                        scrollController
+                                            .position
+                                            .maxScrollExtent,
                                       ),
-                                      duration: const Duration(milliseconds: 300),
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
                                       curve: Curves.easeOutCubic,
                                     );
                                   }
@@ -292,7 +299,8 @@ class _CategoryTechnologyState extends State<CategoryTechnology>
                                     Icon(
                                       Icons.search_off_outlined,
                                       size: 48,
-                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                      color: colorScheme.onSurfaceVariant
+                                          .withValues(alpha: 0.5),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(

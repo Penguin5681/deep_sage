@@ -14,7 +14,11 @@ class HoverUnderlineText extends StatefulWidget {
   ///
   /// Example:
   ///
-  const HoverUnderlineText({super.key, required this.text, required this.style});
+  const HoverUnderlineText({
+    super.key,
+    required this.text,
+    required this.style,
+  });
 
   @override
   State<HoverUnderlineText> createState() => _HoverUnderlineTextState();
@@ -31,7 +35,8 @@ class _HoverUnderlineTextState extends State<HoverUnderlineText> {
       child: Text(
         widget.text,
         style: widget.style.copyWith(
-          decoration: _isHovering ? TextDecoration.underline : TextDecoration.none,
+          decoration:
+              _isHovering ? TextDecoration.underline : TextDecoration.none,
           decorationColor: Colors.blue,
         ),
       ),

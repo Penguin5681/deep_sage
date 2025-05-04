@@ -27,11 +27,14 @@ class CategoryFinances extends StatefulWidget {
 }
 
 /// The state for [CategoryFinances].
-class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerProviderStateMixin {
+class _CategoryFinancesState extends State<CategoryFinances>
+    with SingleTickerProviderStateMixin {
   /// Controls the scrolling behavior of the horizontal list of featured datasets.
   final ScrollController scrollController = ScrollController();
+
   /// Manages the animation for the visibility of the featured datasets section.
   late AnimationController _featuredSectionController;
+
   /// Defines the animation properties for the featured datasets section.
   late Animation<double> _featuredSectionAnimation;
 
@@ -40,13 +43,16 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
 
   /// The distance in pixels a user needs to scroll before the header starts to hide.
   final double _scrollThreshold = 50.0;
+
   /// Indicates whether the user is scrolling down.
   bool _isScrollingDown = false;
+
   /// Stores the previous scroll position to determine the scrolling direction.
   double _lastScrollPosition = 0;
 
   /// Indicates whether the popular datasets are still being loaded.
   bool isLoading = true;
+
   /// Holds the list of popular finance datasets.
   List<PopularDataset> popularDatasets = [];
 
@@ -234,7 +240,10 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
                 return SizeTransition(
                   sizeFactor: _featuredSectionAnimation,
                   axisAlignment: -1.0, // Align to the top
-                  child: FadeTransition(opacity: _featuredSectionAnimation, child: child),
+                  child: FadeTransition(
+                    opacity: _featuredSectionAnimation,
+                    child: child,
+                  ),
                 );
               },
               child: Container(
@@ -257,39 +266,44 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 200,
-                      child: isSmallScreen
-                          ? ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        children: _buildDatasetCards(16),
-                      )
-                          : Listener(
-                        onPointerSignal: (PointerSignalEvent event) {
-                          if (event is PointerScrollEvent) {
-                            final offset = event.scrollDelta.dy;
-                            scrollController.animateTo(
-                              (scrollController.offset + offset).clamp(
-                                0.0,
-                                scrollController.position.maxScrollExtent,
+                      child:
+                          isSmallScreen
+                              ? ListView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                children: _buildDatasetCards(16),
+                              )
+                              : Listener(
+                                onPointerSignal: (PointerSignalEvent event) {
+                                  if (event is PointerScrollEvent) {
+                                    final offset = event.scrollDelta.dy;
+                                    scrollController.animateTo(
+                                      (scrollController.offset + offset).clamp(
+                                        0.0,
+                                        scrollController
+                                            .position
+                                            .maxScrollExtent,
+                                      ),
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.easeOutCubic,
+                                    );
+                                  }
+                                },
+                                child: Scrollbar(
+                                  controller: scrollController,
+                                  thumbVisibility: true,
+                                  thickness: 4,
+                                  radius: const Radius.circular(20),
+                                  child: ListView(
+                                    physics: const BouncingScrollPhysics(),
+                                    controller: scrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    children: _buildDatasetCards(25),
+                                  ),
+                                ),
                               ),
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOutCubic,
-                            );
-                          }
-                        },
-                        child: Scrollbar(
-                          controller: scrollController,
-                          thumbVisibility: true,
-                          thickness: 4,
-                          radius: const Radius.circular(20),
-                          child: ListView(
-                            physics: const BouncingScrollPhysics(),
-                            controller: scrollController,
-                            scrollDirection: Axis.horizontal,
-                            children: _buildDatasetCards(25),
-                          ),
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -319,44 +333,46 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
 
                     // List of finance datasets
                     Expanded(
-                      child: isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : popularDatasets.isEmpty
-                          ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off_outlined,
-                              size: 48,
-                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No finance datasets found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: colorScheme.onSurfaceVariant,
+                      child:
+                          isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : popularDatasets.isEmpty
+                              ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.search_off_outlined,
+                                      size: 48,
+                                      color: colorScheme.onSurfaceVariant
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No finance datasets found',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                              : ListView.builder(
+                                controller: _mainScrollController,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: popularDatasets.length,
+                                itemBuilder: (context, index) {
+                                  final dataset = popularDatasets[index];
+                                  return PopularDatasetCard(
+                                    title: dataset.title,
+                                    addedTime: dataset.addedTime,
+                                    fileType: dataset.fileType,
+                                    fileSize: dataset.fileSize,
+                                    datasetId: dataset.id,
+                                  );
+                                },
                               ),
-                            ),
-                          ],
-                        ),
-                      )
-                          : ListView.builder(
-                        controller: _mainScrollController,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: popularDatasets.length,
-                        itemBuilder: (context, index) {
-                          final dataset = popularDatasets[index];
-                          return PopularDatasetCard(
-                            title: dataset.title,
-                            addedTime: dataset.addedTime,
-                            fileType: dataset.fileType,
-                            fileSize: dataset.fileSize,
-                            datasetId: dataset.id,
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
@@ -367,6 +383,7 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
       ),
     );
   }
+
   /// Builds a list of dataset cards for the featured datasets section.
   ///
   /// This method creates a list of `DatasetCard` widgets, each representing
@@ -401,7 +418,8 @@ class _CategoryFinancesState extends State<CategoryFinances> with SingleTickerPr
         lightIconPath: AppIcons.chartLight,
         darkIconPath: AppIcons.chartDark,
         labelText: 'Banking & Investment',
-        subLabelText: 'Credit scoring, risk analysis, and investment performance',
+        subLabelText:
+            'Credit scoring, risk analysis, and investment performance',
         buttonText: 'Search',
         onButtonClick: () => widget.onSearch('Banking Investment'),
       ),

@@ -57,7 +57,10 @@ class DataCleaningService {
   ///
   /// Throws:
   ///   [Exception] if the request fails or returns a non-200 status code.
-  Future<Map<String, dynamic>> getMetadata(String filePath, {String? customNaValues}) async {
+  Future<Map<String, dynamic>> getMetadata(
+    String filePath, {
+    String? customNaValues,
+  }) async {
     final queryParams = {'file_path': filePath};
     if (customNaValues != null) {
       queryParams['custom_na_values'] = customNaValues;
@@ -98,7 +101,10 @@ class DataCleaningService {
     required List<Map<String, dynamic>> cleaningOperations,
     List<String>? customNaValues,
   }) async {
-    final requestBody = {'file_path': filePath, 'cleaning_operations': cleaningOperations};
+    final requestBody = {
+      'file_path': filePath,
+      'cleaning_operations': cleaningOperations,
+    };
     if (customNaValues != null) {
       requestBody['custom_na_values'] = customNaValues;
     }
