@@ -59,7 +59,7 @@ class _PieChartOptionsOverlayState extends State<PieChartOptionsOverlay> {
       // Interaction
       'enableTouch': true,
       'showTooltip': true,
-      'tooltipBgColor': Colors.white,
+      'tooltipBgColor': Colors.teal,
       'tooltipRadius': 8.0,
     };
 
