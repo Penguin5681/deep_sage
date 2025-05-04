@@ -102,6 +102,8 @@ class _VisualizationScreenState extends State<VisualizationScreen>
       return;
     }
 
+    bool isJustOptionsUpdate = _currentChartType == 'pie' || !isNewChartRequest;
+
     setState(() {
       _isGeneratingChart = true;
       _currentChart = const Center(
@@ -172,9 +174,12 @@ class _VisualizationScreenState extends State<VisualizationScreen>
 
               _saveChartState();
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chart generated successfully')),
-              );
+              if (!isJustOptionsUpdate) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Chart generated successfully')),
+                );
+              }
+
             })
             .catchError((error) {
               setState(() {
@@ -213,9 +218,11 @@ class _VisualizationScreenState extends State<VisualizationScreen>
 
         _saveChartState();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Chart generated successfully')),
-        );
+        if (!isJustOptionsUpdate) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chart generated successfully')),
+          );
+        }
       }
     });
   }
