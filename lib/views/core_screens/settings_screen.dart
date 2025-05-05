@@ -382,7 +382,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<AuthClient> obtainAuthenticatedClient() async {
     // this is not a very good way to do shit. remember
     String serviceJson = await rootBundle.loadString(
-      'assets/deepsage-452909-06ec904ead63.json',
+      'assets/deepsage-service-key.json',
     );
     final accountCredentials = ServiceAccountCredentials.fromJson(serviceJson);
 
