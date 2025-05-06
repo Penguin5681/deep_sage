@@ -15,6 +15,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/services/core_services/health_service.dart';
 import 'dashboard.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -40,6 +41,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final Image fallbackUserAvatar = Image.asset(
     'assets/fallback/fallback_user_image.png',
   );
+
+  final HealthService _healthService = HealthService();
+
 
   /// Checks if the current user signed in with Google authentication.
   ///
@@ -86,7 +90,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     currentScreen = Dashboard(onNavigate: navigateToIndex);
     getUserMetadata();
     checkIfGoogleSignIn();
+    _healthService.startMonitoring();
   }
+
+
 
   /// Navigates to a specified index in the navigation rail.
   ///
@@ -102,6 +109,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       selectedIndex = index;
     });
+  }
+
+  Widget _buildBackendStatusIndicator() {
+    return ValueListenableBuilder<BackendStatus>(
+      valueListenable: _healthService.status,
+      builder: (context, status, child) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        Color statusColor;
+        String tooltip;
+        String statusText;
+
+        switch (status) {
+          case BackendStatus.online:
+            statusColor = Colors.green;
+            tooltip = "Backend is online";
+            statusText = "Online";
+            break;
+          case BackendStatus.offline:
+            statusColor = Colors.red;
+            tooltip = "Backend is offline";
+            statusText = "Offline";
+            break;
+          case BackendStatus.error:
+            statusColor = Colors.orange;
+            tooltip = "Backend error";
+            statusText = "Error";
+            break;
+          case BackendStatus.unknown:
+          statusColor = Colors.grey;
+            tooltip = "Checking backend status...";
+            statusText = "Unknown";
+            break;
+        }
+
+        return Tooltip(
+          message: tooltip,
+          child: Container(
+            margin: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 6),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _healthService.stopMonitoring();
+    super.dispose();
   }
 
   final navigatorKey = GlobalKey<NavigatorState>();
@@ -817,7 +903,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 40),
+                        SizedBox(height: 20),
+                        _buildBackendStatusIndicator(),
+                        SizedBox(height: 20),
                         MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: buildProfileImage(),

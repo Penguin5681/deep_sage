@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 
 import '../../core/models/hive_models/user_api_model.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/aws/aws_s3_config_panel.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -438,7 +439,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               uploadImageUrl = imageUrl;
             });
           }
-
         } else {
           debugPrint('Image decoding failed');
         }
@@ -575,6 +575,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     kaggleUsernameInputFocus = FocusNode();
     credsSavedOrNotLetsFindOutResult = isAnyUserApiDataSaved();
     getUserPreferences();
+
+    final box = Hive.box(hiveApiBoxName!);
+    awsS3Enabled = box.get('awss3enabled') ?? false;
 
     bucketName = 'user_image_data';
     projectId = dotenv.env['GCP_PROJECT_ID']!;
@@ -1007,9 +1010,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onChanged: (value) {
                               setState(() {
                                 awsS3Enabled = value;
+                                final hiveBox = Hive.box(hiveApiBoxName!);
+                                hiveBox.put('awss3enabled', value);
                               });
                             },
                           ),
+                          if (awsS3Enabled) ...[
+                            const SizedBox(height: 16),
+                            AWSS3ConfigPanel(),
+                            const SizedBox(height: 8),
+                          ],
                           const SizedBox(height: 24),
                           buildApiManagementSection(),
                           const SizedBox(height: 24),
