@@ -38,9 +38,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// Indicates whether Google Drive integration is enabled.
   bool googleDriveEnabled = false;
 
-  /// Indicates whether Dropbox integration is enabled.
-  bool dropboxEnabled = false;
-
   /// Indicates whether the user should be prompted for a download location.
   bool shouldWeAskForDownloadLocation = false;
 
@@ -479,6 +476,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       UserImageService().updateProfileImageUrl(imageUrl);
       return Image.network(imageUrl);
     }
+
+    if (userId.isNotEmpty) {
+      try {
+        final awsImageUrl = '${dotenv.env['DEV_BASE_URL']!}/api/aws/s3/get-profile-photo/$userId';
+
+        final response = await http.get(Uri.parse(awsImageUrl));
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['url'] != null) {
+            final fetchedImageUrl = data['url'];
+
+            await userHiveBox.put('userAvatarUrl', fetchedImageUrl);
+            UserImageService().updateProfileImageUrl(fetchedImageUrl);
+
+            return Image.network(fetchedImageUrl);
+          }
+        }
+      } catch (e) {
+        debugPrint('Error fetching profile image from AWS: $e');
+      }
+    }
+
+    // Fall back to the default image if all else fails
     return fallbackUserAvatar;
   }
 
@@ -982,20 +1003,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onChanged: (value) {
                               setState(() {
                                 googleDriveEnabled = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          // Reduced spacing
-                          // Dropbox
-                          _buildIntegrationItem(
-                            icon: Icons.folder_outlined,
-                            title: 'Dropbox',
-                            description: 'Connect your Dropbox account',
-                            value: dropboxEnabled,
-                            onChanged: (value) {
-                              setState(() {
-                                dropboxEnabled = value;
                               });
                             },
                           ),

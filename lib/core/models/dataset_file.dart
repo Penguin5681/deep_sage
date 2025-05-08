@@ -1,3 +1,5 @@
+import '../services/core_services/dataset_sync_service/dataset_sync_management_service.dart';
+
 /// A class that represents a file in a dataset.
 ///
 /// This class stores information about a file including its name, type,
@@ -23,6 +25,7 @@ class DatasetFile {
 
   /// The sync status of the file (e.g., "Synced", "NotSynced", "Syncing").
   String? syncStatus;
+
 
   /// Creates a new [DatasetFile] instance with the required properties.
   ///
