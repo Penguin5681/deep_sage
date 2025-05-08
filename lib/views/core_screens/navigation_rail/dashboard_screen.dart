@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/core_services/dataset_sync_service/dataset_sync_management_service.dart';
 import 'package:deep_sage/core/services/keyboard/shortcut_service.dart';
 import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
@@ -177,6 +178,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDownloadIndicator() {
+    return ValueListenableBuilder<Map<String, String>>(
+      valueListenable: DownloadService().activeDownloads,
+      builder: (context, downloads, _) {
+        if (downloads.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Tooltip(
+            message: "${downloads.length} file(s) downloading",
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "${downloads.length}",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -903,6 +956,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ),
+                        SizedBox(height: 20),
+                        _buildDownloadIndicator(),
                         SizedBox(height: 20),
                         _buildBackendStatusIndicator(),
                         SizedBox(height: 20),
