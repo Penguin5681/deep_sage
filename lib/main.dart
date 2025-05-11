@@ -14,6 +14,8 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 
+import 'core/models/hive_models/chat_message_hive.dart';
+import 'core/models/hive_models/chat_session_hive.dart';
 import 'core/services/download_overlay_service.dart';
 import 'core/services/download_service.dart';
 
@@ -29,6 +31,8 @@ Future main() async {
   Hive.registerAdapter(UserApiAdapter());
   Hive.registerAdapter(RecentImportsModelAdapter());
   Hive.registerAdapter(ColorAdapter());
+  Hive.registerAdapter(ChatMessageHiveAdapter());
+  Hive.registerAdapter(ChatSessionHiveAdapter());
 
   await Hive.openBox(dotenv.env['API_HIVE_BOX_NAME']!);
   await Hive.openBox(dotenv.env['USER_HIVE_BOX']!);

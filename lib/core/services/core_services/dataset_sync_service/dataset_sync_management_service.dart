@@ -10,7 +10,8 @@ class DownloadService {
 
   DownloadService._internal();
 
-  final ValueNotifier<Map<String, String>> activeDownloads = ValueNotifier<Map<String, String>>({});
+  final ValueNotifier<Map<String, String>> activeDownloads =
+      ValueNotifier<Map<String, String>>({});
 
   void startDownload(String fileName, String status) {
     final downloads = Map<String, String>.from(activeDownloads.value);
@@ -49,7 +50,9 @@ class DatasetSyncManagementService {
   ///
   /// Throws:
   ///   - [Exception] if the request fails
-  Future<Map<String, dynamic>> getRecordedDatasets({required String userId}) async {
+  Future<Map<String, dynamic>> getRecordedDatasets({
+    required String userId,
+  }) async {
     final uri = Uri.parse(
       '$_baseUrl/api/aws/s3/get-recorded-datasets',
     ).replace(queryParameters: {'user_id': userId});
@@ -64,7 +67,9 @@ class DatasetSyncManagementService {
         final errorMessage = errorData['error'] ?? 'Unknown error';
         throw Exception('Failed to retrieve datasets: $errorMessage');
       } catch (e) {
-        throw Exception('Error ${response.statusCode}: ${response.reasonPhrase}');
+        throw Exception(
+          'Error ${response.statusCode}: ${response.reasonPhrase}',
+        );
       }
     }
   }
@@ -92,7 +97,11 @@ class DatasetSyncManagementService {
     final response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'user_id': userId, 's3_path': s3Path, 'destination_path': destinationPath}),
+      body: jsonEncode({
+        'user_id': userId,
+        's3_path': s3Path,
+        'destination_path': destinationPath,
+      }),
     );
 
     if (response.statusCode == 200) {
@@ -103,7 +112,9 @@ class DatasetSyncManagementService {
         final errorMessage = errorData['error'] ?? 'Unknown error';
         throw Exception('Failed to download dataset: $errorMessage');
       } catch (e) {
-        throw Exception('Error ${response.statusCode}: ${response.reasonPhrase}');
+        throw Exception(
+          'Error ${response.statusCode}: ${response.reasonPhrase}',
+        );
       }
     }
   }

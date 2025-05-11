@@ -351,7 +351,7 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
       }
 
       try {
-        final sections = <PieChartSectionData>[];
+        final _ = <PieChartSectionData>[];
         final colors = [
           Colors.blue,
           Colors.red,
@@ -373,8 +373,7 @@ class _DynamicPieChartState extends State<DynamicPieChart> {
         final titleColor = widget.chartOptions['titleColor'] ?? Colors.white;
         final titlePositionOffset =
             widget.chartOptions['titlePositionOffset'] ?? 0.6;
-        final defaultSectionColor =
-            widget.chartOptions['defaultSectionColor'] ?? Colors.blue;
+        final _ = widget.chartOptions['defaultSectionColor'] ?? Colors.blue;
         final showSectionBorder =
             widget.chartOptions['showSectionBorder'] ?? false;
         final sectionBorderColor =

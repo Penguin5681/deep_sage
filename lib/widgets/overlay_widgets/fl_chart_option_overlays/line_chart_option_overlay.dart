@@ -76,7 +76,7 @@ class _LineChartOptionsOverlayState extends State<LineChartOptionsOverlay> {
     final theme = Theme.of(context);
     final isLight = theme.brightness == Brightness.light;
     final textColor = isLight ? Colors.black : Colors.white;
-    final subTextColor = isLight ? Colors.black54 : Colors.white70;
+    final _ = isLight ? Colors.black54 : Colors.white70;
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -426,7 +426,7 @@ class _LineChartOptionsOverlayState extends State<LineChartOptionsOverlay> {
                     itemCount: colorOptions.length,
                     itemBuilder: (context, index) {
                       final color = colorOptions[index];
-                      final isSelected = value.value == color.value;
+                      final isSelected = value.toARGB32() == color.toARGB32();
 
                       return GestureDetector(
                         onTap: () => _updateOption(optionKey, color),
@@ -489,7 +489,7 @@ class _LineChartOptionsOverlayState extends State<LineChartOptionsOverlay> {
                   ),
                 ),
                 Text(
-                  '#${value.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+                  '#${value.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],

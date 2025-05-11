@@ -45,7 +45,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   final HealthService _healthService = HealthService();
 
-
   /// Checks if the current user signed in with Google authentication.
   ///
   /// This method evaluates the authentication provider from the user's metadata
@@ -94,8 +93,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _healthService.startMonitoring();
   }
 
-
-
   /// Navigates to a specified index in the navigation rail.
   ///
   /// This method updates the [selectedIndex] state variable to reflect the
@@ -139,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             statusText = "Error";
             break;
           case BackendStatus.unknown:
-          statusColor = Colors.grey;
+            statusColor = Colors.grey;
             tooltip = "Checking backend status...";
             statusText = "Unknown";
             break;
@@ -202,10 +199,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -878,7 +877,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final env = dotenv.env['FLUTTER_ENV'];
     final List<Widget> screens = [
-      // This is an array of Screens
       Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
       FolderScreen(onNavigate: navigateToIndex),
@@ -1078,7 +1076,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               selectedIndex: selectedIndex,
             ),
             const VerticalDivider(thickness: 1, width: 1),
-            Expanded(child: screens[selectedIndex]),
+            Expanded(
+              child: IndexedStack(index: selectedIndex, children: screens),
+            ),
           ],
         ),
         floatingActionButton:

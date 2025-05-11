@@ -20,6 +20,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:path/path.dart' as path;
 
+import '../../../widgets/aws/aws_s3_config_panel.dart';
+
 /// The `FolderAll` widget is a stateful widget that displays a list of
 /// all folders and files within a designated root directory.
 ///
@@ -193,7 +195,10 @@ class _FolderAllState extends State<FolderAll> {
   /// for directories that haven't been watched yet. If an error occurs during
   /// the scanning process, it prints an error message to the debug console.
   /// This function performs deep file traversal
-  Future<void> _scanDirectory(String directoryPath, List<DatasetFile> files) async {
+  Future<void> _scanDirectory(
+    String directoryPath,
+    List<DatasetFile> files,
+  ) async {
     final dir = Directory(directoryPath);
     if (!await dir.exists()) return;
 
@@ -272,12 +277,16 @@ class _FolderAllState extends State<FolderAll> {
     if (dirPath.isEmpty) return;
 
     try {
-      directoryWatcher = Directory(dirPath).watch(recursive: true).listen((event) {
+      directoryWatcher = Directory(dirPath).watch(recursive: true).listen((
+        event,
+      ) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             getDirectoryFileCounts(dirPath);
             scanForDatasetFiles(dirPath);
-            debugPrint('Something happened in the root: ${event.path} - ${event.type}');
+            debugPrint(
+              'Something happened in the root: ${event.path} - ${event.type}',
+            );
           }
         });
       });
@@ -304,7 +313,9 @@ class _FolderAllState extends State<FolderAll> {
   ///   for future management.
   void setupFileWatcher(String directoryPath) {
     try {
-      final subscription = Directory(directoryPath).watch(recursive: true).listen((event) {
+      final subscription = Directory(
+        directoryPath,
+      ).watch(recursive: true).listen((event) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             final filePath = event.path;
@@ -312,8 +323,11 @@ class _FolderAllState extends State<FolderAll> {
 
             if (['.json', '.csv', '.txt'].contains(extension)) {
               scanForDatasetFiles(selectedRootDirectoryPath);
-              debugPrint('Something happened to your file niga: ${event.path} - ${event.type}');
-            } else if (event.type == FileSystemEvent.create && Directory(event.path).existsSync()) {
+              debugPrint(
+                'Something happened to your file niga: ${event.path} - ${event.type}',
+              );
+            } else if (event.type == FileSystemEvent.create &&
+                Directory(event.path).existsSync()) {
               setupFileWatcher(event.path);
               watchedDirectories.add(event.path);
               scanForDatasetFiles(selectedRootDirectoryPath);
@@ -371,7 +385,9 @@ class _FolderAllState extends State<FolderAll> {
     final Directory rootDir = Directory(directoryPath);
 
     if (!await rootDir.exists()) {
-      throw DirectoryNotFoundException('Directory does not exist: ${rootDir.path}');
+      throw DirectoryNotFoundException(
+        'Directory does not exist: ${rootDir.path}',
+      );
     }
 
     List<Map<String, String>> result = [];
@@ -472,13 +488,19 @@ class _FolderAllState extends State<FolderAll> {
               width: MediaQuery.of(context).size.width * 0.25,
               decoration: BoxDecoration(
                 border: Border(
-                  right: BorderSide(color: Theme.of(context).dividerColor, width: 1.0),
+                  right: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 1.0,
+                  ),
                 ),
               ),
               child: Column(
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     color: Theme.of(context).cardColor,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -503,7 +525,10 @@ class _FolderAllState extends State<FolderAll> {
                   ),
                   Expanded(
                     child: FileExplorerView(
-                      initialPath: path.join(selectedRootDirectoryPath, selectedFolderForExplorer),
+                      initialPath: path.join(
+                        selectedRootDirectoryPath,
+                        selectedFolderForExplorer,
+                      ),
                       onClose: () {
                         setState(() {
                           isExplorerVisible = false;
@@ -516,7 +541,9 @@ class _FolderAllState extends State<FolderAll> {
             ),
           Expanded(
             child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+              behavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
               child: SingleChildScrollView(
                 physics: BouncingScrollPhysics(),
                 child: Padding(
@@ -532,17 +559,26 @@ class _FolderAllState extends State<FolderAll> {
                               children: [
                                 ElevatedButton(
                                   onPressed: () async {
-                                    FilePickerResult? result = await FilePicker.platform.pickFiles(
-                                      dialogTitle: 'Select dataset(s)',
-                                      allowMultiple: true,
-                                      type: FileType.custom,
-                                      allowedExtensions: ["json", "csv", "txt"],
-                                      lockParentWindow: true,
-                                    );
-                                    if (result != null && result.files.isNotEmpty) {
+                                    FilePickerResult? result = await FilePicker
+                                        .platform
+                                        .pickFiles(
+                                          dialogTitle: 'Select dataset(s)',
+                                          allowMultiple: true,
+                                          type: FileType.custom,
+                                          allowedExtensions: [
+                                            "json",
+                                            "csv",
+                                            "txt",
+                                          ],
+                                          lockParentWindow: true,
+                                        );
+                                    if (result != null &&
+                                        result.files.isNotEmpty) {
                                       List<String> filePaths =
                                           result.files
-                                              .where((file) => file.path != null)
+                                              .where(
+                                                (file) => file.path != null,
+                                              )
                                               .map((file) => file.path!)
                                               .toList();
 
@@ -552,14 +588,20 @@ class _FolderAllState extends State<FolderAll> {
                                         }
 
                                         try {
-                                          List<String> newPaths = await FileTransferUtil.moveFiles(
-                                            sourcePaths: filePaths,
-                                            destinationDirectory: selectedRootDirectoryPath,
-                                            overwriteExisting: false,
-                                          );
+                                          List<String> newPaths =
+                                              await FileTransferUtil.moveFiles(
+                                                sourcePaths: filePaths,
+                                                destinationDirectory:
+                                                    selectedRootDirectoryPath,
+                                                overwriteExisting: false,
+                                              );
 
-                                          debugPrint('Files moved successfully to: $newPaths');
-                                          scanForDatasetFiles(selectedRootDirectoryPath);
+                                          debugPrint(
+                                            'Files moved successfully to: $newPaths',
+                                          );
+                                          scanForDatasetFiles(
+                                            selectedRootDirectoryPath,
+                                          );
                                           setState(() {
                                             anyFilesPresent = true;
                                           });
@@ -582,14 +624,20 @@ class _FolderAllState extends State<FolderAll> {
                                   ),
                                   child: const Text(
                                     "Upload Dataset",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 OutlinedButton(
                                   onPressed: () {},
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                    side: BorderSide(
+                                      color: Colors.blue.shade600,
+                                      width: 2,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -601,7 +649,10 @@ class _FolderAllState extends State<FolderAll> {
                                   ),
                                   child: const Text(
                                     "Search Public Datasets",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -610,7 +661,10 @@ class _FolderAllState extends State<FolderAll> {
                                     await _showSyncedDatasetsDialog(context);
                                   },
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                    side: BorderSide(
+                                      color: Colors.blue.shade600,
+                                      width: 2,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -622,7 +676,10 @@ class _FolderAllState extends State<FolderAll> {
                                   ),
                                   child: const Text(
                                     "Import Synced Datasets with AWS",
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -646,7 +703,10 @@ class _FolderAllState extends State<FolderAll> {
                                             }
                                           },
                                   style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: Colors.blue.shade600, width: 2),
+                                    side: BorderSide(
+                                      color: Colors.blue.shade600,
+                                      width: 2,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
@@ -669,10 +729,14 @@ class _FolderAllState extends State<FolderAll> {
                                           ),
                                         ),
                                       if (_isSyncing) const SizedBox(width: 8),
-                                      ValueListenableBuilder<Map<String, String>>(
-                                        valueListenable: DownloadService().activeDownloads,
+                                      ValueListenableBuilder<
+                                        Map<String, String>
+                                      >(
+                                        valueListenable:
+                                            DownloadService().activeDownloads,
                                         builder: (context, downloads, child) {
-                                          final downloadCount = downloads.length;
+                                          final downloadCount =
+                                              downloads.length;
                                           return Text(
                                             _isSyncing
                                                 ? downloadCount > 0
@@ -754,7 +818,8 @@ class _FolderAllState extends State<FolderAll> {
   Widget _buildUploadedDatasetsList() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final filesMetaData = filteredDatasetFiles.map((file) => file.toMap()).toList();
+    final filesMetaData =
+        filteredDatasetFiles.map((file) => file.toMap()).toList();
 
     return Container(
       width: MediaQuery.of(context).size.width * 0.89,
@@ -776,12 +841,18 @@ class _FolderAllState extends State<FolderAll> {
                   ),
                 ),
               ),
-              Padding(padding: const EdgeInsets.only(bottom: 10.0), child: _buildSearchBar()),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10.0),
+                child: _buildSearchBar(),
+              ),
             ],
           ),
 
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 12.0,
+              horizontal: 16.0,
+            ),
             decoration: BoxDecoration(
               color: isDarkMode ? Color(0xFF2A2D37) : Colors.grey[200],
               borderRadius: BorderRadius.only(
@@ -857,7 +928,9 @@ class _FolderAllState extends State<FolderAll> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.05),
+                  color: Colors.black.withValues(
+                    alpha: isDarkMode ? 0.3 : 0.05,
+                  ),
                   blurRadius: 2.0,
                   spreadRadius: 0.0,
                   offset: Offset(0, 1),
@@ -869,7 +942,10 @@ class _FolderAllState extends State<FolderAll> {
                     ? Center(
                       child: Text(
                         'No datasets found!',
-                        style: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+                        style: TextStyle(
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                        ),
                       ),
                     )
                     : NotificationListener<ScrollNotification>(
@@ -887,7 +963,10 @@ class _FolderAllState extends State<FolderAll> {
                           itemCount: filesMetaData.length,
                           separatorBuilder:
                               (context, index) => Divider(
-                                color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                                color:
+                                    isDarkMode
+                                        ? Colors.grey[800]
+                                        : Colors.grey[200],
                                 height: 1,
                               ),
                           itemBuilder: (context, index) {
@@ -905,20 +984,29 @@ class _FolderAllState extends State<FolderAll> {
                                       horizontal: 16.0,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: isDarkMode ? Color(0xFF1F222A) : Colors.white,
+                                      color:
+                                          isDarkMode
+                                              ? Color(0xFF1F222A)
+                                              : Colors.white,
                                       border:
                                           index == filesMetaData.length - 1
                                               ? Border(
-                                                bottom: BorderSide(color: Colors.transparent),
+                                                bottom: BorderSide(
+                                                  color: Colors.transparent,
+                                                ),
                                               )
                                               : null,
                                     ),
                                     child: Row(
                                       children: [
                                         Icon(
-                                          _getFileIcon(fileData['fileType'] ?? ''),
+                                          _getFileIcon(
+                                            fileData['fileType'] ?? '',
+                                          ),
                                           size: 24,
-                                          color: _getFileColor(fileData['fileType'] ?? ''),
+                                          color: _getFileColor(
+                                            fileData['fileType'] ?? '',
+                                          ),
                                         ),
                                         SizedBox(width: 8),
                                         Expanded(
@@ -928,26 +1016,37 @@ class _FolderAllState extends State<FolderAll> {
                                             style: TextStyle(
                                               fontSize: 16.0,
                                               fontWeight: FontWeight.w500,
-                                              color: isDarkMode ? Colors.white : Colors.black87,
+                                              color:
+                                                  isDarkMode
+                                                      ? Colors.white
+                                                      : Colors.black87,
                                             ),
                                           ),
                                         ),
                                         Expanded(
                                           flex: 1,
                                           child: Container(
-                                            padding: EdgeInsets.only(top: 4.0, bottom: 4.0),
+                                            padding: EdgeInsets.only(
+                                              top: 4.0,
+                                              bottom: 4.0,
+                                            ),
                                             decoration: BoxDecoration(
                                               color: _getFileColor(
                                                 fileData['fileType'] ?? '',
-                                              ).withValues(alpha: isDarkMode ? 0.2 : 0.1),
-                                              borderRadius: BorderRadius.circular(12.0),
+                                              ).withValues(
+                                                alpha: isDarkMode ? 0.2 : 0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12.0),
                                             ),
                                             child: Text(
                                               fileData['fileType'] ?? '',
                                               textAlign: TextAlign.center,
                                               style: TextStyle(
                                                 fontSize: 14.0,
-                                                color: _getFileColor(fileData['fileType'] ?? ''),
+                                                color: _getFileColor(
+                                                  fileData['fileType'] ?? '',
+                                                ),
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -960,7 +1059,9 @@ class _FolderAllState extends State<FolderAll> {
                                             style: TextStyle(
                                               fontSize: 14.0,
                                               color:
-                                                  isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                                  isDarkMode
+                                                      ? Colors.grey[400]
+                                                      : Colors.grey[700],
                                             ),
                                           ),
                                         ),
@@ -971,16 +1072,21 @@ class _FolderAllState extends State<FolderAll> {
                                             style: TextStyle(
                                               fontSize: 14.0,
                                               color:
-                                                  isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                                                  isDarkMode
+                                                      ? Colors.grey[400]
+                                                      : Colors.grey[700],
                                             ),
                                           ),
                                         ),
                                         Expanded(
                                           flex: 1,
                                           child: Padding(
-                                            padding: const EdgeInsets.only(right: 100.0),
+                                            padding: const EdgeInsets.only(
+                                              right: 100.0,
+                                            ),
                                             child: _buildSyncStatusIndicator(
-                                              filesMetaData[index]['syncStatus'] ?? "NotSynced",
+                                              filesMetaData[index]['syncStatus'] ??
+                                                  "NotSynced",
                                             ),
                                           ),
                                         ),
@@ -993,16 +1099,22 @@ class _FolderAllState extends State<FolderAll> {
                                             color:
                                                 datasetFiles[index].isStarred
                                                     ? Colors.amber
-                                                    : (isDarkMode ? Colors.grey[400] : null),
+                                                    : (isDarkMode
+                                                        ? Colors.grey[400]
+                                                        : null),
                                           ),
                                           onPressed: () {
-                                            final index = datasetFiles.indexWhere(
-                                              (file) => file.filePath == fileData['filePath'],
-                                            );
+                                            final index = datasetFiles
+                                                .indexWhere(
+                                                  (file) =>
+                                                      file.filePath ==
+                                                      fileData['filePath'],
+                                                );
                                             if (index != -1) {
                                               setState(() {
                                                 datasetFiles[index].isStarred =
-                                                    !datasetFiles[index].isStarred;
+                                                    !datasetFiles[index]
+                                                        .isStarred;
                                               });
                                               _saveStarredStatus(
                                                 datasetFiles[index].filePath,
@@ -1017,9 +1129,15 @@ class _FolderAllState extends State<FolderAll> {
                                           icon: Icon(
                                             Icons.more_vert,
                                             size: 20,
-                                            color: isDarkMode ? Colors.grey[400] : null,
+                                            color:
+                                                isDarkMode
+                                                    ? Colors.grey[400]
+                                                    : null,
                                           ),
-                                          onPressed: () => _openFileDetails(datasetFiles[index]),
+                                          onPressed:
+                                              () => _openFileDetails(
+                                                datasetFiles[index],
+                                              ),
                                           tooltip: "More options",
                                           splashRadius: 20,
                                         ),
@@ -1076,7 +1194,10 @@ class _FolderAllState extends State<FolderAll> {
         break;
     }
 
-    return Tooltip(message: tooltipText, child: Icon(iconData, color: iconColor, size: 20));
+    return Tooltip(
+      message: tooltipText,
+      child: Icon(iconData, color: iconColor, size: 20),
+    );
   }
 
   /// Opens a dialog to display detailed information about the selected file.
@@ -1088,14 +1209,19 @@ class _FolderAllState extends State<FolderAll> {
   /// Args:
   ///   - `file`: The `DatasetFile` object containing the file's information.
   Future<void> _openFileDetails(DatasetFile file) async {
-    showDialog(context: context, builder: (context) => _buildFileDetailsDialog(file));
+    showDialog(
+      context: context,
+      builder: (context) => _buildFileDetailsDialog(file),
+    );
   }
 
   Future<void> _showSyncedDatasetsDialog(BuildContext context) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please sign in to access your synced datasets')),
+        const SnackBar(
+          content: Text('Please sign in to access your synced datasets'),
+        ),
       );
       return;
     }
@@ -1118,7 +1244,8 @@ class _FolderAllState extends State<FolderAll> {
     );
 
     try {
-      final DatasetSyncManagementService syncService = DatasetSyncManagementService();
+      final DatasetSyncManagementService syncService =
+          DatasetSyncManagementService();
       final datasets = await syncService.getRecordedDatasets(userId: user.id);
 
       if (!context.mounted) return;
@@ -1126,15 +1253,21 @@ class _FolderAllState extends State<FolderAll> {
 
       if (!context.mounted) return;
 
-      if (datasets['datasets'] == null || (datasets['datasets'] as List).isEmpty) {
+      if (datasets['datasets'] == null ||
+          (datasets['datasets'] as List).isEmpty) {
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text('No Synced Datasets'),
-              content: const Text('You don\'t have any datasets synced with the cloud.'),
+              content: const Text(
+                'You don\'t have any datasets synced with the cloud.',
+              ),
               actions: [
-                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
               ],
             );
           },
@@ -1157,7 +1290,10 @@ class _FolderAllState extends State<FolderAll> {
             title: const Text('Error'),
             content: Text('Failed to fetch synced datasets: ${e.toString()}'),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('OK')),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
             ],
           );
         },
@@ -1187,7 +1323,9 @@ class _FolderAllState extends State<FolderAll> {
 
     if (rootDirectoryPath == null || rootDirectoryPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please set a root directory in settings first')),
+        const SnackBar(
+          content: Text('Please set a root directory in settings first'),
+        ),
       );
       return;
     }
@@ -1206,24 +1344,36 @@ class _FolderAllState extends State<FolderAll> {
                   itemCount: datasets.length,
                   itemBuilder: (context, index) {
                     final dataset = datasets[index];
-                    final datasetName = dataset['dataset_name'] ?? 'Unnamed Dataset';
-                    final isDownloading = _downloadingFiles.containsKey(datasetName);
+                    final datasetName =
+                        dataset['dataset_name'] ?? 'Unnamed Dataset';
+                    final isDownloading = _downloadingFiles.containsKey(
+                      datasetName,
+                    );
 
                     return ListTile(
                       title: Text(datasetName),
-                      subtitle: Text('Size: ${dataset['file_size'] ?? 'Unknown'}'),
+                      subtitle: Text(
+                        'Size: ${dataset['file_size'] ?? 'Unknown'}',
+                      ),
                       trailing:
                           isDownloading
                               ? const SizedBox(
                                 width: 24,
                                 height: 24,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                               : IconButton(
                                 icon: const Icon(Icons.download),
                                 onPressed: () {
                                   Navigator.of(context).pop();
-                                  _downloadDataset(context, dataset, userId, rootDirectoryPath);
+                                  _downloadDataset(
+                                    context,
+                                    dataset,
+                                    userId,
+                                    rootDirectoryPath,
+                                  );
                                 },
                               ),
                     );
@@ -1241,6 +1391,132 @@ class _FolderAllState extends State<FolderAll> {
         );
       },
     );
+  }
+
+  /// Checks for AWS S3 credentials and shows the configuration panel if missing.
+  ///
+  /// This method verifies if the required AWS S3 configuration exists in the Hive storage.
+  /// If the configuration is incomplete or missing, it displays the AWS S3 configuration
+  /// panel as an overlay to collect the necessary credentials.
+  ///
+  /// Parameters:
+  ///   - `context`: The BuildContext required for showing the overlay
+  ///   - `onComplete`: Optional callback function that runs after configuration is complete
+  ///
+  /// Returns:
+  ///   A [Future<bool>] that resolves to:
+  ///   - `true` if credentials are already available or were successfully configured
+  ///   - `false` if configuration was cancelled or failed
+  Future<bool> checkAndConfigureAWSCredentials(
+    BuildContext context, {
+    Function? onComplete,
+  }) async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+    // Check if all required AWS S3 credentials are available
+    final accessKey = hiveBox.get('aws_access_key');
+    final secretKey = hiveBox.get('aws_secret_key');
+    final region = hiveBox.get('aws_region');
+    final bucket = hiveBox.get('aws_bucket');
+
+    if (accessKey == null ||
+        secretKey == null ||
+        region == null ||
+        bucket == null) {
+      bool configurationCompleted =
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder:
+                (context) => Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    width: 500,
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AWS S3 Configuration Required',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Please configure your AWS S3 credentials to continue',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const AWSS3ConfigPanel(),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () {
+                                // Check if configuration is now complete
+                                final updatedAccessKey = hiveBox.get(
+                                  'aws_access_key',
+                                );
+                                final updatedSecretKey = hiveBox.get(
+                                  'aws_secret_key',
+                                );
+                                final updatedRegion = hiveBox.get('aws_region');
+                                final updatedBucket = hiveBox.get('aws_bucket');
+
+                                if (updatedAccessKey != null &&
+                                    updatedSecretKey != null &&
+                                    updatedRegion != null &&
+                                    updatedBucket != null) {
+                                  Navigator.of(context).pop(true);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please complete the AWS S3 configuration',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: const Text('Done'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ) ??
+          false;
+
+      if (configurationCompleted && onComplete != null) {
+        onComplete();
+      }
+
+      return configurationCompleted;
+    }
+
+    // Credentials are already available
+    if (onComplete != null) {
+      onComplete();
+    }
+    return true;
   }
 
   /// Downloads a dataset from the cloud.
@@ -1264,8 +1540,21 @@ class _FolderAllState extends State<FolderAll> {
     String userId,
     String rootDirectoryPath,
   ) async {
+    bool credsOk = await checkAndConfigureAWSCredentials(context);
+    if (!credsOk) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AWS credentials are not configured.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final datasetName =
-        dataset['dataset_name'] ?? 'dataset_${DateTime.now().millisecondsSinceEpoch}';
+        dataset['dataset_name'] ??
+        'dataset_${DateTime.now().millisecondsSinceEpoch}';
     final fileType = dataset['file_type'] ?? 'csv';
 
     String fileName = datasetName;
@@ -1280,7 +1569,10 @@ class _FolderAllState extends State<FolderAll> {
       fileName = fileName.substring(0, lastDotIndex);
     }
 
-    final destinationPath = path.join(rootDirectoryPath, '$fileName.$extension');
+    final destinationPath = path.join(
+      rootDirectoryPath,
+      '$fileName.$extension',
+    );
 
     if (File(destinationPath).existsSync()) {
       debugPrint("$destinationPath already exists locally");
@@ -1341,7 +1633,9 @@ class _FolderAllState extends State<FolderAll> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to download $fileName.$extension: ${e.toString()}'),
+            content: Text(
+              'Failed to download $fileName.$extension: ${e.toString()}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1366,40 +1660,58 @@ class _FolderAllState extends State<FolderAll> {
     final userId = userBox.get('userId');
     final rootDirectoryPath = apiBox.get('selectedRootDirectoryPath');
 
+    bool credsOk = await checkAndConfigureAWSCredentials(context);
+    if (!credsOk) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AWS credentials are not configured.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (userId == null) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('You need to be signed in to sync files')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be signed in to sync files'),
+          ),
+        );
       }
       return;
     }
 
     if (rootDirectoryPath == null || rootDirectoryPath.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Please select a root directory first')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a root directory first')),
+        );
       }
       return;
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Preparing to sync all files...')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preparing to sync all files...')),
+      );
     }
 
     try {
       final datasetSyncService = DatasetSyncManagementService();
-      final response = await datasetSyncService.getRecordedDatasets(userId: userId);
+      final response = await datasetSyncService.getRecordedDatasets(
+        userId: userId,
+      );
       final List<dynamic> cloudDatasets = response['datasets'] ?? [];
 
       if (cloudDatasets.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('No synced datasets found in the cloud')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No synced datasets found in the cloud'),
+            ),
+          );
         }
         return;
       }
@@ -1430,7 +1742,9 @@ class _FolderAllState extends State<FolderAll> {
       if (datasetsToDownload.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('All cloud datasets are already synced locally')),
+            const SnackBar(
+              content: Text('All cloud datasets are already synced locally'),
+            ),
           );
         }
         return;
@@ -1438,7 +1752,9 @@ class _FolderAllState extends State<FolderAll> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Downloading ${datasetsToDownload.length} files...')),
+          SnackBar(
+            content: Text('Downloading ${datasetsToDownload.length} files...'),
+          ),
         );
       }
 
@@ -1478,7 +1794,9 @@ class _FolderAllState extends State<FolderAll> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sync complete: $successCount downloaded, $failCount failed'),
+            content: Text(
+              'Sync complete: $successCount downloaded, $failCount failed',
+            ),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -1548,7 +1866,8 @@ class _FolderAllState extends State<FolderAll> {
                         file.filePath,
                         style: TextStyle(
                           fontSize: 14,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[700],
+                          color:
+                              isDarkMode ? Colors.grey[400] : Colors.grey[700],
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1627,7 +1946,10 @@ class _FolderAllState extends State<FolderAll> {
                     Navigator.pop(context);
                   },
                   style: TextButton.styleFrom(
-                    foregroundColor: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade700,
+                    foregroundColor:
+                        isDarkMode
+                            ? Colors.blue.shade300
+                            : Colors.blue.shade700,
                   ),
                 ),
                 SizedBox(width: 12),
@@ -1669,7 +1991,9 @@ class _FolderAllState extends State<FolderAll> {
         return false;
       }
 
-      final response = await DatasetSyncManagementService().getRecordedDatasets(userId: userId);
+      final response = await DatasetSyncManagementService().getRecordedDatasets(
+        userId: userId,
+      );
 
       final List<dynamic> datasets = response['datasets'] ?? [];
 
@@ -1700,6 +2024,18 @@ class _FolderAllState extends State<FolderAll> {
     final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
     final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
     final apiBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+    bool credsOk = await checkAndConfigureAWSCredentials(context);
+    if (!credsOk) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AWS credentials are not configured.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     if (await _isFileAlreadySynced(filePath)) {
       if (!mounted) {
@@ -1864,9 +2200,13 @@ class _FolderAllState extends State<FolderAll> {
           });
         }
 
-        debugPrint('Successfully updated sync status for ${syncedFiles.length} files');
+        debugPrint(
+          'Successfully updated sync status for ${syncedFiles.length} files',
+        );
       } else {
-        debugPrint('Failed to fetch synced datasets. Status code: ${response.statusCode}');
+        debugPrint(
+          'Failed to fetch synced datasets. Status code: ${response.statusCode}',
+        );
         debugPrint('Response: ${response.body}');
       }
     } catch (e) {
@@ -1906,7 +2246,10 @@ class _FolderAllState extends State<FolderAll> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87),
+              style: TextStyle(
+                fontSize: 14,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
             ),
           ),
         ],
@@ -1946,7 +2289,8 @@ class _FolderAllState extends State<FolderAll> {
             Icon(
               icon,
               size: 20,
-              color: color ?? (isDarkMode ? Colors.grey[400] : Colors.grey[700]),
+              color:
+                  color ?? (isDarkMode ? Colors.grey[400] : Colors.grey[700]),
             ),
             SizedBox(width: 12),
             Text(
@@ -2111,7 +2455,9 @@ class _FolderAllState extends State<FolderAll> {
   void _handleRenameDataset(String filePath) {
     final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
 
-    TextEditingController renameController = TextEditingController(text: file.fileName);
+    TextEditingController renameController = TextEditingController(
+      text: file.fileName,
+    );
 
     showDialog(
       context: context,
@@ -2121,13 +2467,20 @@ class _FolderAllState extends State<FolderAll> {
             content: TextField(
               controller: renameController,
               autofocus: true,
-              decoration: InputDecoration(hintText: 'Enter new name', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                hintText: 'Enter new name',
+                border: OutlineInputBorder(),
+              ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () async {
-                  if (renameController.text.isNotEmpty && renameController.text != file.fileName) {
+                  if (renameController.text.isNotEmpty &&
+                      renameController.text != file.fileName) {
                     String newName = renameController.text;
                     String extension = path.extension(file.filePath);
 
@@ -2149,9 +2502,9 @@ class _FolderAllState extends State<FolderAll> {
                       Navigator.pop(context);
                     } catch (e) {
                       debugPrint('Error renaming file: $e');
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('Failed to rename file: $e')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to rename file: $e')),
+                      );
                       Navigator.pop(context);
                     }
                   }
@@ -2193,7 +2546,10 @@ class _FolderAllState extends State<FolderAll> {
               'Are you sure you want to delete "${file.fileName}"? This cannot be undone.',
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
+              ),
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
                 onPressed: () async {
@@ -2210,9 +2566,9 @@ class _FolderAllState extends State<FolderAll> {
                     Navigator.pop(context);
                   } catch (e) {
                     debugPrint('Error deleting file: $e');
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('Failed to delete file: $e')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to delete file: $e')),
+                    );
                     Navigator.pop(context);
                   }
                 },
@@ -2385,10 +2741,17 @@ class _FolderAllState extends State<FolderAll> {
                     itemCount: folders.length,
                     itemBuilder: (context, index) {
                       return Padding(
-                        padding: const EdgeInsets.only(right: 16.0, bottom: 8.0),
+                        padding: const EdgeInsets.only(
+                          right: 16.0,
+                          bottom: 8.0,
+                        ),
                         child: SizedBox(
                           width: 280,
-                          child: _buildFolderCard(folders[index], isDarkMode, index),
+                          child: _buildFolderCard(
+                            folders[index],
+                            isDarkMode,
+                            index,
+                          ),
                         ),
                       );
                     },
@@ -2412,18 +2775,27 @@ class _FolderAllState extends State<FolderAll> {
   /// Args:
   ///   - `folder`: A map containing folder details, including 'name' and 'files'.
   ///   - `isDarkMode`: A boolean indicating whether dark mode is enabled.
-  Widget _buildFolderCard(Map<String, String> folder, bool isDarkMode, int index) {
+  Widget _buildFolderCard(
+    Map<String, String> folder,
+    bool isDarkMode,
+    int index,
+  ) {
     return MouseRegion(
       onEnter: (_) => setState(() => hoveredFolderIndex = index),
       onExit: (_) => setState(() => hoveredFolderIndex = -1),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         transform:
-            hoveredFolderIndex == index ? Matrix4.translationValues(0, -5, 0) : Matrix4.identity(),
+            hoveredFolderIndex == index
+                ? Matrix4.translationValues(0, -5, 0)
+                : Matrix4.identity(),
         decoration: BoxDecoration(
           color: isDarkMode ? Color(0xFF2A2D37) : Colors.white,
           borderRadius: BorderRadius.circular(12.0),
-          border: Border.all(color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!, width: 1.0),
+          border: Border.all(
+            color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+            width: 1.0,
+          ),
           boxShadow: [
             BoxShadow(
               color:
@@ -2453,7 +2825,11 @@ class _FolderAllState extends State<FolderAll> {
                       color: isDarkMode ? Color(0xFF3A3E4A) : Color(0xFFF5F7FB),
                       borderRadius: BorderRadius.circular(8.0),
                     ),
-                    child: Icon(Icons.folder, color: Colors.blue[400], size: 24.0),
+                    child: Icon(
+                      Icons.folder,
+                      color: Colors.blue[400],
+                      size: 24.0,
+                    ),
                   ),
                   SizedBox(width: 12.0),
                   Expanded(
@@ -2474,7 +2850,10 @@ class _FolderAllState extends State<FolderAll> {
                           folder['files']!,
                           style: TextStyle(
                             fontSize: 12.0,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                            color:
+                                isDarkMode
+                                    ? Colors.grey[400]
+                                    : Colors.grey[600],
                           ),
                         ),
                       ],
@@ -2487,13 +2866,19 @@ class _FolderAllState extends State<FolderAll> {
                   openFileExplorer(folder['name']!);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
+                  backgroundColor:
+                      isDarkMode ? Color(0xFF3A3E4A) : Colors.white,
                   foregroundColor: isDarkMode ? Colors.white : Colors.blue[700],
                   elevation: 0,
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
-                    side: BorderSide(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!),
+                    side: BorderSide(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                    ),
                   ),
                 ),
                 child: Row(
@@ -2559,8 +2944,13 @@ class _FolderAllState extends State<FolderAll> {
   }) {
     return Column(
       children: [
-        const Text('No Files Yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26.0)),
-        const Text('This folder is empty. Upload files to get started with your data analysis.'),
+        const Text(
+          'No Files Yet',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26.0),
+        ),
+        const Text(
+          'This folder is empty. Upload files to get started with your data analysis.',
+        ),
         const SizedBox(height: 18.0),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2570,8 +2960,13 @@ class _FolderAllState extends State<FolderAll> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue.shade600,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: Text(
                 'Upload File(s)',
@@ -2583,9 +2978,14 @@ class _FolderAllState extends State<FolderAll> {
               onPressed: onImportClicked,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.blue.shade600, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 foregroundColor: Colors.blue.shade600,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 "Import from Kaggle",
@@ -2599,9 +2999,14 @@ class _FolderAllState extends State<FolderAll> {
               },
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.blue.shade600, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 foregroundColor: Colors.blue.shade600,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 "Import Synced Datasets with AWS",
@@ -2630,9 +3035,14 @@ class _FolderAllState extends State<FolderAll> {
                       },
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.blue.shade600, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 foregroundColor: Colors.blue.shade600,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -2641,7 +3051,10 @@ class _FolderAllState extends State<FolderAll> {
                     SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(color: Colors.blue.shade600, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.blue.shade600,
+                        strokeWidth: 2,
+                      ),
                     ),
                   if (_isSyncing) const SizedBox(width: 8),
                   ValueListenableBuilder<Map<String, String>>(
@@ -2654,7 +3067,10 @@ class _FolderAllState extends State<FolderAll> {
                                 ? "Syncing ($downloadCount)"
                                 : "Syncing..."
                             : "Auto Sync",
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       );
                     },
                   ),
@@ -2702,7 +3118,8 @@ class _FolderAllState extends State<FolderAll> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(50),
                                 color:
-                                    Theme.of(context).brightness == Brightness.dark
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
                                         ? Colors.grey
                                         : Colors.white,
                               ),
@@ -2714,7 +3131,10 @@ class _FolderAllState extends State<FolderAll> {
                           ),
                           const Text(
                             'Select root directory for datasets',
-                            style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 28.0,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const Text(
                             'Choose a location where all your datasets will be stored. This directory will serve as the base for all dataset operations',
@@ -2727,13 +3147,20 @@ class _FolderAllState extends State<FolderAll> {
                             children: [
                               Expanded(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4.0),
-                                    color: isDarkModeEnabled ? Colors.grey[800] : Colors.grey[100],
+                                    color:
+                                        isDarkModeEnabled
+                                            ? Colors.grey[800]
+                                            : Colors.grey[100],
                                   ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Text(
@@ -2753,22 +3180,28 @@ class _FolderAllState extends State<FolderAll> {
                                         cursor: SystemMouseCursors.click,
                                         child: GestureDetector(
                                           onTap: () async {
-                                            String? selectedDir = await FilePicker.platform
+                                            String?
+                                            selectedDir = await FilePicker
+                                                .platform
                                                 .getDirectoryPath(
-                                                  dialogTitle: 'Select root directory for datasets',
+                                                  dialogTitle:
+                                                      'Select root directory for datasets',
                                                 );
                                             if (selectedDir != null) {
                                               setDialogState(() {
-                                                selectedRootDirectoryPath = selectedDir;
+                                                selectedRootDirectoryPath =
+                                                    selectedDir;
                                               });
 
                                               setState(() {
-                                                selectedRootDirectoryPath = selectedDir;
+                                                selectedRootDirectoryPath =
+                                                    selectedDir;
                                                 isRootDirectorySelected = true;
                                               });
 
                                               final hiveBox = Hive.box(
-                                                dotenv.env['API_HIVE_BOX_NAME']!,
+                                                dotenv
+                                                    .env['API_HIVE_BOX_NAME']!,
                                               );
                                               await hiveBox.put(
                                                 'selectedRootDirectoryPath',
@@ -2778,7 +3211,10 @@ class _FolderAllState extends State<FolderAll> {
                                           },
                                           child: Icon(
                                             Icons.folder_open_outlined,
-                                            color: isDarkModeEnabled ? Colors.white : Colors.black,
+                                            color:
+                                                isDarkModeEnabled
+                                                    ? Colors.white
+                                                    : Colors.black,
                                             size: 18.0,
                                           ),
                                         ),
@@ -2844,7 +3280,10 @@ class _FolderAllState extends State<FolderAll> {
 
       if (result != null && result.files.isNotEmpty) {
         List<String> sourcePaths =
-            result.paths.where((path) => path != null).map((path) => path!).toList();
+            result.paths
+                .where((path) => path != null)
+                .map((path) => path!)
+                .toList();
         debugPrint('Source paths to move: $sourcePaths');
         debugPrint('Destination directory: $selectedRootDirectoryPath');
 
@@ -2853,7 +3292,9 @@ class _FolderAllState extends State<FolderAll> {
             final destDir = Directory(selectedRootDirectoryPath);
             if (!await destDir.exists()) {
               await destDir.create(recursive: true);
-              debugPrint('Created destination directory: $selectedRootDirectoryPath');
+              debugPrint(
+                'Created destination directory: $selectedRootDirectoryPath',
+              );
             }
 
             List<String> newPaths = await FileTransferUtil.moveFiles(

@@ -454,7 +454,7 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                     itemCount: colorOptions.length,
                     itemBuilder: (context, index) {
                       final color = colorOptions[index];
-                      final isSelected = value.value == color.value;
+                      final isSelected = value.toARGB32() == color.toARGB32();
 
                       return GestureDetector(
                         onTap: () => _updateOption(optionKey, color),
@@ -517,7 +517,7 @@ class _BarChartOptionsOverlayState extends State<BarChartOptionsOverlay> {
                   ),
                 ),
                 Text(
-                  '#${value.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+                  '#${value.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
