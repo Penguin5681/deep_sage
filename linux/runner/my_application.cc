@@ -19,16 +19,89 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+// Add this function to your application to debug icon loading issues
+
+void debug_asset_paths(const char* iconFilename) {
+    g_print("\n--- DEBUG: Icon Path Information ---\n");
+
+    try {
+        std::filesystem::path execPath = std::filesystem::read_symlink("/proc/self/exe");
+        g_print("Executable path: %s\n", execPath.c_str());
+
+        std::filesystem::path execDir = execPath.parent_path();
+        g_print("Executable directory: %s\n", execDir.c_str());
+
+        std::filesystem::path expectedIconPath = execDir / "data/flutter_assets" / iconFilename;
+        g_print("Expected icon path: %s\n", expectedIconPath.c_str());
+        g_print("Icon exists: %s\n", std::filesystem::exists(expectedIconPath) ? "YES" : "NO");
+
+        std::filesystem::path assetsDir = execDir / "data/flutter_assets";
+        if (std::filesystem::exists(assetsDir) && std::filesystem::is_directory(assetsDir)) {
+            g_print("Contents of %s:\n", assetsDir.c_str());
+            for (const auto& entry : std::filesystem::directory_iterator(assetsDir)) {
+                g_print("  %s\n", entry.path().filename().c_str());
+            }
+
+            std::filesystem::path iconDir = assetsDir / "assets/app_icon";
+            if (std::filesystem::exists(iconDir) && std::filesystem::is_directory(iconDir)) {
+                g_print("Contents of %s:\n", iconDir.c_str());
+                for (const auto& entry : std::filesystem::directory_iterator(iconDir)) {
+                    g_print("  %s\n", entry.path().filename().c_str());
+                }
+            } else {
+                g_print("Icon directory %s does not exist or is not a directory\n", iconDir.c_str());
+            }
+        } else {
+            g_print("Assets directory %s does not exist or is not a directory\n", assetsDir.c_str());
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        g_print("Filesystem error: %s\n", e.what());
+    }
+
+    g_print("--- End Debug Info ---\n\n");
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
-  const string iconFilename = "assets/ico_files/deep_sage_icon-removebg_linux.png";
-  path execDir = canonical(read_symlink("/proc/self/exe")).parent_path();
-  path iconPath = execDir / "data/flutter_assets" / iconFilename;
-  gtk_window_set_icon_from_file(GTK_WINDOW(window), iconPath.c_str(), NULL);
+  debug_asset_paths("assets/app_icon/ap_1.png");
+
+  GError* error = NULL;
+  std::filesystem::path execDir;
+  try {
+    execDir = std::filesystem::canonical(std::filesystem::read_symlink("/proc/self/exe")).parent_path();
+    std::filesystem::path iconPath = execDir / "data/flutter_assets/assets/app_icon/ap_1.png";
+
+    g_print("Attempting to load icon from: %s\n", iconPath.c_str());
+
+    if (std::filesystem::exists(iconPath)) {
+      if (gtk_window_set_icon_from_file(window, iconPath.c_str(), &error)) {
+        g_print("Successfully set icon!\n");
+      } else {
+        g_warning("Failed to set icon: %s", error ? error->message : "unknown error");
+        g_clear_error(&error);
+
+        // Try loading with GdkPixbuf as alternative method
+        GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(iconPath.c_str(), &error);
+        if (pixbuf) {
+          gtk_window_set_icon(window, pixbuf);
+          g_object_unref(pixbuf);
+          g_print("Set icon using GdkPixbuf alternative method\n");
+        } else {
+          g_warning("GdkPixbuf also failed to load icon: %s",
+                   error ? error->message : "unknown error");
+          g_clear_error(&error);
+        }
+      }
+    } else {
+      g_warning("Icon file does not exist at expected path");
+    }
+  } catch (const std::filesystem::filesystem_error& e) {
+    g_warning("Failed to determine executable path: %s", e.what());
+  }
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -50,11 +123,11 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "deep_sage");
+    gtk_header_bar_set_title(header_bar, "Deep Sage");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "deep_sage");
+    gtk_window_set_title(window, "Deep Sage");
   }
 
   gtk_window_set_default_size(window, 1280, 720);

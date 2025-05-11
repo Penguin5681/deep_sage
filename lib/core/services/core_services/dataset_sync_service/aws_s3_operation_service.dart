@@ -21,13 +21,15 @@ class AWSS3OperationService {
   final String _baseUrl;
 
   /// Singleton instance of the service.
-  static final AWSS3OperationService _instance = AWSS3OperationService._internal();
+  static final AWSS3OperationService _instance =
+      AWSS3OperationService._internal();
 
   /// Factory constructor that returns the singleton instance.
   factory AWSS3OperationService() => _instance;
 
   /// Private constructor that initializes the base URL from environment variables.
-  AWSS3OperationService._internal() : _baseUrl = dotenv.env['DEV_BASE_URL'] ?? '';
+  AWSS3OperationService._internal()
+    : _baseUrl = dotenv.env['DEV_BASE_URL'] ?? '';
 
   /// Lists all buckets accessible with the provided AWS credentials.
   ///
@@ -92,7 +94,10 @@ class AWSS3OperationService {
     required String region,
     required String bucketName,
   }) async {
-    final request = http.MultipartRequest('PUT', Uri.parse('$_baseUrl/api/aws/s3/upload-dataset'));
+    final request = http.MultipartRequest(
+      'PUT',
+      Uri.parse('$_baseUrl/api/aws/s3/upload-dataset'),
+    );
 
     // Add AWS credentials as headers
     request.headers.addAll({
@@ -145,7 +150,10 @@ class AWSS3OperationService {
     }
   }
 
-  String constructS3Path({required String bucketName, required String filePath}) {
+  String constructS3Path({
+    required String bucketName,
+    required String filePath,
+  }) {
     return 's3://$bucketName/$filePath';
   }
 

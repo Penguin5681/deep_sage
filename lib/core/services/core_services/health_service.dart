@@ -13,7 +13,9 @@ class HealthService {
 
   HealthService._internal();
 
-  final ValueNotifier<BackendStatus> status = ValueNotifier(BackendStatus.unknown);
+  final ValueNotifier<BackendStatus> status = ValueNotifier(
+    BackendStatus.unknown,
+  );
   Timer? _timer;
 
   void startMonitoring() {
@@ -33,7 +35,9 @@ class HealthService {
 
   Future<void> checkHealth() async {
     try {
-      final response = await http.get(Uri.parse('${dotenv.env['DEV_BASE_URL']}/health'));
+      final response = await http.get(
+        Uri.parse('${dotenv.env['DEV_BASE_URL']}/health'),
+      );
 
       if (response.statusCode == 200) {
         status.value = BackendStatus.online;
@@ -46,9 +50,4 @@ class HealthService {
   }
 }
 
-enum BackendStatus {
-  online,
-  offline,
-  error,
-  unknown
-}
+enum BackendStatus { online, offline, error, unknown }

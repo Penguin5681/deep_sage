@@ -5,7 +5,8 @@ class DownloadService {
   factory DownloadService() => _instance;
   DownloadService._internal();
 
-  final ValueNotifier<Map<String, String>> activeDownloads = ValueNotifier<Map<String, String>>({});
+  final ValueNotifier<Map<String, String>> activeDownloads =
+      ValueNotifier<Map<String, String>>({});
 
   void startDownload(String fileName, String status) {
     final downloads = Map<String, String>.from(activeDownloads.value);

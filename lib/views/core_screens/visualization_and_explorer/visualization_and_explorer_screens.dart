@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/data_cleaning_tab.dart';
+import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/data_processing_tab.dart';
 import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/raw_data_tab.dart';
-import 'package:deep_sage/views/core_screens/visualization_and_explorer/tabs/visualize_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -15,10 +14,12 @@ class VisualizationAndExplorerScreens extends StatefulWidget {
   const VisualizationAndExplorerScreens({super.key});
 
   @override
-  State<VisualizationAndExplorerScreens> createState() => _VisualizationAndExplorerScreensState();
+  State<VisualizationAndExplorerScreens> createState() =>
+      _VisualizationAndExplorerScreensState();
 }
 
-class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplorerScreens>
+class _VisualizationAndExplorerScreensState
+    extends State<VisualizationAndExplorerScreens>
     with TickerProviderStateMixin {
   /// [tabController] is used to manage the tabbed interface (Raw Data, Data Cleaning, Visualize).
   late TabController tabController;
@@ -48,11 +49,14 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   /// [selectedDatasetNotifier] is a [ValueNotifier] that notifies listeners whenever the selected dataset changes.
   /// It's used to trigger UI updates and other actions that depend on the currently selected dataset.
   /// The initial value is set to null, indicating no dataset is selected initially.
-  final ValueNotifier<String?> selectedDatasetNotifier = ValueNotifier<String?>(null);
+  final ValueNotifier<String?> selectedDatasetNotifier = ValueNotifier<String?>(
+    null,
+  );
   List<StreamSubscription<FileSystemEvent>> fileWatchers = [];
   Set<String> watchedFiles = {};
 
-  final TextEditingController recentImportsSearchController = TextEditingController();
+  final TextEditingController recentImportsSearchController =
+      TextEditingController();
   List<RecentImportsModel> filteredRecentImports = [];
 
   @override
@@ -149,15 +153,23 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.0),
         color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-        border: Border.all(color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!, width: 1.0),
+        border: Border.all(
+          color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+          width: 1.0,
+        ),
       ),
       child: TextField(
         controller: recentImportsSearchController,
-        style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87),
+        style: TextStyle(
+          fontSize: 14,
+          color: isDarkMode ? Colors.white : Colors.black87,
+        ),
         decoration: InputDecoration(
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           hintText: "Search recent imports",
-          hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+          hintStyle: TextStyle(
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+          ),
           prefixIcon: Icon(
             Icons.search,
             color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
@@ -180,7 +192,8 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   /// This ensures that the application's state and the persistent storage are synchronized with the user's
   /// most recent dataset selection.
   void _handleDatasetSelectionChange() {
-    if (selectedDatasetNotifier.value != null && selectedDatasetNotifier.value != currentDataset) {
+    if (selectedDatasetNotifier.value != null &&
+        selectedDatasetNotifier.value != currentDataset) {
       setState(() {
         currentDataset = selectedDatasetNotifier.value;
 
@@ -270,8 +283,10 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
 
       if (directory.existsSync()) {
         final subscription = directory.watch(recursive: false).listen((event) {
-          if (event.path == filePath || event.path.contains(file.uri.pathSegments.last)) {
-            if (event.type == FileSystemEvent.delete || !File(filePath).existsSync()) {
+          if (event.path == filePath ||
+              event.path.contains(file.uri.pathSegments.last)) {
+            if (event.type == FileSystemEvent.delete ||
+                !File(filePath).existsSync()) {
               debugPrint('File was deleted or moved: $filePath');
               setState(() {});
             }
@@ -354,7 +369,10 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                   indicatorColor: isDarkMode ? Colors.white : Colors.black,
                   indicatorAnimation: TabIndicatorAnimation.elastic,
                   controller: tabController,
-                  tabs: const [Tab(text: 'Raw Data'), Tab(text: 'Data cleaning')],
+                  tabs: const [
+                    Tab(text: 'Raw Data'),
+                    Tab(text: 'Data Processing'),
+                  ],
                   onTap: ((index) {
                     setState(() {
                       tabControllerIndex = index;
@@ -365,8 +383,10 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                   child: TabBarView(
                     controller: tabController,
                     children: [
-                      RawDataTab(selectedDatasetNotifier: selectedDatasetNotifier),
-                      DataCleaningTab(
+                      RawDataTab(
+                        selectedDatasetNotifier: selectedDatasetNotifier,
+                      ),
+                      DataProcessingTab(
                         currentDataset: currentDataset,
                         currentDatasetPath: currentDatasetPath,
                         currentDatasetType: currentDatasetType,
@@ -429,7 +449,7 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   ///   - **Data Cleaning**: Provides tools and options to clean and preprocess the data.
   ///   - **Visualize**: Offers visualization_and_explorer tools to create charts and graphs from the data.
   ///
-  /// Each tab is implemented as a separate widget ([RawDataTab], [DataCleaningTab],
+  /// Each tab is implemented as a separate widget ([RawDataTab], [DataProcessingTab],
   /// [VisualizeTab]) and is managed by a [TabBar] and [TabBarView]. The selected dataset
   /// is passed to the [RawDataTab] to dynamically display its content.
   ///
@@ -492,7 +512,8 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                          color:
+                              isDarkMode ? Colors.grey[300] : Colors.grey[800],
                         ),
                       ),
                     ],
@@ -506,7 +527,10 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: _buildRecentImportsSearchBar(),
         ),
-        Divider(height: 1, color: isDarkMode ? Colors.grey[800] : Colors.grey[200]),
+        Divider(
+          height: 1,
+          color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+        ),
         Expanded(
           child: ValueListenableBuilder(
             valueListenable: recentImportsBox.listenable(),
@@ -536,7 +560,9 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
               recentImports =
                   recentImports
                       .where(
-                        (import) => import.filePath != null && File(import.filePath!).existsSync(),
+                        (import) =>
+                            import.filePath != null &&
+                            File(import.filePath!).existsSync(),
                       )
                       .toList();
 
@@ -553,8 +579,13 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                       ),
                       SizedBox(height: 16),
                       Text(
-                        query.isNotEmpty ? 'No matching results' : 'No recent imports',
-                        style: TextStyle(color: isDarkMode ? Colors.grey[500] : Colors.grey[600]),
+                        query.isNotEmpty
+                            ? 'No matching results'
+                            : 'No recent imports',
+                        style: TextStyle(
+                          color:
+                              isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                        ),
                       ),
                       Text(
                         query.isNotEmpty
@@ -562,7 +593,8 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                             : 'Import datasets to see them here',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDarkMode ? Colors.grey[600] : Colors.grey[500],
+                          color:
+                              isDarkMode ? Colors.grey[600] : Colors.grey[500],
                         ),
                       ),
                     ],
@@ -626,7 +658,8 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
   /// _buildImportItem(recentImports[index], isDarkMode);
 
   Widget _buildImportItem(RecentImportsModel import, bool isDarkMode) {
-    final fileExists = import.filePath != null && File(import.filePath!).existsSync();
+    final fileExists =
+        import.filePath != null && File(import.filePath!).existsSync();
     final isCurrentDataset = import.fileName == currentDataset;
 
     if (!fileExists) {
@@ -639,10 +672,15 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
       decoration: BoxDecoration(
         color:
             isCurrentDataset
-                ? (isDarkMode ? Colors.blue.shade900.withValues(alpha: 0.2) : Colors.blue.shade50)
+                ? (isDarkMode
+                    ? Colors.blue.shade900.withValues(alpha: 0.2)
+                    : Colors.blue.shade50)
                 : (isDarkMode ? Color(0xFF1F222A) : Colors.white),
         borderRadius: BorderRadius.circular(8),
-        border: isCurrentDataset ? Border.all(color: Colors.blue.shade400, width: 2) : null,
+        border:
+            isCurrentDataset
+                ? Border.all(color: Colors.blue.shade400, width: 2)
+                : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -656,7 +694,11 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
         children: [
           Row(
             children: [
-              Icon(_getFileIcon(import.fileType), color: _getFileColor(import.fileType), size: 24),
+              Icon(
+                _getFileIcon(import.fileType),
+                color: _getFileColor(import.fileType),
+                size: 24,
+              ),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -677,7 +719,11 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                           ),
                         ),
                         if (isCurrentDataset)
-                          Icon(Icons.check_circle, color: Colors.green.shade400, size: 20),
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade400,
+                            size: 20,
+                          ),
                       ],
                     ),
                     SizedBox(height: 4),
@@ -710,7 +756,9 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
                   foregroundColor: Colors.white,
                   minimumSize: Size(60, 30),
                   padding: EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
                 child: Text('Use', style: TextStyle(fontSize: 12)),
               ),
@@ -751,7 +799,10 @@ class _VisualizationAndExplorerScreensState extends State<VisualizationAndExplor
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, color: isDarkMode ? Colors.grey[300] : Colors.grey[700]),
+        style: TextStyle(
+          fontSize: 12,
+          color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+        ),
       ),
     );
   }

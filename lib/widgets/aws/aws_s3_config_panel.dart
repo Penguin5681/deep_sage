@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:deep_sage/core/services/core_services/dataset_sync_service/aws_s3_operation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
@@ -78,7 +76,10 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
 
     setState(() {
       _configurationComplete =
-          accessKey != null && secretKey != null && region != null && bucket != null;
+          accessKey != null &&
+          secretKey != null &&
+          region != null &&
+          bucket != null;
     });
   }
 
@@ -86,9 +87,11 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
     if (_accessKeyController.text.isEmpty ||
         _secretKeyController.text.isEmpty ||
         _selectedRegion == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter credentials and select a region')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter credentials and select a region'),
+        ),
+      );
       return;
     }
 
@@ -118,9 +121,9 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
     } catch (e) {
       setState(() => _isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error fetching buckets: ${e.toString()}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching buckets: ${e.toString()}')),
+      );
       debugPrint(e.toString());
     }
   }
@@ -168,7 +171,10 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
     final iconColor = Colors.grey[400];
 
     return Container(
-      decoration: BoxDecoration(color: containerColor, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: containerColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
       padding: const EdgeInsets.all(16),
       child:
           _configurationComplete
@@ -199,7 +205,11 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
             const SizedBox(width: 8),
             Text(
               'AWS S3 Configuration',
-              style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
             const Spacer(),
             IconButton(
@@ -218,7 +228,10 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
         _buildInfoRow(
           'Region',
           _selectedRegion != null
-              ? _regions.firstWhere((r) => r['code'] == _selectedRegion)['name'] ?? _selectedRegion!
+              ? _regions.firstWhere(
+                    (r) => r['code'] == _selectedRegion,
+                  )['name'] ??
+                  _selectedRegion!
               : 'Not selected',
           textColor,
         ),
@@ -241,7 +254,11 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
           width: 100,
           child: Text(
             label,
-            style: TextStyle(color: textColor, fontWeight: FontWeight.w500, fontSize: 14),
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
           ),
         ),
         Expanded(
@@ -267,21 +284,32 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
       children: [
         Text(
           'AWS S3 Configuration',
-          style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
         const SizedBox(height: 16),
 
         // Access Key
         Text(
           'Access Key ID',
-          style: TextStyle(color: labelColor, fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: _accessKeyController,
           decoration: InputDecoration(
             hintText: 'Enter your AWS access key',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: BorderSide(color: borderColor),
@@ -299,7 +327,11 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
         // Secret Key
         Text(
           'Secret Access Key',
-          style: TextStyle(color: labelColor, fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -307,7 +339,10 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
           obscureText: !_showSecretKey,
           decoration: InputDecoration(
             hintText: 'Enter your AWS secret key',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: BorderSide(color: borderColor),
@@ -333,7 +368,11 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
         // Region Selection
         Text(
           'Region',
-          style: TextStyle(color: labelColor, fontSize: 14, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -345,7 +384,10 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               isExpanded: true,
-              hint: Text('Select AWS region', style: TextStyle(color: labelColor, fontSize: 13)),
+              hint: Text(
+                'Select AWS region',
+                style: TextStyle(color: labelColor, fontSize: 13),
+              ),
               value: _selectedRegion,
               icon: Icon(Icons.arrow_drop_down, color: iconColor),
               dropdownColor: containerColor,
@@ -354,10 +396,15 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
                 setState(() => _selectedRegion = newValue);
               },
               items:
-                  _regions.map<DropdownMenuItem<String>>((Map<String, String> region) {
+                  _regions.map<DropdownMenuItem<String>>((
+                    Map<String, String> region,
+                  ) {
                     return DropdownMenuItem<String>(
                       value: region['code'],
-                      child: Text(region['name']!, overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        region['name']!,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     );
                   }).toList(),
             ),
@@ -375,14 +422,19 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
                 child:
                     _isLoading
                         ? const SizedBox(
                           height: 16,
                           width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                         : const Text('Fetch Buckets'),
               ),
@@ -395,7 +447,11 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
           const SizedBox(height: 20),
           Text(
             'Select Bucket',
-            style: TextStyle(color: labelColor, fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: labelColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -407,7 +463,10 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 isExpanded: true,
-                hint: Text('Select a bucket', style: TextStyle(color: labelColor, fontSize: 13)),
+                hint: Text(
+                  'Select a bucket',
+                  style: TextStyle(color: labelColor, fontSize: 13),
+                ),
                 value: _selectedBucket,
                 icon: Icon(Icons.arrow_drop_down, color: iconColor),
                 dropdownColor: containerColor,
@@ -435,7 +494,9 @@ class _AWSS3ConfigPanelState extends State<AWSS3ConfigPanel> {
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
                   child: const Text('Save Configuration'),
                 ),
