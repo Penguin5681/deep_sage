@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:deep_sage/core/models/chat_message.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../../../core/models/ai_model.dart';
 import '../../../core/models/chat_session.dart';
@@ -94,27 +95,18 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
           title: Text('Rename Chat'),
           content: TextField(controller: controller),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel')),
             TextButton(
               onPressed: () async {
                 final newTitle = controller.text.trim();
                 if (newTitle.isNotEmpty) {
                   try {
-                    await _chatService.updateSessionTitle(
-                      session.id,
-                      _userId,
-                      newTitle,
-                    );
+                    await _chatService.updateSessionTitle(session.id, _userId, newTitle);
                     setState(() => session.nickname = newTitle);
                   } catch (e) {
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to rename chat: ${e.toString()}'),
-                      ),
+                      SnackBar(content: Text('Failed to rename chat: ${e.toString()}')),
                     );
                   }
                 }
@@ -190,13 +182,13 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
       _startDownloadStatusPolling(model.id);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Started downloading ${model.name}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Started downloading ${model.name}')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error downloading model: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error downloading model: ${e.toString()}')));
     }
   }
 
@@ -224,7 +216,9 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
             _updateModelInstallStatus(modelId, true);
           }
         });
-      } catch (e) {}
+      } catch (e) {
+        // I wont do anything here
+      }
     });
     _pollingTimers.remove(modelId);
   }
@@ -235,13 +229,11 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
       _pollingTimers[model.id]?.cancel();
       setState(() => _downloadProgress.remove(model.id));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cancelled download of ${model.name}')),
-      );
-    } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to cancel: $e')));
+      ).showSnackBar(SnackBar(content: Text('Cancelled download of ${model.name}')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to cancel: $e')));
     }
   }
 
@@ -288,31 +280,20 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
     final session = _selectedSession!;
     setState(() {
       // Add the user's message
-      session.messages.add(
-        ChatMessage(text: text, isUserMessage: true, timestamp: DateTime.now()),
-      );
+      session.messages.add(ChatMessage(text: text, isUserMessage: true, timestamp: DateTime.now()));
       _messageController.clear();
       _isTyping = true;
 
       // Add a single placeholder message for the AI response
       session.messages.add(
-        ChatMessage(
-          text: "",
-          isUserMessage: false,
-          timestamp: DateTime.now(),
-          isTyping: true,
-        ),
+        ChatMessage(text: "", isUserMessage: false, timestamp: DateTime.now(), isTyping: true),
       );
     });
     _scrollToBottom();
 
     try {
       // Get the stream of response chunks
-      final responseStream = await _chatService.sendMessageStream(
-        session.id,
-        _userId,
-        text,
-      );
+      final responseStream = await _chatService.sendMessageStream(session.id, _userId, text);
       String responseBuffer = "";
 
       // Listen to the stream chunks
@@ -366,20 +347,46 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
     });
   }
 
-  void _selectModel(AIModel model) {
+  // lib/views/core_screens/machine_learning/machine_learning_screen.dart (update _selectModel)
+
+  void _selectModel(AIModel model) async {
+    // Update UI immediately
     setState(() {
       _selectedModel = model;
       _showModelSettings = false;
     });
 
-    // Add a system message about model change
-    _messages.add(
-      ChatMessage(
-        text: "Switched to model: ${model.name}",
-        isUserMessage: false,
-        timestamp: DateTime.now(),
-      ),
-    );
+    try {
+      final existingSession = _sessions.firstWhere((session) {
+        final hiveSession = Hive.box<ChatSessionHive>('chat_sessions').get(session.id);
+        return hiveSession != null && hiveSession.model == model.id;
+      }, orElse: () => ChatSession(id: '', nickname: 'Default Session'));
+
+      if (existingSession != null) {
+        setState(() {
+          _selectedSession = existingSession;
+        });
+        _loadMessages(existingSession);
+      } else {
+        final hiveSession = await _chatService.createSession(
+          _userId,
+          title: 'Chat with ${model.name}',
+          model: model.id,
+        );
+
+        final newSession = ChatSession(id: hiveSession.sessionId, nickname: hiveSession.title);
+
+        setState(() {
+          _sessions.insert(0, newSession);
+          _selectedSession = newSession;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to switch model: $e')));
+    }
   }
 
   void _toggleModelSettings() {
@@ -388,88 +395,23 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
     });
   }
 
-  // Method to simulate loading a GGUF model
-  void _showLoadModelDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Load GGUF Model'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Select a GGUF model file from your computer:'),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.file_upload),
-                  label: const Text('Browse Files'),
-                  onPressed: () {
-                    // This would be connected to file picker in Phase 3
-                    Navigator.of(context).pop();
-
-                    // Simulate adding a new model
-                    final newModel = AIModel(
-                      id: 'custom-model-${DateTime.now().millisecondsSinceEpoch}',
-                      name: 'Custom Model',
-                      provider: 'Local GGUF',
-                      description: 'User uploaded model',
-                      parameterCount: 7,
-                      size: '3.8 GB',
-                      isLocal: true,
-                      isInstalled: true,
-                      localPath: '/path/to/custom/model.gguf',
-                      parameters: {
-                        'temperature': 0.7,
-                        'top_p': 0.9,
-                        'max_tokens': 2048,
-                      },
-                    );
-
-                    // Add new model to list and select it
-                    setState(() {
-                      _availableModels.add(newModel);
-                      _selectedModel = newModel;
-                    });
-
-                    // Show confirmation
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Custom model loaded successfully'),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-            ],
-          ),
-    );
-  }
-
   Future<void> _removeModel(AIModel model) async {
     try {
       await _modelService.removeModel(model.id);
       setState(() {
         _availableModels.removeWhere((m) => m.id == model.id);
         if (_selectedModel?.id == model.id) {
-          _selectedModel =
-              _availableModels.isNotEmpty ? _availableModels.first : null;
+          _selectedModel = _availableModels.isNotEmpty ? _availableModels.first : null;
         }
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Removed ${model.name} successfully')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Removed ${model.name} successfully')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to remove ${model.name}: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to remove ${model.name}: $e')));
     }
   }
 
@@ -488,6 +430,20 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
     }).toList();
   }
 
+  bool _containsCodeBlock(String markdown) {
+    final codeBlockRegex = RegExp(r'```[\s\S]*?```');
+    return codeBlockRegex.hasMatch(markdown);
+  }
+
+  String _extractCodeFromMarkdown(String markdown) {
+    final codeBlockRegex = RegExp(r'```(?:[a-zA-Z]+\n)?([^`]+)```');
+    final matches = codeBlockRegex.allMatches(markdown);
+
+    if (matches.isEmpty) return "";
+
+    return matches.map((match) => match.group(1) ?? "").join("\n\n");
+  }
+
   @override
   void initState() {
     super.initState();
@@ -502,8 +458,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
 
       _messages.add(
         ChatMessage(
-          text:
-              "Welcome to the AI Chat! Select a model from the sidebar to begin.",
+          text: "Welcome to the AI Chat! Select a model from the sidebar to begin.",
           isUserMessage: false,
           timestamp: DateTime.now(),
         ),
@@ -524,11 +479,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
     final hiveSessions = await _chatService.listSessions(_userId);
     setState(() {
       _sessions.clear();
-      _sessions.addAll(
-        hiveSessions.map(
-          (s) => ChatSession(id: s.sessionId, nickname: s.title),
-        ),
-      );
+      _sessions.addAll(hiveSessions.map((s) => ChatSession(id: s.sessionId, nickname: s.title)));
       if (_sessions.isNotEmpty) {
         _selectedSession = _sessions.first;
         _loadMessages(_selectedSession!);
@@ -571,10 +522,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text(
-              'Loading available models...',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text('Loading available models...', style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),
       );
@@ -587,10 +535,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
-              'Error loading models',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Error loading models', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               _loadingError!,
@@ -598,10 +543,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: fetchOllamaModels,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: fetchOllamaModels, child: const Text('Retry')),
           ],
         ),
       );
@@ -616,17 +558,11 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
           children: [
             const Icon(Icons.search_off, size: 48, color: Colors.grey),
             const SizedBox(height: 16),
-            Text(
-              'No models found',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('No models found', style: Theme.of(context).textTheme.titleMedium),
             if (_modelSearchController.text.isNotEmpty || _modelFilter != 'all')
               const SizedBox(height: 8),
             if (_modelSearchController.text.isNotEmpty || _modelFilter != 'all')
-              Text(
-                'Try adjusting your filters',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text('Try adjusting your filters', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       );
@@ -652,10 +588,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
             borderRadius: BorderRadius.circular(12),
             side:
                 isSelected
-                    ? BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 1,
-                    )
+                    ? BorderSide(color: Theme.of(context).colorScheme.primary, width: 1)
                     : BorderSide.none,
           ),
           child: InkWell(
@@ -695,9 +628,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                                 color:
                                     isSelected
                                         ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurface,
+                                        : Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Text(
@@ -710,17 +641,9 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                       if (model.isInstalled)
                         Row(
                           children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 16,
-                            ),
+                            Icon(Icons.check_circle, color: Colors.green, size: 16),
                             IconButton(
-                              icon: Icon(
-                                Icons.delete_outline,
-                                size: 16,
-                                color: Colors.red,
-                              ),
+                              icon: Icon(Icons.delete_outline, size: 16, color: Colors.red),
                               tooltip: 'Remove model',
                               onPressed: () => _removeModel(model),
                             ),
@@ -754,10 +677,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                   ),
                   if (isSelected) ...[
                     const SizedBox(height: 8),
-                    Text(
-                      model.description,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text(model.description, style: Theme.of(context).textTheme.bodySmall),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -767,10 +687,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                           label: const Text('Settings'),
                           onPressed: _toggleModelSettings,
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             visualDensity: VisualDensity.compact,
                           ),
                         ),
@@ -781,8 +698,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                     const SizedBox(height: 8),
                     LinearProgressIndicator(
                       value: downloadProgress,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         Theme.of(context).colorScheme.primary,
                       ),
@@ -827,32 +743,23 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
 
           const SizedBox(height: 16),
 
-          Text(
-            _selectedModel!.name,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text(_selectedModel!.name, style: Theme.of(context).textTheme.titleLarge),
           Text(
             _selectedModel!.provider,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.primary),
           ),
 
           const SizedBox(height: 8),
 
-          Text(
-            _selectedModel!.description,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text(_selectedModel!.description, style: Theme.of(context).textTheme.bodyMedium),
 
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 16),
 
-          Text(
-            'Generation Parameters',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Generation Parameters', style: Theme.of(context).textTheme.titleMedium),
 
           const SizedBox(height: 8),
 
@@ -862,8 +769,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
               const SizedBox(width: 16),
               const Expanded(child: Text('Temperature')),
               Text(
-                (_selectedModel!.parameters['temperature'] as double)
-                    .toStringAsFixed(1),
+                (_selectedModel!.parameters['temperature'] as double).toStringAsFixed(1),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -873,8 +779,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
             min: 0.0,
             max: 2.0,
             divisions: 20,
-            label: (_selectedModel!.parameters['temperature'] as double)
-                .toStringAsFixed(1),
+            label: (_selectedModel!.parameters['temperature'] as double).toStringAsFixed(1),
             onChanged: (value) {
               setState(() {
                 _selectedModel = AIModel(
@@ -888,10 +793,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                   isInstalled: _selectedModel!.isInstalled,
                   downloadProgress: _selectedModel!.downloadProgress,
                   localPath: _selectedModel!.localPath,
-                  parameters: {
-                    ..._selectedModel!.parameters,
-                    'temperature': value,
-                  },
+                  parameters: {..._selectedModel!.parameters, 'temperature': value},
                 );
               });
             },
@@ -905,9 +807,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
               const SizedBox(width: 16),
               const Expanded(child: Text('Top P')),
               Text(
-                (_selectedModel!.parameters['top_p'] as double).toStringAsFixed(
-                  1,
-                ),
+                (_selectedModel!.parameters['top_p'] as double).toStringAsFixed(1),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -917,8 +817,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
             min: 0.0,
             max: 1.0,
             divisions: 10,
-            label: (_selectedModel!.parameters['top_p'] as double)
-                .toStringAsFixed(1),
+            label: (_selectedModel!.parameters['top_p'] as double).toStringAsFixed(1),
             onChanged: (value) {
               setState(() {
                 _selectedModel = AIModel(
@@ -970,10 +869,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                   isInstalled: _selectedModel!.isInstalled,
                   downloadProgress: _selectedModel!.downloadProgress,
                   localPath: _selectedModel!.localPath,
-                  parameters: {
-                    ..._selectedModel!.parameters,
-                    'max_tokens': value.toInt(),
-                  },
+                  parameters: {..._selectedModel!.parameters, 'max_tokens': value.toInt()},
                 );
               });
             },
@@ -993,9 +889,9 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
             dense: true,
             onTap: () {
               // Reset model parameters to default
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Parameters reset to defaults')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Parameters reset to defaults')));
             },
           ),
 
@@ -1015,9 +911,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                 _showModelSettings = false;
               });
             },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
             child: const Text('Done'),
           ),
         ],
@@ -1028,11 +922,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
   Widget _buildTypingIndicator() {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildBouncingDot(0),
-        _buildBouncingDot(100),
-        _buildBouncingDot(200),
-      ],
+      children: [_buildBouncingDot(0), _buildBouncingDot(100), _buildBouncingDot(200)],
     );
   }
 
@@ -1046,15 +936,10 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
           height: 8,
           width: 8,
           decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.6),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             shape: BoxShape.circle,
           ),
-          transform:
-              Transform.translate(
-                offset: Offset(0, -4 * sin(value * 2 * pi)),
-              ).transform,
+          transform: Transform.translate(offset: Offset(0, -4 * sin(value * 2 * pi))).transform,
         );
       },
     );
@@ -1062,51 +947,118 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUserMessage = message.isUserMessage;
-    final bubbleColor =
-        isUserMessage
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).brightness == Brightness.dark
+    final bubbleColor = isUserMessage
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).brightness == Brightness.dark
             ? Colors.grey[800]
             : Colors.grey[200];
+    final textColor = isUserMessage
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface;
 
-    final textColor =
-        isUserMessage
-            ? Theme.of(context).colorScheme.onPrimary
-            : Theme.of(context).colorScheme.onSurface;
+    final showButtons = !isUserMessage && !message.isTyping;
+    final hasCode = showButtons && _containsCodeBlock(message.text);
 
     return Align(
       alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.7,
-        ),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: bubbleColor,
-            borderRadius: BorderRadius.circular(16).copyWith(
-              bottomRight: isUserMessage ? const Radius.circular(0) : null,
-              bottomLeft: !isUserMessage ? const Radius.circular(0) : null,
-            ),
-          ),
-          child:
-              message.isTyping
+          child: Column(
+            crossAxisAlignment: isUserMessage ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: bubbleColor,
+                  borderRadius: BorderRadius.circular(16).copyWith(
+                    bottomRight: isUserMessage ? const Radius.circular(0) : null,
+                    bottomLeft: !isUserMessage ? const Radius.circular(0) : null,
+                  ),
+                ),
+                child: message.isTyping
                   ? _buildTypingIndicator()
                   : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(message.text, style: TextStyle(color: textColor)),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          color: textColor.withValues(alpha: 0.7),
-                          fontSize: 10,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        MarkdownBody(
+                          data: message.text,
+                          styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                            p: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor),
+                            codeblockDecoration: BoxDecoration(
+                              color: Colors.grey.shade900,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          '${message.timestamp.hour}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                          style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 10),
+                        ),
+                      ],
+                    ),
+              ),
+
+              // Action buttons with animation
+              if (showButtons)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Copy Response button
+                        AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                          child: TextButton.icon(
+                            icon: const Icon(Icons.copy, size: 16),
+                            label: const Text('Copy Response'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            onPressed: () async {
+                              await Clipboard.setData(ClipboardData(text: message.text));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Response copied to clipboard')),
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Copy Code button (only show if code is present)
+                        if (hasCode)
+                          AnimatedOpacity(
+                            opacity: 1.0,
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                            child: TextButton.icon(
+                              icon: const Icon(Icons.code, size: 16),
+                              label: const Text('Copy Code'),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              onPressed: () async {
+                                final code = _extractCodeFromMarkdown(message.text);
+                                await Clipboard.setData(ClipboardData(text: code));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Code copied to clipboard')),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1126,29 +1078,18 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
             width: _isSidebarExpanded ? 320 : 60,
             child: Card(
               margin: EdgeInsets.zero,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
               elevation: 2,
               child: Column(
                 children: [
                   ListTile(
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: _isSidebarExpanded ? 16 : 8,
-                    ),
+                    contentPadding: EdgeInsets.symmetric(horizontal: _isSidebarExpanded ? 16 : 8),
                     title:
                         _isSidebarExpanded
-                            ? const Text(
-                              'Models',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            )
+                            ? const Text('Models', style: TextStyle(fontWeight: FontWeight.bold))
                             : null,
                     leading: IconButton(
-                      icon: Icon(
-                        _isSidebarExpanded
-                            ? Icons.chevron_left
-                            : Icons.chevron_right,
-                      ),
+                      icon: Icon(_isSidebarExpanded ? Icons.chevron_left : Icons.chevron_right),
                       onPressed: () {
                         setState(() {
                           _isSidebarExpanded = !_isSidebarExpanded;
@@ -1168,9 +1109,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                             icon: Icon(
                               Icons.model_training,
                               color:
-                                  _showChatSessions
-                                      ? null
-                                      : Theme.of(context).colorScheme.primary,
+                                  _showChatSessions ? null : Theme.of(context).colorScheme.primary,
                             ),
                             onPressed:
                                 () => setState(() {
@@ -1183,9 +1122,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                             icon: Icon(
                               Icons.chat_bubble_outline,
                               color:
-                                  _showChatSessions
-                                      ? Theme.of(context).colorScheme.primary
-                                      : null,
+                                  _showChatSessions ? Theme.of(context).colorScheme.primary : null,
                             ),
                             onPressed:
                                 () => setState(() {
@@ -1219,8 +1156,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                                 const SizedBox(height: 16),
                                 Text(
                                   'No chats yet',
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(context).textTheme.titleMedium,
                                 ),
                                 const SizedBox(height: 8),
                                 ElevatedButton.icon(
@@ -1292,15 +1228,11 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                         child: SegmentedButton<String>(
                           segments: const [
                             ButtonSegment(value: 'all', label: Text('All')),
-                            ButtonSegment(
-                              value: 'ollama',
-                              label: Text('Ollama'),
-                            ),
+                            ButtonSegment(value: 'ollama', label: Text('Ollama')),
                             ButtonSegment(value: 'local', label: Text('Local')),
                           ],
                           selected: {_modelFilter},
-                          onSelectionChanged:
-                              (s) => setState(() => _modelFilter = s.first),
+                          onSelectionChanged: (s) => setState(() => _modelFilter = s.first),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1318,37 +1250,19 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                       padding: const EdgeInsets.all(16.0),
                       child: Row(
                         children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.upload_file, size: 16),
-                              label: const Text('Load GGUF'),
-                              onPressed: _showLoadModelDialog,
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: ElevatedButton.icon(
-                              icon: const Icon(Icons.auto_fix_high, size: 16),
-                              label: const Text('Fine-tune'),
+                              icon: const Icon(Icons.auto_fix_high, size: 16, color: Colors.white,),
+                              label: const Text('Fine-tune', style: TextStyle(color: Colors.white),),
                               onPressed: () {
-                                // Will be implemented in Phase 3
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Fine-tuning coming in Phase 3',
-                                    ),
-                                  ),
+                                  const SnackBar(content: Text('Fine-tuning coming in Phase 3')),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
+                                backgroundColor: Colors.green.shade900,
+                                padding: const EdgeInsets.symmetric(vertical: 18),
                               ),
                             ),
                           ),
@@ -1374,7 +1288,6 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                             onPressed: () {
                               setState(() {
                                 _isSidebarExpanded = true;
-                                _showLoadModelDialog();
                               });
                             },
                             tooltip: 'Load GGUF Model',
@@ -1410,10 +1323,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 1,
-                      ),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 1),
                     ],
                   ),
                   child: Row(
@@ -1425,10 +1335,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                         children: [
                           const Text(
                             'AI Assistant',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           if (_selectedModel != null)
                             Text(
@@ -1447,9 +1354,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                       if (_selectedModel != null)
                         ActionChip(
                           avatar: Icon(
-                            _selectedModel!.isLocal
-                                ? Icons.folder
-                                : Icons.cloud,
+                            _selectedModel!.isLocal ? Icons.folder : Icons.cloud,
                             size: 16,
                           ),
                           label: Row(
@@ -1460,17 +1365,11 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                               Icon(
                                 Icons.settings,
                                 size: 16,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ],
                           ),
-                          backgroundColor:
-                              Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                           onPressed: () {
                             setState(() {
                               _isSidebarExpanded = true;
@@ -1487,20 +1386,13 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                   Expanded(
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 20,
-                      ),
-                      itemCount:
-                          (_selectedSession?.messages.length ?? 0) +
-                          (_isTyping ? 1 : 0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                      itemCount: (_selectedSession?.messages.length ?? 0) + (_isTyping ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == (_selectedSession?.messages.length ?? 0)) {
                           return _buildTypingIndicator();
                         }
-                        return _buildMessageBubble(
-                          _selectedSession!.messages[index],
-                        );
+                        return _buildMessageBubble(_selectedSession!.messages[index]);
                       },
                     ),
                   )
@@ -1513,9 +1405,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                           Icon(
                             Icons.chat,
                             size: 72,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                           const SizedBox(height: 24),
                           Text(
@@ -1526,10 +1416,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                           OutlinedButton(
                             onPressed: _createSession,
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             ),
                             child: Text('Start Chat'),
                           ),
@@ -1563,14 +1450,9 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                               if (HardwareKeyboard.instance.isShiftPressed) {
                                 final text = _messageController.text;
                                 final sel = _messageController.selection;
-                                final newText = text.replaceRange(
-                                  sel.start,
-                                  sel.end,
-                                  '\n',
-                                );
+                                final newText = text.replaceRange(sel.start, sel.end, '\n');
                                 _messageController.text = newText;
-                                _messageController
-                                    .selection = TextSelection.collapsed(
+                                _messageController.selection = TextSelection.collapsed(
                                   offset: sel.start + 1,
                                 );
                               } else {
@@ -1585,17 +1467,15 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                             minLines: 1,
                             maxLines: 5,
                             decoration: InputDecoration(
-                              hintText:
-                                  'Message ${_selectedModel?.name ?? 'AI Assistant'}...',
+                              hintText: 'Message ${_selectedModel?.name ?? 'AI Assistant'}...',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,
-                              fillColor: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest
-                                  .withAlpha(0x80),
+                              fillColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest.withAlpha(0x80),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 20,
                                 vertical: 12,
@@ -1605,9 +1485,7 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text(
-                                        'Voice input coming in a future phase',
-                                      ),
+                                      content: Text('Voice input coming in a future phase'),
                                     ),
                                   );
                                 },
@@ -1622,10 +1500,8 @@ class _MachineLearningScreenState extends State<MachineLearningScreen>
                         icon: const Icon(Icons.send),
                         onPressed: _sendMessage,
                         style: IconButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onPrimary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         ),
                       ),
                     ],

@@ -293,4 +293,37 @@ class OllamaChatService {
       throw Exception('Error updating session title: $e');
     }
   }
+
+  Future<void> updateSessionModel(
+    String sessionId,
+    String userId,
+    String newModel,
+  ) async {
+    final uri = Uri.parse('$_baseUrl/api/chat/sessions/$sessionId');
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'user_id': userId,
+        'model': newModel,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to update model: ${response.statusCode} ${response.body}',
+      );
+    }
+    final old = _sessionBox.get(sessionId);
+    if (old != null) {
+      final updated = ChatSessionHive(
+        sessionId: old.sessionId,
+        userId: old.userId,
+        title: old.title,
+        model: newModel,
+        createdAt: old.createdAt,
+        updatedAt: DateTime.now(),
+      );
+      await _sessionBox.put(sessionId, updated);
+    }
+  }
 }

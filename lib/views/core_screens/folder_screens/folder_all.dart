@@ -1931,7 +1931,7 @@ class _FolderAllState extends State<FolderAll> {
                 _handleSyncFile(file.filePath);
               },
               isDarkMode: isDarkMode,
-              color: Colors.purple.shade600,
+              color: Colors.greenAccent,
             ),
             SizedBox(height: 24),
 
