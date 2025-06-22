@@ -90,6 +90,7 @@ class LoginScreen extends StatelessWidget {
               response.session!.accessToken,
             );
             await userBox.put('loginMethod', 'email');
+            await userBox.put('userId', response.user?.id);
           }
 
           if (!context.mounted) return;

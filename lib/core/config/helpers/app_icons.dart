@@ -188,4 +188,7 @@ class AppIcons {
   /// Outlined machine learning icon for dark mode
   static const String machineLearningOutlinedDark =
       'assets/icons/dark/brain_outlined.png';
+
+  static const String cloudLight = 'assets/icons/light/cloud.png';
+  static const String cloudDark = 'assets/icons/dark/cloud.png';
 }

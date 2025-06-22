@@ -10,7 +10,7 @@ import '../../../views/core_screens/visualization_and_explorer/pie_chart_visuali
 
 class ChartRenderingService {
   static final ChartRenderingService _instance =
-  ChartRenderingService._internal();
+      ChartRenderingService._internal();
 
   factory ChartRenderingService() {
     return _instance;
@@ -82,8 +82,8 @@ class ChartRenderingService {
 
   // Method to deserialize options, converting numeric color values back to Color objects
   Map<String, dynamic> _deserializeOptions(
-      Map<String, dynamic> serializedOptions,
-      ) {
+    Map<String, dynamic> serializedOptions,
+  ) {
     final deserializedOptions = <String, dynamic>{};
 
     serializedOptions.forEach((key, value) {
@@ -118,9 +118,9 @@ class ChartRenderingService {
 
   // Method to create a widget from the chart data returned by the isolate
   Widget _createChartWidgetFromData(
-      dynamic chartData,
-      Map<String, dynamic> options,
-      ) {
+    dynamic chartData,
+    Map<String, dynamic> options,
+  ) {
     if (chartData is! Map<String, dynamic>) {
       throw Exception('Invalid chart data format');
     }
@@ -272,7 +272,7 @@ class ChartRenderingService {
     for (var key in sortedKeys) {
       final value = options[key];
       if (value is Color) {
-        keyParts.add('$key:${value.value}');
+        keyParts.add('$key:${value.toARGB32()}');
       } else {
         keyParts.add('$key:$value');
       }
@@ -324,9 +324,9 @@ class ChartRenderingService {
   }
 
   double _calculateSimilarityScore(
-      Map<String, dynamic> options,
-      String cacheKey,
-      ) {
+    Map<String, dynamic> options,
+    String cacheKey,
+  ) {
     final keyParts = cacheKey.split('|');
     int matchingFields = 0;
 
@@ -339,7 +339,7 @@ class ChartRenderingService {
         if (options.containsKey(key)) {
           var optionValue = options[key];
           if (optionValue is Color) {
-            optionValue = optionValue.value.toString();
+            optionValue = optionValue.toARGB32().toString();
           } else {
             optionValue = optionValue.toString();
           }
@@ -405,7 +405,7 @@ class ChartRenderingService {
     options.forEach((key, value) {
       if (value is Color) {
         // Convert Color to integer
-        serializedOptions[key] = value.value;
+        serializedOptions[key] = value.toARGB32();
       } else if (value is DateTime) {
         // Convert DateTime to milliseconds since epoch
         serializedOptions[key] = value.millisecondsSinceEpoch;
@@ -443,8 +443,8 @@ class ChartRenderingService {
   }
 
   static Future<Map<String, dynamic>> _computeChartData(
-      List<dynamic> args,
-      ) async {
+    List<dynamic> args,
+  ) async {
     final String datasetPath = args[0] as String;
     final Map<String, dynamic> options = args[1] as Map<String, dynamic>;
 
@@ -499,8 +499,8 @@ class ChartRenderingService {
   }
 
   static Map<String, dynamic> _processPieChartData(
-      List<Map<String, dynamic>> data,
-      ) {
+    List<Map<String, dynamic>> data,
+  ) {
     if (data.isEmpty) {
       return {'sections': [], 'usedColumns': []};
     }
@@ -521,9 +521,9 @@ class ChartRenderingService {
 
     labelColumn ??= firstRow.keys.first;
     valueColumn ??=
-    firstRow.keys.length > 1
-        ? firstRow.keys.elementAt(1)
-        : firstRow.keys.first;
+        firstRow.keys.length > 1
+            ? firstRow.keys.elementAt(1)
+            : firstRow.keys.first;
 
     final List<Map<String, dynamic>> sections = [];
 
@@ -535,9 +535,9 @@ class ChartRenderingService {
       sections.add({
         'label': row[labelColumn].toString(),
         'value':
-        row[valueColumn] is num
-            ? (row[valueColumn] as num).toDouble()
-            : 0.0,
+            row[valueColumn] is num
+                ? (row[valueColumn] as num).toDouble()
+                : 0.0,
       });
 
       if (sections.length >= 10) {

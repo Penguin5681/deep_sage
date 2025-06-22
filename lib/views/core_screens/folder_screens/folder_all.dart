@@ -1,19 +1,26 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:deep_sage/core/config/helpers/file_transfer_util.dart';
 import 'package:deep_sage/core/models/dataset_file.dart';
 import 'package:deep_sage/core/models/hive_models/recent_imports_model.dart';
+import 'package:deep_sage/core/services/core_services/dataset_sync_service/aws_s3_operation_service.dart';
+import 'package:deep_sage/core/services/core_services/dataset_sync_service/dataset_sync_management_service.dart';
 import 'package:deep_sage/core/services/directory_path_service.dart';
 import 'package:deep_sage/views/core_screens/explorer/file_explorer_view.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:path/path.dart' as path;
+
+import '../../../widgets/aws/aws_s3_config_panel.dart';
 
 /// The `FolderAll` widget is a stateful widget that displays a list of
 /// all folders and files within a designated root directory.
@@ -82,7 +89,14 @@ class _FolderAllState extends State<FolderAll> {
   /// Set of directories being watched for changes.
   Set<String> watchedDirectories = {};
 
+  /// List of dataset files filtered according to the applied search criteria.
   List<DatasetFile> filteredDatasetFiles = [];
+
+  /// Map of file paths to their download statuses.
+  final Map<String, String> _downloadingFiles = {};
+
+  /// Indicates if a syncing operation is currently in progress.
+  bool _isSyncing = false;
 
   /// Initializes the state of the `FolderAll` widget.
   ///
@@ -103,7 +117,9 @@ class _FolderAllState extends State<FolderAll> {
       if (selectedRootDirectoryPath.isNotEmpty) {
         getDirectoryFileCounts(selectedRootDirectoryPath);
         setupDirectoryWatcher(selectedRootDirectoryPath);
-        scanForDatasetFiles(selectedRootDirectoryPath);
+        scanForDatasetFiles(selectedRootDirectoryPath).then((_) {
+          updateFilesSyncStatus();
+        });
       }
     });
 
@@ -165,6 +181,7 @@ class _FolderAllState extends State<FolderAll> {
         _filterDatasetFiles();
         anyFilesPresent = files.isNotEmpty;
       });
+      updateFilesSyncStatus();
     } catch (ex) {
       debugPrint('Error scanning files: $ex');
     }
@@ -419,7 +436,6 @@ class _FolderAllState extends State<FolderAll> {
     }
   }
 
-  @override
   /// Performs cleanup when the widget is being removed from the widget tree.
   ///
   /// This method:
@@ -639,6 +655,104 @@ class _FolderAllState extends State<FolderAll> {
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 10),
+                                OutlinedButton(
+                                  onPressed: () async {
+                                    await _showSyncedDatasetsDialog(context);
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: Colors.blue.shade600,
+                                      width: 2,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    foregroundColor: Colors.blue.shade600,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    "Import Synced Datasets with AWS",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                OutlinedButton(
+                                  onPressed:
+                                      _isSyncing
+                                          ? null
+                                          : () async {
+                                            setState(() {
+                                              _isSyncing = true;
+                                            });
+
+                                            try {
+                                              await downloadAllFromCloud();
+                                            } finally {
+                                              if (mounted) {
+                                                setState(() {
+                                                  _isSyncing = false;
+                                                });
+                                              }
+                                            }
+                                          },
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: Colors.blue.shade600,
+                                      width: 2,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    foregroundColor: Colors.blue.shade600,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_isSyncing)
+                                        SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.blue.shade600,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      if (_isSyncing) const SizedBox(width: 8),
+                                      ValueListenableBuilder<
+                                        Map<String, String>
+                                      >(
+                                        valueListenable:
+                                            DownloadService().activeDownloads,
+                                        builder: (context, downloads, child) {
+                                          final downloadCount =
+                                              downloads.length;
+                                          return Text(
+                                            _isSyncing
+                                                ? downloadCount > 0
+                                                    ? "Syncing ($downloadCount)"
+                                                    : "Syncing..."
+                                                : "Auto Sync",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                             const SizedBox(height: 12.0),
@@ -789,6 +903,16 @@ class _FolderAllState extends State<FolderAll> {
                     ),
                   ),
                 ),
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'Status',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ),
                 SizedBox(width: 80),
               ],
             ),
@@ -902,9 +1026,9 @@ class _FolderAllState extends State<FolderAll> {
                                         Expanded(
                                           flex: 1,
                                           child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 8.0,
-                                              vertical: 4.0,
+                                            padding: EdgeInsets.only(
+                                              top: 4.0,
+                                              bottom: 4.0,
                                             ),
                                             decoration: BoxDecoration(
                                               color: _getFileColor(
@@ -951,6 +1075,18 @@ class _FolderAllState extends State<FolderAll> {
                                                   isDarkMode
                                                       ? Colors.grey[400]
                                                       : Colors.grey[700],
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 1,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 100.0,
+                                            ),
+                                            child: _buildSyncStatusIndicator(
+                                              filesMetaData[index]['syncStatus'] ??
+                                                  "NotSynced",
                                             ),
                                           ),
                                         ),
@@ -1021,6 +1157,49 @@ class _FolderAllState extends State<FolderAll> {
     );
   }
 
+  /// Returns a widget that indicates the synchronization status.
+  ///
+  /// Depending on the given [status], it returns an icon with the corresponding
+  /// color and tooltip text indicating the synchronization state (e.g., "Synced",
+  /// "NotSynced"). The indicator also considers the current theme (dark/light)
+  /// for proper color adjustments.
+  Widget _buildSyncStatusIndicator(String status) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    IconData iconData;
+    Color iconColor;
+    String tooltipText;
+
+    switch (status) {
+      case "Synced":
+        iconData = Icons.cloud_done;
+        iconColor = Colors.green;
+        tooltipText = "Synced to cloud";
+        break;
+      case "Syncing":
+        iconData = Icons.sync;
+        iconColor = Colors.blue;
+        tooltipText = "Syncing to cloud";
+        break;
+      case "Failed":
+        iconData = Icons.cloud_off;
+        iconColor = Colors.red;
+        tooltipText = "Sync failed";
+        break;
+      case "NotSynced":
+      default:
+        iconData = Icons.cloud_upload_outlined;
+        iconColor = isDarkMode ? Colors.grey[400]! : Colors.grey[700]!;
+        tooltipText = "Not synced";
+        break;
+    }
+
+    return Tooltip(
+      message: tooltipText,
+      child: Icon(iconData, color: iconColor, size: 20),
+    );
+  }
+
   /// Opens a dialog to display detailed information about the selected file.
   ///
   /// This function is triggered when the user wants to view more details
@@ -1036,6 +1215,612 @@ class _FolderAllState extends State<FolderAll> {
     );
   }
 
+  Future<void> _showSyncedDatasetsDialog(BuildContext context) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to access your synced datasets'),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Fetching your synced datasets...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final DatasetSyncManagementService syncService =
+          DatasetSyncManagementService();
+      final datasets = await syncService.getRecordedDatasets(userId: user.id);
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+
+      if (!context.mounted) return;
+
+      if (datasets['datasets'] == null ||
+          (datasets['datasets'] as List).isEmpty) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('No Synced Datasets'),
+              content: const Text(
+                'You don\'t have any datasets synced with the cloud.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+        return;
+      }
+
+      await _showDatasetSelectionDialog(context, datasets['datasets'], user.id);
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to fetch synced datasets: ${e.toString()}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  /// Displays a dialog that allows the user to select a dataset from the available list.
+  ///
+  /// Retrieves the root directory path from Hive and verifies that it is properly set.
+  /// If the root directory is not configured, it prompts the user via a snack bar.
+  /// Otherwise, it presents a dialog with the dataset list for selection and import.
+  ///
+  /// Parameters:
+  /// - [context]: The build context for displaying the dialog.
+  /// - [datasets]: A list of dataset items to choose from.
+  /// - [userId]: The unique identifier of the current user.
+  ///
+  /// Returns a [Future] that completes when the dialog is dismissed.
+  Future<void> _showDatasetSelectionDialog(
+    BuildContext context,
+    List<dynamic> datasets,
+    String userId,
+  ) async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+    final rootDirectoryPath = hiveBox.get('selectedRootDirectoryPath');
+
+    if (rootDirectoryPath == null || rootDirectoryPath.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please set a root directory in settings first'),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Your Synced Datasets'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: datasets.length,
+                  itemBuilder: (context, index) {
+                    final dataset = datasets[index];
+                    final datasetName =
+                        dataset['dataset_name'] ?? 'Unnamed Dataset';
+                    final isDownloading = _downloadingFiles.containsKey(
+                      datasetName,
+                    );
+
+                    return ListTile(
+                      title: Text(datasetName),
+                      subtitle: Text(
+                        'Size: ${dataset['file_size'] ?? 'Unknown'}',
+                      ),
+                      trailing:
+                          isDownloading
+                              ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : IconButton(
+                                icon: const Icon(Icons.download),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  _downloadDataset(
+                                    context,
+                                    dataset,
+                                    userId,
+                                    rootDirectoryPath,
+                                  );
+                                },
+                              ),
+                    );
+                  },
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Checks for AWS S3 credentials and shows the configuration panel if missing.
+  ///
+  /// This method verifies if the required AWS S3 configuration exists in the Hive storage.
+  /// If the configuration is incomplete or missing, it displays the AWS S3 configuration
+  /// panel as an overlay to collect the necessary credentials.
+  ///
+  /// Parameters:
+  ///   - `context`: The BuildContext required for showing the overlay
+  ///   - `onComplete`: Optional callback function that runs after configuration is complete
+  ///
+  /// Returns:
+  ///   A [Future<bool>] that resolves to:
+  ///   - `true` if credentials are already available or were successfully configured
+  ///   - `false` if configuration was cancelled or failed
+  Future<bool> checkAndConfigureAWSCredentials(
+    BuildContext context, {
+    Function? onComplete,
+  }) async {
+    final hiveBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+    // Check if all required AWS S3 credentials are available
+    final accessKey = hiveBox.get('aws_access_key');
+    final secretKey = hiveBox.get('aws_secret_key');
+    final region = hiveBox.get('aws_region');
+    final bucket = hiveBox.get('aws_bucket');
+
+    if (accessKey == null ||
+        secretKey == null ||
+        region == null ||
+        bucket == null) {
+      bool configurationCompleted =
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder:
+                (context) => Dialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    width: 500,
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AWS S3 Configuration Required',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Please configure your AWS S3 credentials to continue',
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const AWSS3ConfigPanel(),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () {
+                                // Check if configuration is now complete
+                                final updatedAccessKey = hiveBox.get(
+                                  'aws_access_key',
+                                );
+                                final updatedSecretKey = hiveBox.get(
+                                  'aws_secret_key',
+                                );
+                                final updatedRegion = hiveBox.get('aws_region');
+                                final updatedBucket = hiveBox.get('aws_bucket');
+
+                                if (updatedAccessKey != null &&
+                                    updatedSecretKey != null &&
+                                    updatedRegion != null &&
+                                    updatedBucket != null) {
+                                  Navigator.of(context).pop(true);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please complete the AWS S3 configuration',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: const Text('Done'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ) ??
+          false;
+
+      if (configurationCompleted && onComplete != null) {
+        onComplete();
+      }
+
+      return configurationCompleted;
+    }
+
+    // Credentials are already available
+    if (onComplete != null) {
+      onComplete();
+    }
+    return true;
+  }
+
+  /// Downloads a dataset from the cloud.
+  ///
+  /// This function downloads the dataset specified in [dataset] and stores it in the
+  /// directory provided by [rootDirectoryPath]. The [userId] is used to identify the
+  /// current user for naming or authentication purposes.
+  ///
+  /// Parameters:
+  /// - context: The BuildContext used for UI operations and dialogs.
+  /// - dataset: A map containing dataset information such as 'dataset_name', 'file_size',
+  ///   and 'file_type'.
+  /// - userId: The identifier of the current user.
+  /// - rootDirectoryPath: The path where the dataset file will be saved.
+  ///
+  /// Returns:
+  /// A Future that completes when the download operation finishes.
+  Future<void> _downloadDataset(
+    BuildContext context,
+    Map<String, dynamic> dataset,
+    String userId,
+    String rootDirectoryPath,
+  ) async {
+    bool credsOk = await checkAndConfigureAWSCredentials(context);
+    if (!credsOk) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AWS credentials are not configured.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final datasetName =
+        dataset['dataset_name'] ??
+        'dataset_${DateTime.now().millisecondsSinceEpoch}';
+    final fileType = dataset['file_type'] ?? 'csv';
+
+    String fileName = datasetName;
+    String extension = fileType.toLowerCase();
+
+    if (fileName.toLowerCase().endsWith('.$extension')) {
+      fileName = fileName.substring(0, fileName.length - extension.length - 1);
+    }
+
+    final lastDotIndex = fileName.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+      fileName = fileName.substring(0, lastDotIndex);
+    }
+
+    final destinationPath = path.join(
+      rootDirectoryPath,
+      '$fileName.$extension',
+    );
+
+    if (File(destinationPath).existsSync()) {
+      debugPrint("$destinationPath already exists locally");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$fileName.$extension already exists locally'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => _openContainingFolder(destinationPath),
+            ),
+          ),
+        );
+      }
+      DownloadService().completeDownload(datasetName);
+      return;
+    }
+
+    final downloadService = DownloadService();
+    downloadService.startDownload(datasetName, 'downloading');
+
+    try {
+      final syncService = DatasetSyncManagementService();
+      final s3Path = dataset['s3_path'] ?? '';
+
+      if (s3Path.isEmpty) {
+        throw Exception('S3 path is missing from dataset information');
+      }
+
+      await syncService.downloadRecordedDataset(
+        userId: userId,
+        s3Path: s3Path,
+        destinationPath: destinationPath,
+      );
+
+      downloadService.completeDownload(datasetName);
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      await scanForDatasetFiles(rootDirectoryPath);
+      await updateFilesSyncStatus();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Downloaded $fileName.$extension successfully'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => _openContainingFolder(destinationPath),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      downloadService.completeDownload(datasetName);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to download $fileName.$extension: ${e.toString()}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      debugPrint('Download error: $e');
+    }
+  }
+
+  /// Downloads all synced datasets from the cloud to the local filesystem
+  ///
+  /// This function retrieves all datasets associated with the current user from the cloud,
+  /// checks which ones don't exist locally, and downloads them to the root directory.
+  /// It shows progress via the DownloadService and displays appropriate notifications.
+  ///
+  /// Side effects:
+  /// - Updates the DownloadService with current download statuses
+  /// - Creates local files in the root directory
+  /// - Shows notifications about download progress
+  Future<void> downloadAllFromCloud() async {
+    final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+    final apiBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+    final userId = userBox.get('userId');
+    final rootDirectoryPath = apiBox.get('selectedRootDirectoryPath');
+
+    bool credsOk = await checkAndConfigureAWSCredentials(context);
+    if (!credsOk) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AWS credentials are not configured.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You need to be signed in to sync files'),
+          ),
+        );
+      }
+      return;
+    }
+
+    if (rootDirectoryPath == null || rootDirectoryPath.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a root directory first')),
+        );
+      }
+      return;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preparing to sync all files...')),
+      );
+    }
+
+    try {
+      final datasetSyncService = DatasetSyncManagementService();
+      final response = await datasetSyncService.getRecordedDatasets(
+        userId: userId,
+      );
+      final List<dynamic> cloudDatasets = response['datasets'] ?? [];
+
+      if (cloudDatasets.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No synced datasets found in the cloud'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final List<Map<String, dynamic>> datasetsToDownload = [];
+      for (var dataset in cloudDatasets) {
+        final datasetName = dataset['dataset_name'];
+        final fileType = dataset['file_type'] ?? 'csv';
+        final s3Path = dataset['s3_path'];
+
+        if (datasetName == null || s3Path == null) continue;
+
+        String localFilePath = path.join(rootDirectoryPath, datasetName);
+        if (!localFilePath.toLowerCase().endsWith('.$fileType')) {
+          localFilePath = '$localFilePath.$fileType';
+        }
+
+        if (!File(localFilePath).existsSync()) {
+          datasetsToDownload.add({
+            'name': datasetName,
+            's3_path': s3Path,
+            'file_type': fileType,
+            'destination_path': localFilePath,
+          });
+        }
+      }
+
+      if (datasetsToDownload.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('All cloud datasets are already synced locally'),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Downloading ${datasetsToDownload.length} files...'),
+          ),
+        );
+      }
+
+      final downloadService = DownloadService();
+      int successCount = 0;
+      int failCount = 0;
+
+      await Future.forEach(datasetsToDownload, (dataset) async {
+        final datasetName = dataset['name'];
+        final s3Path = dataset['s3_path'];
+        final destinationPath = dataset['destination_path'];
+
+        try {
+          downloadService.startDownload(datasetName, 'downloading');
+
+          await datasetSyncService.downloadRecordedDataset(
+            userId: userId,
+            s3Path: s3Path,
+            destinationPath: destinationPath,
+          );
+
+          successCount++;
+          downloadService.completeDownload(datasetName);
+        } catch (e) {
+          failCount++;
+          downloadService.updateDownloadStatus(datasetName, 'failed');
+          debugPrint('Failed to download $datasetName: $e');
+
+          Future.delayed(const Duration(seconds: 2), () {
+            downloadService.completeDownload(datasetName);
+          });
+        }
+      });
+
+      await scanForDatasetFiles(rootDirectoryPath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Sync complete: $successCount downloaded, $failCount failed',
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error during bulk download: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sync failed: ${e.toString()}')));
+      }
+    }
+  }
+
+  /// Builds a dialog widget to display detailed information about a dataset file.
+  ///
+  /// This dialog shows file meta-data such as file name, type, size, and modified date.
+  /// It is styled based on the current theme settings.
+  ///
+  /// Parameters:
+  /// - file: The dataset file for which details are displayed.
+  ///
+  /// Returns:
+  /// A [Widget] representing the file details dialog.
   Widget _buildFileDetailsDialog(DatasetFile file) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -1137,6 +1922,17 @@ class _FolderAllState extends State<FolderAll> {
               isDarkMode: isDarkMode,
               color: Colors.red.shade600,
             ),
+            SizedBox(height: 12),
+            _buildOptionButton(
+              icon: Icons.cloud_upload,
+              label: "Sync to Cloud",
+              onClick: () {
+                Navigator.pop(context);
+                _handleSyncFile(file.filePath);
+              },
+              isDarkMode: isDarkMode,
+              color: Colors.purple.shade600,
+            ),
             SizedBox(height: 24),
 
             Row(
@@ -1177,6 +1973,259 @@ class _FolderAllState extends State<FolderAll> {
     );
   }
 
+  /// Checks if a file is already synced with cloud storage.
+  ///
+  /// Evaluates whether the file identified by its path (or unique identifier)
+  /// has been successfully synchronized with the cloud.
+  ///
+  /// Returns `true` if the file is already synced; otherwise, returns `false`.
+  Future<bool> _isFileAlreadySynced(String filePath) async {
+    try {
+      final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
+      final fileName = file.fileName;
+      final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+      final userId = userBox.get('userId');
+
+      if (userId == null) {
+        debugPrint('Unable to check sync status: missing user ID');
+        return false;
+      }
+
+      final response = await DatasetSyncManagementService().getRecordedDatasets(
+        userId: userId,
+      );
+
+      final List<dynamic> datasets = response['datasets'] ?? [];
+
+      for (var dataset in datasets) {
+        final String datasetName = dataset['dataset_name'] ?? '';
+        if (datasetName == fileName) {
+          debugPrint('This file is already synced to cloud => $fileName');
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint('Error checking if file is synced: $e');
+      return false;
+    }
+  }
+
+  /// Handles syncing of a file with the cloud.
+  ///
+  /// This method initiates the cloud synchronization process for the file located at
+  /// [filePath]. On successful sync, the file's sync status is updated accordingly.
+  /// Any errors during the process are logged and handled appropriately.
+  ///
+  /// Parameters:
+  /// - filePath: The local path of the file to be synced.
+  void _handleSyncFile(String filePath) async {
+    final file = datasetFiles.firstWhere((file) => file.filePath == filePath);
+    final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+    final apiBox = Hive.box(dotenv.env['API_HIVE_BOX_NAME']!);
+
+    bool credsOk = await checkAndConfigureAWSCredentials(context);
+    if (!credsOk) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AWS credentials are not configured.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (await _isFileAlreadySynced(filePath)) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${file.fileName} is already synced to cloud'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      final index = datasetFiles.indexWhere((f) => f.filePath == filePath);
+      if (index != -1) {
+        datasetFiles[index].syncStatus = "Syncing";
+      }
+    });
+
+    try {
+      final accessKey = apiBox.get('aws_access_key');
+      final secretKey = apiBox.get('aws_secret_key');
+      final region = apiBox.get('aws_region');
+      final bucketName = apiBox.get('aws_bucket');
+      final userId = userBox.get('userId') ?? 'unknown_user';
+
+      if (accessKey.isEmpty || secretKey.isEmpty || bucketName.isEmpty) {
+        throw Exception('Missing AWS credentials');
+      }
+
+      // Use the service to upload the file
+      final awsService = AWSS3OperationService();
+      final responseData = await awsService.uploadDataset(
+        file: File(filePath),
+        userId: userId,
+        accessKey: accessKey,
+        secretKey: secretKey,
+        region: region,
+        bucketName: bucketName,
+      );
+
+      setState(() {
+        final index = datasetFiles.indexWhere((f) => f.filePath == filePath);
+        if (index != -1) {
+          datasetFiles[index].syncStatus = "Synced";
+        }
+      });
+
+      updateFilesSyncStatus();
+
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${file.fileName} has been synced to cloud'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      debugPrint('File synced successfully: ${responseData['file_url']}');
+    } catch (e) {
+      debugPrint('Error syncing file: $e');
+
+      setState(() {
+        final index = datasetFiles.indexWhere((f) => f.filePath == filePath);
+        if (index != -1) {
+          datasetFiles[index].syncStatus = "Failed";
+        }
+      });
+
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to sync ${file.fileName}: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Retrieves the list of datasets synced to S3 and updates the sync status
+  /// of local files.
+  ///
+  /// This function fetches a list of datasets that have been previously synced
+  /// to S3 from the server API, then updates the sync status of matching local
+  /// files in the [datasetFiles] list. It compares the file names to determine
+  /// which files have been synced.
+  ///
+  /// The function handles various error cases including network issues and
+  /// authentication problems, and ensures the UI is updated with the latest
+  /// sync status information.
+  Future<void> updateFilesSyncStatus() async {
+    try {
+      final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
+
+      final userId = userBox.get('userId');
+      final baseUrl = dotenv.env['DEV_BASE_URL']!;
+
+      if (userId == null) {
+        debugPrint('Unable to update sync status: missing user credentials');
+        return;
+      }
+
+      final url = Uri.parse(
+        '$baseUrl/api/aws/s3/get-recorded-datasets',
+      ).replace(queryParameters: {'user_id': userId.toString()});
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List<dynamic> datasets = data['datasets'] ?? [];
+
+        if (datasets.isEmpty) {
+          debugPrint('No synced datasets found for user $userId');
+          return;
+        }
+
+        final Map<String, String> syncedFiles = {};
+
+        for (var dataset in datasets) {
+          final String datasetName = dataset['dataset_name'] ?? '';
+          if (datasetName.isNotEmpty) {
+            syncedFiles[datasetName] = "Synced";
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            for (int i = 0; i < datasetFiles.length; i++) {
+              String baseName = datasetFiles[i].fileName;
+              // I had to make this temp fix, cuz I didn't figure out the root case for .csv.csv
+              int firstDotIndex = baseName.indexOf('.');
+              if (firstDotIndex != -1) {
+                baseName = baseName.substring(0, firstDotIndex);
+              }
+
+              bool found = false;
+              syncedFiles.forEach((key, value) {
+                String cleanKey = key;
+                int keyDotIndex = cleanKey.indexOf('.');
+                if (keyDotIndex != -1) {
+                  cleanKey = cleanKey.substring(0, keyDotIndex);
+                }
+
+                if (cleanKey == baseName) {
+                  datasetFiles[i].syncStatus = "Synced";
+                  found = true;
+                }
+              });
+
+              if (!found && datasetFiles[i].syncStatus != "Syncing") {
+                datasetFiles[i].syncStatus = "NotSynced";
+              }
+            }
+            _filterDatasetFiles();
+          });
+        }
+
+        debugPrint(
+          'Successfully updated sync status for ${syncedFiles.length} files',
+        );
+      } else {
+        debugPrint(
+          'Failed to fetch synced datasets. Status code: ${response.statusCode}',
+        );
+        debugPrint('Response: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error updating sync status: $e');
+    }
+  }
+
+  /// Builds a widget for displaying a file information item.
+  ///
+  /// This widget displays a file information row containing a label and its corresponding
+  /// value with styling that adapts to the current theme mode.
+  ///
+  /// Parameters:
+  /// - `label`: A String representing the label for the file info (e.g., "Type", "Size").
+  /// - `value`: A String representing the value displayed next to the label.
+  /// - `isDarkMode`: A bool indicating whether the dark theme is enabled.
+  ///
+  /// Returns:
+  /// A Widget that shows the file info item.
   Widget _buildFileInfoItem(String label, String value, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1208,6 +2257,17 @@ class _FolderAllState extends State<FolderAll> {
     );
   }
 
+  /// Builds an option button for file operations.
+  ///
+  /// This widget displays an icon and a text label, and triggers the provided [onClick]
+  /// callback when pressed. Its appearance is adjusted based on [isDarkMode] and an optional [color].
+  ///
+  /// Parameters:
+  /// - icon: The icon to display on the button.
+  /// - label: The text label for the button.
+  /// - onClick: The callback to invoke when the button is tapped.
+  /// - isDarkMode: A boolean flag to determine the style for dark mode.
+  /// - color: An optional color to customize the appearance.
   Widget _buildOptionButton({
     required IconData icon,
     required String label,
@@ -1930,6 +2990,91 @@ class _FolderAllState extends State<FolderAll> {
               child: const Text(
                 "Import from Kaggle",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 15.0),
+            OutlinedButton(
+              onPressed: () async {
+                await _showSyncedDatasetsDialog(context);
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.blue.shade600, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                foregroundColor: Colors.blue.shade600,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text(
+                "Import Synced Datasets with AWS",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 15.0),
+            OutlinedButton(
+              onPressed:
+                  _isSyncing
+                      ? null
+                      : () async {
+                        setState(() {
+                          _isSyncing = true;
+                        });
+
+                        try {
+                          await downloadAllFromCloud();
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isSyncing = false;
+                            });
+                          }
+                        }
+                      },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.blue.shade600, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                foregroundColor: Colors.blue.shade600,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isSyncing)
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.blue.shade600,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  if (_isSyncing) const SizedBox(width: 8),
+                  ValueListenableBuilder<Map<String, String>>(
+                    valueListenable: DownloadService().activeDownloads,
+                    builder: (context, downloads, child) {
+                      final downloadCount = downloads.length;
+                      return Text(
+                        _isSyncing
+                            ? downloadCount > 0
+                                ? "Syncing ($downloadCount)"
+                                : "Syncing..."
+                            : "Auto Sync",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ],

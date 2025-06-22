@@ -40,11 +40,8 @@ class _VisualizationScreenState extends State<VisualizationScreen>
   Widget? _currentChart;
   Map<String, dynamic>? _currentChartOptions;
   String? _currentChartType;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final VisualizationService _visualizationService = VisualizationService();
-  String? _generatedChartImagePath;
-  bool _isGeneratingChart = false;
 
   Map<String, dynamic>? _pieChartOptions;
   // Code for line chart
@@ -118,7 +115,6 @@ class _VisualizationScreenState extends State<VisualizationScreen>
     bool isJustOptionsUpdate = _currentChartType == 'pie' || !isNewChartRequest;
 
     setState(() {
-      _isGeneratingChart = true;
       _currentChart = const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -135,11 +131,11 @@ class _VisualizationScreenState extends State<VisualizationScreen>
     file.exists().then((exists) {
       if (!exists) {
         setState(() {
-          _isGeneratingChart = false;
           _currentChart = const Center(
             child: Text('Dataset file not found. Please import a new dataset.'),
           );
         });
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Dataset file not found')));
@@ -151,7 +147,6 @@ class _VisualizationScreenState extends State<VisualizationScreen>
             .generatePieChart(file, options)
             .then((imagePath) {
               setState(() {
-                _generatedChartImagePath = imagePath;
                 _currentChart = Image.network(
                   imagePath,
                   fit: BoxFit.contain,
@@ -182,12 +177,12 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                 );
                 _currentChartOptions = options;
                 _currentChartType = 'pie';
-                _isGeneratingChart = false;
               });
 
               _saveChartState();
 
               if (!isJustOptionsUpdate) {
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Chart generated successfully')),
                 );
@@ -195,7 +190,6 @@ class _VisualizationScreenState extends State<VisualizationScreen>
             })
             .catchError((error) {
               setState(() {
-                _isGeneratingChart = false;
                 _currentChart = Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -212,6 +206,7 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                 );
               });
 
+              if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error: ${error.toString()}')),
               );
@@ -225,12 +220,12 @@ class _VisualizationScreenState extends State<VisualizationScreen>
           );
           _currentChartOptions = options;
           _currentChartType = 'pie';
-          _isGeneratingChart = false;
         });
 
         _saveChartState();
 
         if (!isJustOptionsUpdate) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Chart generated successfully')),
           );
@@ -247,7 +242,7 @@ class _VisualizationScreenState extends State<VisualizationScreen>
 
       serializableOptions.forEach((key, value) {
         if (value is Color) {
-          serializableOptions[key] = value.value;
+          serializableOptions[key] = value.toARGB32();
         }
       });
 

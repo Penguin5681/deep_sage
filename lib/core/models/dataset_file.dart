@@ -1,7 +1,7 @@
 /// A class that represents a file in a dataset.
 ///
 /// This class stores information about a file including its name, type,
-/// size, path, modification time, and whether it is starred.
+/// size, path, modification time, sync status, and whether it is starred.
 class DatasetFile {
   /// The name of the file.
   String fileName;
@@ -21,9 +21,12 @@ class DatasetFile {
   /// Whether the file is marked as starred by the user.
   bool isStarred;
 
+  /// The sync status of the file (e.g., "Synced", "NotSynced", "Syncing").
+  String? syncStatus;
+
   /// Creates a new [DatasetFile] instance with the required properties.
   ///
-  /// All parameters are required.
+  /// All parameters are required, except [syncStatus] which defaults to "NotSynced".
   DatasetFile({
     required this.fileName,
     required this.fileType,
@@ -31,6 +34,7 @@ class DatasetFile {
     required this.filePath,
     required this.modified,
     required this.isStarred,
+    this.syncStatus = "NotSynced",
   });
 
   /// Converts this instance to a map representation.
@@ -47,6 +51,7 @@ class DatasetFile {
       'filePath': filePath,
       'modified': _formatModifiedTime(modified),
       'isStarred': isStarred.toString(),
+      'syncStatus': syncStatus ?? "NotSynced",
     };
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:deep_sage/core/config/helpers/app_icons.dart';
+import 'package:deep_sage/core/services/core_services/dataset_sync_service/dataset_sync_management_service.dart';
 import 'package:deep_sage/core/services/keyboard/shortcut_service.dart';
 import 'package:deep_sage/core/services/user_image_service.dart';
 import 'package:deep_sage/views/core_screens/folder_screens/folder_screen.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/services/core_services/health_service.dart';
 import 'dashboard.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -40,6 +42,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final Image fallbackUserAvatar = Image.asset(
     'assets/fallback/fallback_user_image.png',
   );
+
+  final HealthService _healthService = HealthService();
 
   /// Checks if the current user signed in with Google authentication.
   ///
@@ -86,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     currentScreen = Dashboard(onNavigate: navigateToIndex);
     getUserMetadata();
     checkIfGoogleSignIn();
+    _healthService.startMonitoring();
   }
 
   /// Navigates to a specified index in the navigation rail.
@@ -102,6 +107,139 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       selectedIndex = index;
     });
+  }
+
+  Widget _buildBackendStatusIndicator() {
+    return ValueListenableBuilder<BackendStatus>(
+      valueListenable: _healthService.status,
+      builder: (context, status, child) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        Color statusColor;
+        String tooltip;
+        String statusText;
+
+        switch (status) {
+          case BackendStatus.online:
+            statusColor = Colors.green;
+            tooltip = "Backend is online";
+            statusText = "Online";
+            break;
+          case BackendStatus.offline:
+            statusColor = Colors.red;
+            tooltip = "Backend is offline";
+            statusText = "Offline";
+            break;
+          case BackendStatus.error:
+            statusColor = Colors.orange;
+            tooltip = "Backend error";
+            statusText = "Error";
+            break;
+          case BackendStatus.unknown:
+            statusColor = Colors.grey;
+            tooltip = "Checking backend status...";
+            statusText = "Unknown";
+            break;
+        }
+
+        return Tooltip(
+          message: tooltip,
+          child: Container(
+            margin: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.grey[800] : Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDarkMode ? Colors.grey[700]! : Colors.grey[300]!,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 6),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDownloadIndicator() {
+    return ValueListenableBuilder<Map<String, String>>(
+      valueListenable: DownloadService().activeDownloads,
+      builder: (context, downloads, _) {
+        if (downloads.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Tooltip(
+            message: "${downloads.length} file(s) downloading",
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "${downloads.length}",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _healthService.stopMonitoring();
+    super.dispose();
   }
 
   final navigatorKey = GlobalKey<NavigatorState>();
@@ -739,7 +877,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final env = dotenv.env['FLUTTER_ENV'];
     final List<Widget> screens = [
-      // This is an array of Screens
       Dashboard(onNavigate: navigateToIndex),
       SearchScreen(),
       FolderScreen(onNavigate: navigateToIndex),
@@ -817,7 +954,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 40),
+                        SizedBox(height: 20),
+                        _buildDownloadIndicator(),
+                        SizedBox(height: 20),
+                        _buildBackendStatusIndicator(),
+                        SizedBox(height: 20),
                         MouseRegion(
                           cursor: SystemMouseCursors.click,
                           child: buildProfileImage(),
@@ -935,7 +1076,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               selectedIndex: selectedIndex,
             ),
             const VerticalDivider(thickness: 1, width: 1),
-            Expanded(child: screens[selectedIndex]),
+            Expanded(
+              child: IndexedStack(index: selectedIndex, children: screens),
+            ),
           ],
         ),
         floatingActionButton:

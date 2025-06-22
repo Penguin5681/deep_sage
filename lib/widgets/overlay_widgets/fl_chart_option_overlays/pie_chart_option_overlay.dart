@@ -473,7 +473,7 @@ class _PieChartOptionsOverlayState extends State<PieChartOptionsOverlay> {
                     itemCount: colorOptions.length,
                     itemBuilder: (context, index) {
                       final color = colorOptions[index];
-                      final isSelected = value.value == color.value;
+                      final isSelected = value.toARGB32() == color.toARGB32();
 
                       return GestureDetector(
                         onTap: () => _updateOption(optionKey, color),
@@ -536,7 +536,7 @@ class _PieChartOptionsOverlayState extends State<PieChartOptionsOverlay> {
                   ),
                 ),
                 Text(
-                  '#${value.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+                  '#${value.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
                   style: const TextStyle(fontSize: 12),
                 ),
               ],
@@ -593,48 +593,6 @@ class _PieChartOptionsOverlayState extends State<PieChartOptionsOverlay> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildRangeInput(
-    String label,
-    String optionKey,
-    double value,
-    ThemeData theme,
-    Color textColor,
-  ) {
-    final controller = TextEditingController(text: value.toString());
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Expanded(flex: 2, child: Text(label)),
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onChanged: (newValue) {
-                final parsed = double.tryParse(newValue);
-                if (parsed != null) {
-                  _updateOption(optionKey, parsed);
-                }
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 

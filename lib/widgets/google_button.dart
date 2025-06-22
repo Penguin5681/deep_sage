@@ -70,6 +70,7 @@ class GoogleButton extends StatelessWidget {
     final userBox = Hive.box(dotenv.env['USER_HIVE_BOX']!);
     await userBox.put('userSessionToken', res.session!.accessToken);
     await userBox.put('loginMethod', 'google');
+    await userBox.put('userId', user.id);
 
     // Store user profile information in Supabase profiles table
     await supabase.from('profiles').upsert({
