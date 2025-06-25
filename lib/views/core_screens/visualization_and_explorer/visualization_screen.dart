@@ -6,12 +6,21 @@ import 'package:deep_sage/widgets/overlay_widgets/matplotlib_option_overlays/pie
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+// import 'package:path/path.dart';
 
 import '../../../core/services/core_services/visualization_service.dart';
 import '../../../widgets/overlay_widgets/fl_chart_option_overlays/bar_chart_option_overlay.dart';
 import '../../../widgets/overlay_widgets/fl_chart_option_overlays/line_chart_option_overlay.dart';
 import '../../../widgets/overlay_widgets/fl_chart_option_overlays/pie_chart_option_overlay.dart';
 import '../../../widgets/pie_chart_control_panel.dart';
+
+// Line chart files
+import '../../../widgets/line_chart_control_panel.dart';
+import '../../core_screens/visualization_and_explorer/line_chart_visualization/dynamic_line_chart.dart';
+
+// Bar chart files
+import '../../../widgets/bar_chart_control_panel.dart';
+import '../../core_screens/visualization_and_explorer/bar_chart_visualization/dynamic_bar_chart.dart';
 
 class VisualizationScreen extends StatefulWidget {
   const VisualizationScreen({super.key});
@@ -35,6 +44,10 @@ class _VisualizationScreenState extends State<VisualizationScreen>
   final VisualizationService _visualizationService = VisualizationService();
 
   Map<String, dynamic>? _pieChartOptions;
+  // Code for line chart
+  Map<String, dynamic>? _lineChartOptions;
+  // Code for bar chart
+  Map<String, dynamic>? _barChartOptions;
 
   final Box recentImportsBox = Hive.box(dotenv.env['RECENT_IMPORTS_HISTORY']!);
 
@@ -277,6 +290,188 @@ class _VisualizationScreenState extends State<VisualizationScreen>
     }
   }
 
+  // Code logic for line chart
+  void _showLineChart(Map<String, dynamic> options) {
+    bool isNewChartRequest =
+        _currentChartType != 'line' || _currentChart == null;
+
+    if ((currentDatasetPath == null || currentDatasetPath!.isEmpty) &&
+        isNewChartRequest) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please import a dataset first')),
+      );
+      return;
+    }
+
+    final preRenderedChart = _chartRenderingService.getPreRenderedChart(
+      options,
+    );
+
+    if (preRenderedChart != null) {
+      setState(() {
+        _currentChart = preRenderedChart;
+        _currentChartOptions = options;
+        _currentChartType = 'line';
+      });
+      _saveChartState();
+      return;
+    }
+
+    bool isJustOptionsUpdate =
+        _currentChartType == 'line' || !isNewChartRequest;
+
+    setState(() {
+      _isGeneratingChart = true;
+      _currentChart = const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Generating chart...'),
+          ],
+        ),
+      );
+    });
+
+    final file = File(currentDatasetPath!);
+    file.exists().then((exists) {
+      if (!exists) {
+        setState(() {
+          _isGeneratingChart = false;
+          _currentChart = const Center(
+            child: Text('Dataset file not found. Please import a new dataset.'),
+          );
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Dataset file not found')));
+        return;
+      }
+
+      // Only FL Chart for now, add Matplotlib if needed
+      setState(() {
+        _currentChart = DynamicLineChart(
+          filePath: currentDatasetPath!,
+          chartOptions: options,
+          key: ValueKey(currentDatasetPath),
+        );
+        _currentChartOptions = options;
+        _currentChartType = 'line';
+        _isGeneratingChart = false;
+      });
+
+      _saveLineChartState();
+
+      if (!isJustOptionsUpdate) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chart generated successfully')),
+        );
+      }
+    });
+  }
+
+  void _saveLineChartState() {
+    if (_currentChartType != null && _currentChartOptions != null) {
+      final serializableOptions = Map<String, dynamic>.from(
+        _currentChartOptions!,
+      );
+
+      serializableOptions.forEach((key, value) {
+        if (value is Color) {
+          serializableOptions[key] = value.value;
+        }
+      });
+
+      final chartStateBox = Hive.box(dotenv.env['CHART_STATE_BOX']!);
+      chartStateBox.put('chartType', _currentChartType);
+      chartStateBox.put('chartOptions', serializableOptions);
+      chartStateBox.put('datasetPath', currentDatasetPath);
+    }
+  }
+
+  void _restoreLineChartState() {
+    final chartStateBox = Hive.box(dotenv.env['CHART_STATE_BOX']!);
+    final savedChartType = chartStateBox.get('chartType');
+    final savedOptions = chartStateBox.get('chartOptions');
+    final savedDatasetPath = chartStateBox.get('datasetPath');
+
+    if (savedChartType == 'pie' &&
+        savedOptions != null &&
+        savedDatasetPath != null &&
+        savedDatasetPath == currentDatasetPath) {
+      final restoredOptions = Map<String, dynamic>.from(savedOptions);
+
+      final colorKeys = [
+        'centerSpaceColor',
+        'sectionColor',
+        'sectionBorderColor',
+        'titleColor',
+        'tooltipBgColor',
+      ];
+
+      for (var key in colorKeys) {
+        if (restoredOptions.containsKey(key) && restoredOptions[key] is int) {
+          restoredOptions[key] = Color(restoredOptions[key]);
+        }
+      }
+
+      setState(() {
+        _currentChart = DynamicPieChart(
+          filePath: currentDatasetPath!,
+          chartOptions: restoredOptions,
+        );
+        _currentChartOptions = restoredOptions;
+        _currentChartType = savedChartType;
+      });
+    } else if (savedChartType == 'line' &&
+        savedOptions != null &&
+        savedDatasetPath != null &&
+        savedDatasetPath == currentDatasetPath) {
+      final restoredOptions = Map<String, dynamic>.from(savedOptions);
+
+      final colorKeys = ['lineColor', 'dotColor', 'backgroundColor'];
+
+      for (var key in colorKeys) {
+        if (restoredOptions.containsKey(key) && restoredOptions[key] is int) {
+          restoredOptions[key] = Color(restoredOptions[key]);
+        }
+      }
+
+      setState(() {
+        _currentChart = DynamicLineChart(
+          filePath: currentDatasetPath!,
+          chartOptions: restoredOptions,
+        );
+        _currentChartOptions = restoredOptions;
+        _currentChartType = savedChartType;
+      });
+    }
+  }
+
+  // Code logic for bar chart
+  void _showBarChart(Map<String, dynamic> options) {
+    bool isNewChartRequest =
+        _currentChartType != 'bar' || _currentChart == null;
+
+    if ((currentDatasetPath == null || currentDatasetPath!.isEmpty) &&
+        isNewChartRequest) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please import a dataset first')),
+      );
+      return;
+    }
+    setState(() {
+      _currentChart = DynamicBarChart(
+        filePath: currentDatasetPath!,
+        chartOptions: options,
+        key: ValueKey(currentDatasetPath),
+      );
+      _currentChartOptions = options;
+      _currentChartType = 'bar';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -395,16 +590,22 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                       ),
                                     ),
                                     child: LineChartOptionsOverlay(
+                                      // Added the function of line chart
+                                      initialOptions: _lineChartOptions ?? {},
                                       onOptionsChanged: (options) {
-                                        // Store or use the updated options
-                                        debugPrint(
-                                          'Chart options updated: $options',
-                                        );
+                                        setState(() {
+                                          _lineChartOptions = options;
+                                        });
                                       },
                                     ),
                                   ),
                             ),
-                      );
+                        // showing the result of line chart
+                      ).then((result) {
+                        if (result != null && result is Map<String, dynamic>) {
+                          _showLineChart(result);
+                        }
+                      });
                     },
                   ),
                 ),
@@ -436,16 +637,20 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                                       ),
                                     ),
                                     child: BarChartOptionsOverlay(
+                                      initialOptions: _barChartOptions ?? {},
                                       onOptionsChanged: (options) {
-                                        // Store or use the updated options
-                                        debugPrint(
-                                          'Bar chart options updated: $options',
-                                        );
+                                        setState(() {
+                                          _barChartOptions = options;
+                                        });
                                       },
                                     ),
                                   ),
                             ),
-                      );
+                      ).then((result) {
+                        if (result != null && result is Map<String, dynamic>) {
+                          _showBarChart(result);
+                        }
+                      });
                     },
                   ),
                 ),
@@ -538,23 +743,76 @@ class _VisualizationScreenState extends State<VisualizationScreen>
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child:
-                            _currentChartType == 'pie' &&
-                                    _currentChartOptions != null
-                                ? PieChartControlPanel(
-                                  currentOptions: _currentChartOptions!,
-                                  onOptionsChanged: (updatedOptions) {
-                                    setState(() {
-                                      _currentChartOptions = updatedOptions;
-                                    });
-                                    _showPieChart(updatedOptions);
-                                  },
-                                )
-                                : const Center(
-                                  child: Text(
-                                    'Select a chart type to see controls',
-                                  ),
-                                ),
+                        child: Builder(
+                          builder: (_) {
+                            if (_currentChartType == 'pie' &&
+                                _currentChartOptions != null) {
+                              return PieChartControlPanel(
+                                currentOptions: _currentChartOptions!,
+                                onOptionsChanged: (updatedOptions) {
+                                  setState(() {
+                                    _currentChartOptions = updatedOptions;
+                                  });
+                                  _showPieChart(updatedOptions);
+                                },
+                              );
+                            } else if (_currentChartType == 'line' &&
+                                _currentChartOptions != null) {
+                              return LineChartControlPanel(
+                                currentOptions: _currentChartOptions!,
+                                onOptionsChanged: (updatedOptions) {
+                                  setState(() {
+                                    _currentChartOptions = updatedOptions;
+                                    if (_currentChart is DynamicLineChart) {
+                                      // update the chart with new options
+                                      (_currentChart as DynamicLineChart)
+                                          .updateOptions(updatedOptions);
+                                    }
+                                  });
+                                  // _showLineChart(updatedOptions);
+                                },
+                              );
+                              // Here we can also add the code for bar chart
+                            } else if (_currentChartType == 'bar' &&
+                                _currentChartOptions != null) {
+                              return BarChartControlPanel(
+                                currentOptions: _currentChartOptions!,
+                                onOptionsChanged: (updatedOptions) {
+                                  setState(() {
+                                    _currentChartOptions = updatedOptions;
+                                    if (_currentChart is DynamicBarChart) {
+                                      (_currentChart as DynamicBarChart)
+                                          .updateOptions(updatedOptions);
+                                    }
+                                  });
+                                },
+                              );
+                            }
+                            // Default fallback widget
+                            return const Center(
+                              child: Text(
+                                'Select a chart type to see controls',
+                              ),
+                            );
+                          },
+                        ),
+                        // child:
+                        //     _currentChartType == 'pie' &&
+                        //             _currentChartOptions != null
+                        //         ? PieChartControlPanel(
+                        //           currentOptions: _currentChartOptions!,
+                        //           onOptionsChanged: (updatedOptions) {
+                        //             setState(() {
+                        //               _currentChartOptions = updatedOptions;
+                        //             });
+                        //             _showPieChart(updatedOptions);
+                        //           },
+                        //         )
+                        //         : const Center(
+                        //           child: Text(
+                        //             'Select a chart type to see controls',
+                        //           ),
+                        //         ),
                       ),
                     ),
                   ],
